@@ -1,5 +1,4 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-{-# LANGUAGE EmptyDataDecls #-}
 module Language.Lean.FFI
   ( lean_initialize
   , lean_finalize
