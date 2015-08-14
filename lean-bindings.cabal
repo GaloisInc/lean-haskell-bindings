@@ -1,0 +1,23 @@
+Name: lean-bindings
+Version: 0.1
+Author: Joe Hendrix
+Maintainer: jhendrix@galois.com
+Build-type: Simple
+Cabal-version: >= 1.9.2
+
+library
+  build-depends:
+    base
+  hs-source-dirs: src
+  build-tools: c2hs
+  exposed-modules:
+    Language.Lean.FFI
+
+executable test
+  build-depends:
+    base,
+    lean-bindings
+  extra-libraries:
+    leanshared
+  hs-source-dirs: test
+  main-is: Main_test.hs
