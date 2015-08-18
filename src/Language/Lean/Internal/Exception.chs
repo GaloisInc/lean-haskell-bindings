@@ -1,7 +1,7 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE StandaloneDeriving #-}
-module Language.Lean.FFI.Exception
+module Language.Lean.Internal.Exception
   ( LeanException(..)
   , LeanExceptionKind(..)
     -- * FFI types
@@ -18,7 +18,7 @@ import Data.Typeable
 import Foreign
 import Foreign.C
 
-import Language.Lean.FFI.String
+import Language.Lean.Internal.String
 
 #include "lean_macros.h"
 #include "lean_exception.h"

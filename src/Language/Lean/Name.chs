@@ -2,9 +2,9 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE StandaloneDeriving #-}
-module Language.Lean.FFI.Name
+module Language.Lean.Name
   ( Name
-  , mkAnonymousName
+  , anonymousName
   , strName
   , idxName
   , NameView(..)
@@ -18,8 +18,8 @@ import Foreign
 import Foreign.C
 import System.IO.Unsafe
 
-{#import Language.Lean.FFI.Exception #}
-{#import Language.Lean.FFI.String #}
+{#import Language.Lean.Internal.Exception #}
+{#import Language.Lean.Internal.String #}
 
 #include "lean_macros.h"
 #include "lean_bool.h"
@@ -113,9 +113,10 @@ tryAllocName mk_name =
 withNamePtr :: Name -> (NamePtr -> IO a) -> IO a
 withNamePtr (Name nm) = withForeignPtr nm
 
-mkAnonymousName :: IO Name
-mkAnonymousName = do
+anonymousName :: Name
+anonymousName = unsafePerformIO $
   tryAllocName lean_mk_anonymous_name
+{-# NOINLINE anonymousName #-}
 
 strName :: Name -> String -> Name
 strName pre r = unsafePerformIO $ do
@@ -134,6 +135,7 @@ data NameView
    = AnonymousName
    | StringName Name String
    | IndexName Name CUInt
+  deriving (Show)
 
 viewName :: Name -> NameView
 viewName nm = unsafePerformIO $ do

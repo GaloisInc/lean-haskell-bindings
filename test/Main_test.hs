@@ -1,11 +1,11 @@
 module Main (main) where
 
-import qualified Language.Lean.FFI.Name as Lean
+import qualified Language.Lean as Lean
 
 main :: IO ()
 main = do
   putStrLn "Started name test"
-  a <- Lean.mkAnonymousName
+  let a = Lean.anonymousName
   case Lean.viewName a of
     Lean.AnonymousName -> return ()
     _ -> fail "Expected anonymous name."

@@ -1,5 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Language.Lean.FFI.String
+module Language.Lean.Internal.String
   ( mkLeanString
   , decodeLeanString
   , withLeanStringPtr

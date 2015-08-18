@@ -16,10 +16,11 @@ library
   build-tools: c2hs
   ghc-options: -Wall
   exposed-modules:
-    Language.Lean.FFI
-    Language.Lean.FFI.String
-    Language.Lean.FFI.Exception
-    Language.Lean.FFI.Name
+    Language.Lean.Internal.Exception
+    Language.Lean.Internal.String
+    Language.Lean.Exception
+    Language.Lean.Name
+    Language.Lean
 
 executable test
   build-depends:
