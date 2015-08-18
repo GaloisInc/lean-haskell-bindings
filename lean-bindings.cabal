@@ -7,17 +7,24 @@ Cabal-version: >= 1.9.2
 
 library
   build-depends:
-    base
+    base,
+    bytestring,
+    text
+  extra-libraries:
+    leanshared
   hs-source-dirs: src
   build-tools: c2hs
+  ghc-options: -Wall
   exposed-modules:
     Language.Lean.FFI
+    Language.Lean.FFI.String
+    Language.Lean.FFI.Exception
+    Language.Lean.FFI.Name
 
 executable test
   build-depends:
     base,
     lean-bindings
-  extra-libraries:
-    leanshared
+  ghc-options: -Wall
   hs-source-dirs: test
   main-is: Main_test.hs
