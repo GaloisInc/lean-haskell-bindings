@@ -16,6 +16,7 @@ import Foreign
 import Foreign.C
 import System.IO.Unsafe
 
+
 {#import Language.Lean.Internal.Exception #}
 {#import Language.Lean.Internal.String #}
 
@@ -23,6 +24,12 @@ import System.IO.Unsafe
 #include "lean_bool.h"
 #include "lean_exception.h"
 #include "lean_name.h"
+
+tryAllocLeanValue :: FunPtr (Ptr a -> IO ())
+                   -> (Ptr (Ptr a) -> Ptr ExceptionPtr -> IO Bool)
+                   -> IO (ForeignPtr a)
+tryAllocLeanValue free_fn alloc_fn =
+  tryPartialLeanFn alloc_fn $ newForeignPtr free_fn
 
 {#pointer lean_name as NamePtr -> Name#}
 
@@ -95,29 +102,27 @@ foreign import ccall "&lean_del_name"
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
--- | A Lean Name
+-- | A Lean name is a c
 newtype Name = Name (ForeignPtr Name)
 
-tryAllocLeanValue :: FunPtr (Ptr a -> IO ())
-                   -> (Ptr (Ptr a) -> Ptr ExceptionPtr -> IO Bool)
-                   -> IO (ForeignPtr a)
-tryAllocLeanValue free_fn alloc_fn =
-  tryPartialLeanFn alloc_fn $ newForeignPtr free_fn
-
+-- | Call a C layer function that attempts to allocate a
+-- new name.
 tryAllocName :: (Ptr NamePtr -> Ptr ExceptionPtr -> IO Bool)
            -> IO Name
 tryAllocName mk_name =
   fmap Name $ tryAllocLeanValue lean_del_name_ptr $ mk_name
 
-
+-- | Run an action with the underlying name pointer.
 withNamePtr :: Name -> (NamePtr -> IO a) -> IO a
 withNamePtr (Name nm) = withForeignPtr nm
 
+-- | The root "anonymous" name
 anonymousName :: Name
 anonymousName = unsafePerformIO $
   tryAllocName lean_mk_anonymous_name
 {-# NOINLINE anonymousName #-}
 
+-- | Append a string to a name.
 strName :: Name -> String -> Name
 strName pre r = unsafePerformIO $ do
   withNamePtr pre $ \pre_ptr -> do
@@ -125,16 +130,20 @@ strName pre r = unsafePerformIO $ do
       tryAllocName (lean_mk_str_name pre_ptr r_ptr)
 {-# NOINLINE strName #-}
 
-idxName :: Name -> CUInt -> Name
+-- | Append a numeric index to a name.
+idxName :: Name -> Word32 -> Name
 idxName pre i = unsafePerformIO $ do
   withNamePtr pre $ \pre_ptr -> do
-     tryAllocName (lean_mk_idx_name pre_ptr i)
+    tryAllocName (lean_mk_idx_name pre_ptr (fromIntegral i))
 {-# NOINLINE idxName #-}
 
 data NameView
    = AnonymousName
+     -- ^ The anonymous name.
    | StringName Name String
-   | IndexName Name CUInt
+     -- ^ A name with a string appended.
+   | IndexName Name Word32
+     -- ^ A name with a numeric value appended.
   deriving (Show)
 
 viewName :: Name -> NameView
@@ -149,7 +158,8 @@ viewName nm = unsafePerformIO $ do
     else assert (lean_is_idx_name name_ptr) $ do
       ptr <- tryAllocName $ lean_get_name_prefix name_ptr
       idx <- tryGetUInt $ lean_get_name_idx name_ptr
-      return $! IndexName ptr idx
+      return $! IndexName ptr (fromIntegral idx)
+{-# NOLINE viewName #-}
 
 eqName :: Name -> Name -> Bool
 eqName x y = unsafePerformIO $ do
