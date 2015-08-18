@@ -1,6 +1,7 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 module Language.Lean.Internal.String
   ( mkLeanString
+  , mkLeanText
   , decodeLeanString
   , withLeanStringPtr
   , withLeanTextPtr
