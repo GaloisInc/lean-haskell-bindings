@@ -97,7 +97,7 @@ foreign import ccall "&lean_name_del"
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
--- | A Lean name is a c
+-- | A Lean name
 newtype Name = Name (ForeignPtr Name)
 
 -- | Call a C layer function that attempts to allocate a
@@ -154,7 +154,7 @@ viewName nm = unsafePerformIO $ do
       ptr <- tryAllocName $ lean_name_get_prefix name_ptr
       idx <- tryGetUInt $ lean_name_get_idx name_ptr
       return $! IndexName ptr (fromIntegral idx)
-{-# NOLINE viewName #-}
+{-# NOINLINE viewName #-}
 
 eqName :: Name -> Name -> Bool
 eqName x y = unsafePerformIO $ do

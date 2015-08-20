@@ -24,9 +24,6 @@ import Foreign.C (CChar, CString)
   { `CString'
   } -> `()' #}
 
-foreign import ccall "&lean_string_del"
-  _lean_string_del_ptr :: FunPtr (CString -> IO ())
-
 -- | This decodes a CString as Lean text
 decodeLeanText :: CString -> IO Text
 decodeLeanText cstr = do
@@ -49,11 +46,11 @@ mkLeanText alloc = bracket alloc lean_string_del $ decodeLeanText
 mkLeanString :: IO CString -> IO String
 mkLeanString alloc = bracket alloc lean_string_del $ decodeLeanString
 
--- | Use the string as a UTF8 CString
+-- | Use the string as a Lean string
 withLeanStringPtr :: String -> (CString -> IO a) -> IO a
 withLeanStringPtr s f = withLeanTextPtr (fromString s) f
 
--- | Use the text as a UTF8 CString
+-- | Use the text as a Lean string
 withLeanTextPtr :: Text -> (CString -> IO a) -> IO a
 withLeanTextPtr txt f =
   unsafeUseAsCString (encodeUtf8 txt `BS.snoc` 0) f
