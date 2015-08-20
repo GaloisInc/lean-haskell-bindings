@@ -20,6 +20,8 @@ library
     Language.Lean.Internal.String
     Language.Lean.Exception
     Language.Lean.Name
+    Language.Lean.Options
+    Language.Lean.Univ
     Language.Lean
 
 executable test

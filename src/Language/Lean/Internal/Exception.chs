@@ -9,6 +9,7 @@ module Language.Lean.Internal.Exception
   , throwLeanException
   , tryPartialLeanFn
   , tryAllocString
+  , tryGetBool
   , tryGetUInt
   , tryAllocLeanValue
   ) where
@@ -97,6 +98,12 @@ tryGetUInt :: (Ptr CUInt -> Ptr ExceptionPtr -> IO Bool)
            -> IO CUInt
 tryGetUInt mk_uint =
   tryPartialLeanFn mk_uint $ return
+
+tryGetBool :: (Ptr CInt -> Ptr ExceptionPtr -> IO Bool)
+           -> IO Bool
+tryGetBool mk_bool =
+  tryPartialLeanFn mk_bool $ \v -> do
+    return $ toEnum (fromIntegral v)
 
 tryAllocLeanValue :: FunPtr (Ptr a -> IO ())
                    -> (Ptr (Ptr a) -> Ptr ExceptionPtr -> IO Bool)

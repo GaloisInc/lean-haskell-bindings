@@ -9,6 +9,7 @@ module Language.Lean.Name
   , idxName
   , NameView(..)
   , viewName
+  , NamePtr
   ) where
 
 import Control.Exception (assert)
