@@ -10,6 +10,7 @@ module Language.Lean.Name
   , NameView(..)
   , viewName
   , NamePtr
+  , withNamePtr
   ) where
 
 import Control.Exception (assert)
@@ -17,6 +18,7 @@ import Foreign
 import Foreign.C
 import System.IO.Unsafe
 
+import Language.Lean.Internal.Utils
 
 {#import Language.Lean.Internal.Exception #}
 {#import Language.Lean.Internal.String #}
@@ -108,7 +110,7 @@ tryAllocName mk_name =
   fmap Name $ tryAllocLeanValue lean_name_del_ptr $ mk_name
 
 -- | Run an action with the underlying name pointer.
-withNamePtr :: Name -> (NamePtr -> IO a) -> IO a
+withNamePtr :: WithValueFn Name NamePtr a
 withNamePtr (Name nm) = withForeignPtr nm
 
 -- | The root "anonymous" name
@@ -156,15 +158,9 @@ viewName nm = unsafePerformIO $ do
       return $! IndexName ptr (fromIntegral idx)
 {-# NOINLINE viewName #-}
 
-eqName :: Name -> Name -> Bool
-eqName x y = unsafePerformIO $ do
-  withNamePtr x $ \x_ptr -> do
-    withNamePtr y $ \y_ptr -> do
-      return $! lean_name_eq x_ptr y_ptr
-{-# NOINLINE eqName #-}
-
 instance Eq Name where
-  (==) = eqName
+  (==) = withBinaryPred withNamePtr lean_name_eq
+  {-# NOINLINE (==) #-}
 
 showName :: Name -> String
 showName nm = unsafePerformIO $ do
