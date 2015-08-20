@@ -1,4 +1,7 @@
 *~
+.cabal-sandbox
 .stack-work
 .lean_trace
+cabal.sandbox.config
+deps
 dist
