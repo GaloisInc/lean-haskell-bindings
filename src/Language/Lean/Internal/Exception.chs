@@ -10,6 +10,7 @@ module Language.Lean.Internal.Exception
   , tryPartialLeanFn
   , tryAllocString
   , tryGetUInt
+  , tryAllocLeanValue
   ) where
 
 import Control.Exception (Exception(..), finally, throwIO)
@@ -18,6 +19,7 @@ import Data.Typeable
 import Foreign
 import Foreign.C
 
+import Language.Lean.Exception
 import Language.Lean.Internal.String
 
 #include "lean_macros.h"
@@ -27,52 +29,37 @@ import Language.Lean.Internal.String
 
 deriving instance Storable ExceptionPtr
 
-{#fun unsafe lean_del_exception
+{#fun unsafe lean_exception_del
   { `ExceptionPtr'
   } -> `()' #}
 
-{#fun unsafe lean_get_exception_message
+{#fun unsafe lean_exception_get_message
   { id `ExceptionPtr'
   } -> `CString' #}
 
 {#enum lean_exception_kind as ExceptionKind { upcaseFirstLetter }
          deriving (Eq)#}
 
-{#fun pure unsafe lean_get_exception_kind
+{#fun pure unsafe lean_exception_get_kind
   { id `ExceptionPtr'
   } -> `ExceptionKind' #}
-
-data LeanExceptionKind
-   = LeanSystemException
-   | LeanOutOfMemory
-   | LeanInterrupted
-   | LeanKernelException
-   | LeanOtherException
-  deriving (Show)
-
--- | An exception thrown by Lean
-data LeanException
-   = LeanException !LeanExceptionKind !String
- deriving (Typeable, Show)
-
-instance Exception LeanException
 
 -- | Convert the ExceptionPtr to a Lean exception and throw
 -- it while releasing the ExceptionPtr
 throwLeanException :: ExceptionPtr -> IO a
 throwLeanException ptr = do
   ex <- leanExceptionFromPtr ptr
-    `finally` lean_del_exception ptr
+    `finally` lean_exception_del ptr
   throwIO $ ex
 
 leanExceptionFromPtr :: ExceptionPtr -> IO LeanException
 leanExceptionFromPtr ptr = do
-  msg <- mkLeanString (lean_get_exception_message ptr)
+  msg <- mkLeanString (lean_exception_get_message ptr)
   return $! LeanException (getLeanExceptionKind ptr) msg
 
 getLeanExceptionKind :: ExceptionPtr -> LeanExceptionKind
 getLeanExceptionKind ptr = do
-  case lean_get_exception_kind ptr of
+  case lean_exception_get_kind ptr of
     LEAN_NULL_EXCEPTION -> do
       error "getLeanException not given an exception"
     LEAN_SYSTEM_EXCEPTION -> do
@@ -85,7 +72,6 @@ getLeanExceptionKind ptr = do
       LeanKernelException
     LEAN_OTHER_EXCEPTION -> do
       LeanOtherException
-
 
 tryPartialLeanFn :: Storable a
                  => (Ptr a -> Ptr ExceptionPtr -> IO Bool)
@@ -105,9 +91,15 @@ tryAllocString :: (Ptr CString -> Ptr ExceptionPtr -> IO Bool)
                -> IO String
 tryAllocString mk_string =
   tryPartialLeanFn mk_string $ \ptr -> do
-     decodeLeanString ptr `finally` lean_del_string ptr
+     decodeLeanString ptr `finally` lean_string_del ptr
 
 tryGetUInt :: (Ptr CUInt -> Ptr ExceptionPtr -> IO Bool)
            -> IO CUInt
 tryGetUInt mk_uint =
   tryPartialLeanFn mk_uint $ return
+
+tryAllocLeanValue :: FunPtr (Ptr a -> IO ())
+                   -> (Ptr (Ptr a) -> Ptr ExceptionPtr -> IO Bool)
+                   -> IO (ForeignPtr a)
+tryAllocLeanValue free_fn alloc_fn =
+  tryPartialLeanFn alloc_fn $ newForeignPtr free_fn

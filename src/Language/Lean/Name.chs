@@ -25,27 +25,21 @@ import System.IO.Unsafe
 #include "lean_exception.h"
 #include "lean_name.h"
 
-tryAllocLeanValue :: FunPtr (Ptr a -> IO ())
-                   -> (Ptr (Ptr a) -> Ptr ExceptionPtr -> IO Bool)
-                   -> IO (ForeignPtr a)
-tryAllocLeanValue free_fn alloc_fn =
-  tryPartialLeanFn alloc_fn $ newForeignPtr free_fn
-
 {#pointer lean_name as NamePtr -> Name#}
 
-{#fun unsafe lean_mk_anonymous_name
+{#fun unsafe lean_name_mk_anonymous
   { id `Ptr NamePtr'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
-{#fun unsafe lean_mk_str_name
+{#fun unsafe lean_name_mk_str
   { `NamePtr'
   , `CString'
   , id `Ptr NamePtr'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
-{#fun unsafe lean_mk_idx_name
+{#fun unsafe lean_name_mk_idx
   { `NamePtr'
   , `CUInt'
   , id `Ptr NamePtr'
@@ -58,18 +52,18 @@ tryAllocLeanValue free_fn alloc_fn =
   } -> `()' #}
 -}
 
-foreign import ccall "&lean_del_name"
-  lean_del_name_ptr :: FunPtr (NamePtr -> IO ())
+foreign import ccall "&lean_name_del"
+  lean_name_del_ptr :: FunPtr (NamePtr -> IO ())
 
-{#fun pure unsafe lean_is_anonymous_name
+{#fun pure unsafe lean_name_is_anonymous
   { `NamePtr'
   } -> `Bool' #}
 
-{#fun pure unsafe lean_is_str_name
+{#fun pure unsafe lean_name_is_str
   { `NamePtr'
   } -> `Bool' #}
 
-{#fun pure unsafe lean_is_idx_name
+{#fun pure unsafe lean_name_is_idx
   { `NamePtr'
   } -> `Bool' #}
 
@@ -78,19 +72,19 @@ foreign import ccall "&lean_del_name"
   , `NamePtr'
   } -> `Bool' #}
 
-{#fun unsafe lean_get_name_prefix
+{#fun unsafe lean_name_get_prefix
   { `NamePtr'
   , id `Ptr NamePtr'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
-{#fun unsafe lean_get_name_str
+{#fun unsafe lean_name_get_str
   { `NamePtr'
   , id `Ptr CString'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
-{#fun unsafe lean_get_name_idx
+{#fun unsafe lean_name_get_idx
   { `NamePtr'
   , id `Ptr CUInt'
   , id `Ptr ExceptionPtr'
@@ -110,7 +104,7 @@ newtype Name = Name (ForeignPtr Name)
 tryAllocName :: (Ptr NamePtr -> Ptr ExceptionPtr -> IO Bool)
            -> IO Name
 tryAllocName mk_name =
-  fmap Name $ tryAllocLeanValue lean_del_name_ptr $ mk_name
+  fmap Name $ tryAllocLeanValue lean_name_del_ptr $ mk_name
 
 -- | Run an action with the underlying name pointer.
 withNamePtr :: Name -> (NamePtr -> IO a) -> IO a
@@ -119,7 +113,7 @@ withNamePtr (Name nm) = withForeignPtr nm
 -- | The root "anonymous" name
 anonymousName :: Name
 anonymousName = unsafePerformIO $
-  tryAllocName lean_mk_anonymous_name
+  tryAllocName lean_name_mk_anonymous
 {-# NOINLINE anonymousName #-}
 
 -- | Append a string to a name.
@@ -127,14 +121,14 @@ strName :: Name -> String -> Name
 strName pre r = unsafePerformIO $ do
   withNamePtr pre $ \pre_ptr -> do
     withLeanStringPtr r $ \r_ptr -> do
-      tryAllocName (lean_mk_str_name pre_ptr r_ptr)
+      tryAllocName (lean_name_mk_str pre_ptr r_ptr)
 {-# NOINLINE strName #-}
 
 -- | Append a numeric index to a name.
 idxName :: Name -> Word32 -> Name
 idxName pre i = unsafePerformIO $ do
   withNamePtr pre $ \pre_ptr -> do
-    tryAllocName (lean_mk_idx_name pre_ptr (fromIntegral i))
+    tryAllocName (lean_name_mk_idx pre_ptr (fromIntegral i))
 {-# NOINLINE idxName #-}
 
 data NameView
@@ -149,15 +143,15 @@ data NameView
 viewName :: Name -> NameView
 viewName nm = unsafePerformIO $ do
   withNamePtr nm $ \name_ptr -> do
-    if lean_is_anonymous_name name_ptr then
+    if lean_name_is_anonymous name_ptr then
       return $! AnonymousName
-    else if lean_is_str_name name_ptr then do
-      ptr <- tryAllocName   $ lean_get_name_prefix name_ptr
-      r   <- tryAllocString $ lean_get_name_str    name_ptr
+    else if lean_name_is_str name_ptr then do
+      ptr <- tryAllocName   $ lean_name_get_prefix name_ptr
+      r   <- tryAllocString $ lean_name_get_str    name_ptr
       return $! StringName ptr r
-    else assert (lean_is_idx_name name_ptr) $ do
-      ptr <- tryAllocName $ lean_get_name_prefix name_ptr
-      idx <- tryGetUInt $ lean_get_name_idx name_ptr
+    else assert (lean_name_is_idx name_ptr) $ do
+      ptr <- tryAllocName $ lean_name_get_prefix name_ptr
+      idx <- tryGetUInt $ lean_name_get_idx name_ptr
       return $! IndexName ptr (fromIntegral idx)
 {-# NOLINE viewName #-}
 

@@ -5,7 +5,7 @@ module Language.Lean.Internal.String
   , decodeLeanString
   , withLeanStringPtr
   , withLeanTextPtr
-  , lean_del_string
+  , lean_string_del
   ) where
 
 import Control.Exception (bracket)
@@ -20,12 +20,12 @@ import Foreign.C (CChar, CString)
 
 #include "lean_string.h"
 
-{#fun unsafe lean_del_string
+{#fun unsafe lean_string_del
   { `CString'
   } -> `()' #}
 
-foreign import ccall "&lean_del_string"
-  _lean_del_string_ptr :: FunPtr (CString -> IO ())
+foreign import ccall "&lean_string_del"
+  _lean_string_del_ptr :: FunPtr (CString -> IO ())
 
 -- | This decodes a CString as Lean text
 decodeLeanText :: CString -> IO Text
@@ -42,12 +42,12 @@ decodeLeanString cstr = Text.unpack <$> decodeLeanText cstr
 -- | This calls a function that allocates a Lean string, parses it as
 -- a @Text@ value, and frees the string.
 mkLeanText :: IO CString -> IO Text
-mkLeanText alloc = bracket alloc lean_del_string $ decodeLeanText
+mkLeanText alloc = bracket alloc lean_string_del $ decodeLeanText
 
 -- | This calls a function that allocates a Lean string, parses it as
 -- a @Text@ value, and frees the string.
 mkLeanString :: IO CString -> IO String
-mkLeanString alloc = bracket alloc lean_del_string $ decodeLeanString
+mkLeanString alloc = bracket alloc lean_string_del $ decodeLeanString
 
 -- | Use the string as a UTF8 CString
 withLeanStringPtr :: String -> (CString -> IO a) -> IO a
