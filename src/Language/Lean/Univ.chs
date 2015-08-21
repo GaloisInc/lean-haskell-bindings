@@ -21,7 +21,8 @@ module Language.Lean.Univ
   , showUnivUsing
   ) where
 
-import Control.Exception (assert)
+import Control.Exception (assert, throw)
+import Control.Monad (when)
 import Foreign
 import Foreign.C
 import System.IO.Unsafe
@@ -39,7 +40,30 @@ import System.IO.Unsafe
 #include "lean_options.h"
 #include "lean_univ.h"
 
+
+-- | A lean universe
+newtype Univ = Univ (ForeignPtr Univ)
+
 {#pointer lean_univ as UnivPtr -> Univ#}
+
+foreign import ccall "&lean_univ_del"
+  lean_univ_del_ptr :: FunPtr (UnivPtr -> IO ())
+
+-- | Call a C layer function that attempts to allocate a
+-- new universe
+tryAllocUniv :: LeanPartialFn UnivPtr
+             -> Univ
+tryAllocUniv mk_name = unsafePerformIO $ tryAllocUnivIO mk_name
+
+-- | Call a C layer function that attempts to allocate a
+-- new universe
+tryAllocUnivIO :: LeanPartialFn UnivPtr
+               -> IO Univ
+tryAllocUnivIO mk_name = fmap Univ $ tryAllocLeanValue lean_univ_del_ptr $ mk_name
+
+-- | Run an action with the underlying universe pointer.
+withUnivPtr :: Univ -> (UnivPtr -> IO a) -> IO a
+withUnivPtr (Univ nm) = withForeignPtr nm
 
 {#fun unsafe lean_univ_mk_zero
   { id `Ptr UnivPtr'
@@ -47,189 +71,192 @@ import System.IO.Unsafe
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_mk_succ
-  { `UnivPtr'
+  { withUnivPtr* `Univ'
   , id `Ptr UnivPtr'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_mk_max
-  { `UnivPtr'
-  , `UnivPtr'
+  { withUnivPtr* `Univ'
+  , withUnivPtr* `Univ'
   , id `Ptr UnivPtr'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_mk_imax
-  { `UnivPtr'
-  , `UnivPtr'
+  { withUnivPtr* `Univ'
+  , withUnivPtr* `Univ'
   , id `Ptr UnivPtr'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_mk_param
-  { `NamePtr'
+  { withNamePtr* `Name'
   , id `Ptr UnivPtr'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_mk_global
-  { `NamePtr'
+  { withNamePtr* `Name'
   , id `Ptr UnivPtr'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 
 {#fun unsafe lean_univ_mk_meta
-  { `NamePtr'
+  { withNamePtr* `Name'
   , id `Ptr UnivPtr'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_to_string
-  { `UnivPtr'
+  { withUnivPtr* `Univ'
   , id `Ptr CString'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_to_string_using
-  { `UnivPtr'
-  , `OptionsPtr'
+  { withUnivPtr* `Univ'
+  , withOptionsPtr* `Options'
   , id `Ptr CString'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
-
-foreign import ccall "&lean_univ_del"
-  lean_univ_del_ptr :: FunPtr (UnivPtr -> IO ())
 
 {#enum lean_univ_kind as UnivKind { upcaseFirstLetter }
          deriving (Eq)#}
 
 {#fun pure unsafe lean_univ_get_kind
-  { id `UnivPtr'
+  { withUnivPtr* `Univ'
   } -> `UnivKind' #}
 
 {#fun unsafe lean_univ_eq
-  { `UnivPtr'
-  , `UnivPtr'
+  { withUnivPtr* `Univ'
+  , withUnivPtr* `Univ'
   , id `Ptr CInt'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_geq
-  { `UnivPtr'
-  , `UnivPtr'
+  { withUnivPtr* `Univ'
+  , withUnivPtr* `Univ'
   , id `Ptr CInt'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_get_pred
-  { `UnivPtr'
+  { withUnivPtr* `Univ'
   , id `Ptr UnivPtr'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_get_max_lhs
-  { `UnivPtr'
+  { withUnivPtr* `Univ'
   , id `Ptr UnivPtr'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_get_max_rhs
-  { `UnivPtr'
+  { withUnivPtr* `Univ'
   , id `Ptr UnivPtr'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_get_name
-  { `UnivPtr'
+  { withUnivPtr* `Univ'
   , id `Ptr NamePtr'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_normalize
-  { `UnivPtr'
+  { withUnivPtr* `Univ'
   , id `Ptr UnivPtr'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_instantiate
-  { `UnivPtr'
-  , `CUInt'
+  { withUnivPtr* `Univ'
+  , `Word32'
   , id `Ptr NamePtr'
   , id `Ptr UnivPtr'
   , id `Ptr UnivPtr'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
-
--- | A lean universe
-newtype Univ = Univ (ForeignPtr Univ)
-
--- | Call a C layer function that attempts to allocate a
--- new universe
-tryAllocUniv :: (Ptr UnivPtr -> Ptr ExceptionPtr -> IO Bool)
-           -> IO Univ
-tryAllocUniv mk_name =
-  fmap Univ $ tryAllocLeanValue lean_univ_del_ptr $ mk_name
-
--- | Run an action with the underlying universe pointer.
-withUnivPtr :: Univ -> (UnivPtr -> IO a) -> IO a
-withUnivPtr (Univ nm) = withForeignPtr nm
-
-
-data UnivView
-   = UnivZero
-     -- ^ The zero universe.
-   | UnivSucc Univ
-     -- ^ Successor of the previous universe.
-   | UnivMax Univ Univ
-     -- ^ Maximum of two universes.
-   | UnivIMax Univ Univ
-     -- ^ @UnivIMax x y@ denotes @y@ if @y@ is universe zero, otherwise @UnivMax x y@
-   | UnivParam Name
-     -- ^ Universe parameter with the given name.
-   | UnivGlobal Name
-     -- ^ Reference to a global universe.
-   | UnivMeta Name
-     -- ^ Meta variable with the given name.
-  deriving (Show)
-
-viewUniv :: Univ -> UnivView
-viewUniv x = unsafePerformIO $ do
-  withUnivPtr x $ \x_ptr -> do
-  case (lean_univ_get_kind x_ptr) of
-   LEAN_UNIV_ZERO -> return UnivZero
-{-# NOINLINE viewUniv #-}
-
 eqUniv :: Univ -> Univ -> Bool
-eqUniv x y = unsafePerformIO $ do
-  withUnivPtr x $ \x_ptr -> do
-    withUnivPtr y $ \y_ptr -> do
-      tryGetBool $ lean_univ_eq x_ptr y_ptr
-{-# NOINLINE eqUniv #-}
+eqUniv x y = unsafePerformIO $ tryGetBool $ lean_univ_eq x y
 
 geqUniv :: Univ -> Univ -> Bool
-geqUniv x y = unsafePerformIO $ do
-  withUnivPtr x $ \x_ptr -> do
-    withUnivPtr y $ \y_ptr -> do
-      tryGetBool $ lean_univ_geq x_ptr y_ptr
-{-# NOINLINE geqUniv #-}
+geqUniv x y = unsafePerformIO $ tryGetBool $ lean_univ_geq x y
 
 instance Eq Univ where
   (==) = eqUniv
 
 showUniv :: Univ -> String
-showUniv u = unsafePerformIO $ do
-  withUnivPtr u $ \u_ptr ->
-    tryAllocString $ lean_univ_to_string u_ptr
-{-# NOINLINE showUniv #-}
+showUniv u = unsafePerformIO $ tryAllocString $ lean_univ_to_string u
 
 showUnivUsing :: Univ -> Options -> String
 showUnivUsing u options = unsafePerformIO $ do
-  withUnivPtr u $ \u_ptr ->
-    withOptionsPtr options $ \opt_ptr ->
-      tryAllocString $ lean_univ_to_string_using u_ptr opt_ptr
-{-# NOINLINE showUnivUsing #-}
+  tryAllocString $ lean_univ_to_string_using u options
 
 instance Show Univ where
   show = showUniv
+
+data UnivView
+   = UnivZero
+     -- ^ The zero universe.
+   | UnivSucc !Univ
+     -- ^ Successor of the previous universe.
+   | UnivMax !Univ !Univ
+     -- ^ Maximum of two universes.
+   | UnivIMax !Univ !Univ
+     -- ^ @UnivIMax x y@ denotes @y@ if @y@ is universe zero, otherwise @UnivMax x y@
+   | UnivParam !Name
+     -- ^ Universe parameter with the given name.
+   | UnivGlobal !Name
+     -- ^ Reference to a global universe.
+   | UnivMeta !Name
+     -- ^ Meta variable with the given name.
+  deriving (Show)
+
+viewUniv :: Univ -> UnivView
+viewUniv x =
+  case lean_univ_get_kind x of
+   LEAN_UNIV_ZERO -> UnivZero
+   LEAN_UNIV_SUCC -> UnivSucc (tryAllocUniv $ lean_univ_get_pred x)
+   LEAN_UNIV_MAX ->
+     UnivMax (tryAllocUniv $ lean_univ_get_max_lhs x)
+             (tryAllocUniv $ lean_univ_get_max_rhs x)
+   LEAN_UNIV_IMAX ->
+     UnivIMax (tryAllocUniv $ lean_univ_get_max_lhs x)
+              (tryAllocUniv $ lean_univ_get_max_rhs x)
+   LEAN_UNIV_PARAM  -> UnivParam  (tryAllocName $ lean_univ_get_name x)
+   LEAN_UNIV_GLOBAL -> UnivGlobal (tryAllocName $ lean_univ_get_name x)
+   LEAN_UNIV_META   -> UnivMeta   (tryAllocName $ lean_univ_get_name x)
+
+-- | Return the normal form for a universe.
+normalizeUniv :: Univ -> Univ
+normalizeUniv x = tryAllocUniv $ lean_univ_normalize x
+
+type WithPointer b p a = b -> (p -> IO a) -> IO a
+
+withForeignArray :: Storable p => WithPointer b p a -> Int -> [b] -> (Ptr p -> IO a) -> IO a
+withForeignArray withPtr n l action = do
+  allocaArray n $ \ptr -> do
+    withForeignArray' withPtr ptr l action
+
+withForeignArray' :: Storable p => WithPointer b p a -> Ptr p -> [b] -> (Ptr p -> IO a) -> IO a
+withForeignArray' _ arrayPtr [] action = action arrayPtr
+withForeignArray' withPtr arrayPtr (h:r) action = do
+  withPtr h $ \ptr -> do
+    poke arrayPtr ptr
+    withForeignArray' withPtr (arrayPtr `plusPtr` sizeOf ptr) r action
+
+-- | Instantiate the parameters with universes
+instantiateUniv :: Univ -> [(Name, Univ)] -> Univ
+instantiateUniv x args = unsafePerformIO $ do
+  let sz = length args
+  when (sz > fromIntegral (maxBound :: Word32)) $ do
+    throw $ leanKernelException "Lean does not support instantiating more than 2^32 paramters universe parameters."
+  withForeignArray withNamePtr sz (fst <$> args) $ \name_array -> do
+    withForeignArray withUnivPtr sz (snd <$> args) $ \univ_array -> do
+      tryAllocUnivIO $ lean_univ_instantiate x (fromIntegral sz) name_array univ_array

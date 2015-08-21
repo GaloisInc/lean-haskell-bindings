@@ -28,6 +28,17 @@ newtype Options = Options (ForeignPtr Options)
 foreign import ccall "&lean_options_del"
   lean_options_del_ptr :: FunPtr (OptionsPtr -> IO ())
 
+-- | Call a C layer function that attempts to allocate a
+-- new options
+tryAllocOptions :: LeanPartialFn OptionsPtr
+                -> Options
+tryAllocOptions mk_options = unsafePerformIO $ do
+  fmap Options $ tryAllocLeanValue lean_options_del_ptr $ mk_options
+
+-- | Run an action with the underlying pointer.
+withOptionsPtr :: Options -> (OptionsPtr -> IO a) -> IO a
+withOptionsPtr (Options x) = withForeignPtr x
+
 {#fun pure unsafe lean_options_eq
   { withOptionsPtr* `Options'
   , withOptionsPtr* `Options'
@@ -50,18 +61,6 @@ foreign import ccall "&lean_options_del"
   , id `Ptr OptionsPtr'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
-
-
--- | Call a C layer function that attempts to allocate a
--- new options
-tryAllocOptions :: (Ptr OptionsPtr -> Ptr ExceptionPtr -> IO Bool)
-                -> Options
-tryAllocOptions mk_options = unsafePerformIO $ do
-  fmap Options $ tryAllocLeanValue lean_options_del_ptr $ mk_options
-
--- | Run an action with the underlying pointer.
-withOptionsPtr :: Options -> (OptionsPtr -> IO a) -> IO a
-withOptionsPtr (Options x) = withForeignPtr x
 
 instance Eq Options where
   (==) = lean_options_eq
