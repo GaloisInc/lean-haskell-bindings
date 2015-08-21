@@ -1,9 +1,14 @@
-Name: lean-bindings
-Version: 0.1
-Author: Joe Hendrix
-Maintainer: jhendrix@galois.com
-Build-type: Simple
-Cabal-version: >= 1.9.2
+name: lean-bindings
+version: 0.1
+author: Joe Hendrix
+maintainer: jhendrix@galois.com
+license: Apache-2
+license-file: LICENSE
+build-type: Simple
+cabal-version: >= 1.9.2
+description:
+  This package contains Haskell bindings to the
+  <http://leanprover.github.io/ Lean Theorem Prover>.
 
 library
   build-depends:
@@ -17,15 +22,15 @@ library
   build-tools: c2hs
   ghc-options: -Wall
   exposed-modules:
-    Language.Lean.Internal.Exception
-    Language.Lean.Internal.Name
-    Language.Lean.Internal.Options
-    Language.Lean.Internal.String
+    Language.Lean
     Language.Lean.Exception
     Language.Lean.Name
     Language.Lean.Options
     Language.Lean.Univ
-    Language.Lean
+    Language.Lean.Internal.Exception
+    Language.Lean.Internal.Name
+    Language.Lean.Internal.Options
+    Language.Lean.Internal.String
 
 executable test
   build-depends:

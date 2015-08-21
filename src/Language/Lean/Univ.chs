@@ -1,3 +1,14 @@
+{-|
+Module      : Language.Lean.Univ
+Description : Operations on Lean Universes
+Copyright   : (c) Galois Inc, 2015
+License     : Apache-2
+Maintainer  : jhendrix@galois.com, lcasburn@galois.com
+Stability   : experimental
+Portability : POSIX
+
+This module defines functions for constructing and deconstructing lean universes.
+-}
 {-# LANGUAGE DoAndIfThenElse #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
