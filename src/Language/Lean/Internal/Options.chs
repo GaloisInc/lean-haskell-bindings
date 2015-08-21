@@ -4,6 +4,8 @@ module Language.Lean.Internal.Options
   , OptionsPtr
   , tryAllocOptions
   , withOptionsPtr
+  , emptyOptions
+  , joinOptions
   ) where
 
 import Foreign
@@ -19,6 +21,7 @@ import Language.Lean.Internal.Utils
 #include "lean_name.h"
 #include "lean_options.h"
 
+-- | A set of Lean configuration options
 newtype Options = Options (ForeignPtr Options)
 
 {#pointer lean_options as OptionsPtr -> Options#}
@@ -27,21 +30,34 @@ foreign import ccall "&lean_options_del"
   lean_options_del_ptr :: FunPtr (OptionsPtr -> IO ())
 
 {#fun pure unsafe lean_options_eq
-  { `OptionsPtr'
-  , `OptionsPtr'
+  { withOptionsPtr* `Options'
+  , withOptionsPtr* `Options'
   } -> `Bool' #}
 
 {#fun unsafe lean_options_to_string
-  { `OptionsPtr'
+  { withOptionsPtr* `Options'
   , id `Ptr CString'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
+{#fun unsafe lean_options_mk_empty
+  { id `Ptr OptionsPtr'
+  , id `Ptr ExceptionPtr'
+  } -> `Bool' #}
+
+{#fun unsafe lean_options_join
+  { withOptionsPtr* `Options'
+  , withOptionsPtr* `Options'
+  , id `Ptr OptionsPtr'
+  , id `Ptr ExceptionPtr'
+  } -> `Bool' #}
+
+
 -- | Call a C layer function that attempts to allocate a
 -- new options
 tryAllocOptions :: (Ptr OptionsPtr -> Ptr ExceptionPtr -> IO Bool)
-                -> IO Options
-tryAllocOptions mk_options =
+                -> Options
+tryAllocOptions mk_options = unsafePerformIO $ do
   fmap Options $ tryAllocLeanValue lean_options_del_ptr $ mk_options
 
 -- | Run an action with the underlying pointer.
@@ -49,14 +65,24 @@ withOptionsPtr :: WithValueFn Options OptionsPtr a
 withOptionsPtr (Options x) = withForeignPtr x
 
 instance Eq Options where
-  (==) = withBinaryPred withOptionsPtr lean_options_eq
-  {-# NOINLINE (==) #-}
+  (==) = lean_options_eq
 
 showOption :: Options -> String
 showOption x = unsafePerformIO $ do
-  withOptionsPtr x $ \x_ptr ->
-    tryAllocString $ lean_options_to_string x_ptr
-{-# NOINLINE showOption #-}
+  tryAllocString $ lean_options_to_string x
 
 instance Show Options where
   show = showOption
+
+-- | An empty set of options
+emptyOptions :: Options
+emptyOptions = tryAllocOptions lean_options_mk_empty
+
+-- | Combine two options where the assignments from the second
+-- argument override the assignments from the first.
+joinOptions :: Options -> Options -> Options
+joinOptions x y = tryAllocOptions $ lean_options_join x y
+
+instance Monoid Options where
+  mempty  = emptyOptions
+  mappend = joinOptions

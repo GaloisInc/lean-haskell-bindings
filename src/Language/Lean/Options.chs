@@ -6,7 +6,9 @@
 module Language.Lean.Options
   ( Options
   , emptyOptions
-  , optionsContains
+  , joinOptions
+  , nullOptions
+  , containsOption
   , boolOption
   , doubleOption
   , intOption
@@ -14,7 +16,6 @@ module Language.Lean.Options
   , stringOption
   ) where
 
-import Control.Exception (assert)
 import Control.Lens
 import Foreign
 import Foreign.C
@@ -24,18 +25,12 @@ import System.IO.Unsafe
 {#import Language.Lean.Internal.Name #}
 {#import Language.Lean.Internal.Options #}
 {#import Language.Lean.Internal.String #}
-import Language.Lean.Internal.Utils
 
 #include "lean_macros.h"
 #include "lean_bool.h"
 #include "lean_exception.h"
 #include "lean_name.h"
 #include "lean_options.h"
-
-{#fun unsafe lean_options_mk_empty
-  { id `Ptr OptionsPtr'
-  , id `Ptr ExceptionPtr'
-  } -> `Bool' #}
 
 {#fun unsafe lean_options_set_bool
   { withOptionsPtr* `Options'
@@ -77,19 +72,12 @@ import Language.Lean.Internal.Utils
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
-{#fun unsafe lean_options_join
-  { withOptionsPtr* `Options'
-  , withOptionsPtr* `Options'
-  , id `Ptr OptionsPtr'
-  , id `Ptr ExceptionPtr'
-  } -> `Bool' #}
-
-{#fun pure unsafe lean_options_empty
+{#fun pure unsafe lean_options_empty as nullOptions
   { withOptionsPtr* `Options'
   } -> `Bool' #}
 
 -- | Indicate whether name is set in the lean options.
-{#fun pure unsafe lean_options_contains as optionsContains
+{#fun pure unsafe lean_options_contains as containsOption
   { withOptionsPtr* `Options'
   , withNamePtr* `Name'
   } -> `Bool' #}
@@ -129,10 +117,6 @@ import Language.Lean.Internal.Utils
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
-emptyOptions :: Options
-emptyOptions = unsafePerformIO $
-  tryAllocOptions lean_options_mk_empty
-
 -- | Retrieves a value for a Lean option
 optionsGet :: (LeanPartialFn a -> IO b)
            -> (Options -> Name -> LeanPartialFn a)
@@ -148,8 +132,7 @@ optionsSet :: (Options -> Name -> a -> LeanPartialFn OptionsPtr)
            -> Name
            -> a
            -> Options
-optionsSet leanSetter o nm v = unsafePerformIO $ do
-  tryAllocOptions $ leanSetter o nm v
+optionsSet leanSetter o nm v = tryAllocOptions $ leanSetter o nm v
 
 -- | Lens for getting and setting boolean options without
 --   rewriting equivalent values
