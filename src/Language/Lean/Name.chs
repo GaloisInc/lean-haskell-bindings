@@ -31,69 +31,60 @@ import System.IO.Unsafe
   } -> `Bool' #}
 
 {#fun unsafe lean_name_mk_str
-  { `NamePtr'
-  , `CString'
+  { withNamePtr* `Name'
+  , withLeanStringPtr* `String'
   , id `Ptr NamePtr'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_name_mk_idx
-  { `NamePtr'
-  , `CUInt'
+  { withNamePtr* `Name'
+  , `Word32'
   , id `Ptr NamePtr'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 {#fun pure unsafe lean_name_is_anonymous
-  { `NamePtr'
+  { withNamePtr* `Name'
   } -> `Bool' #}
 
 {#fun pure unsafe lean_name_is_str
-  { `NamePtr'
+  { withNamePtr* `Name'
   } -> `Bool' #}
 
 {#fun pure unsafe lean_name_is_idx
-  { `NamePtr'
+  { withNamePtr* `Name'
   } -> `Bool' #}
 
 {#fun unsafe lean_name_get_prefix
-  { `NamePtr'
+  { withNamePtr* `Name'
   , id `Ptr NamePtr'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_name_get_str
-  { `NamePtr'
+  { withNamePtr* `Name'
   , id `Ptr CString'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_name_get_idx
-  { `NamePtr'
+  { withNamePtr* `Name'
   , id `Ptr CUInt'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 -- | The root "anonymous" name
 anonymousName :: Name
-anonymousName = unsafePerformIO $
-  tryAllocName lean_name_mk_anonymous
-{-# NOINLINE anonymousName #-}
+anonymousName = tryAllocName lean_name_mk_anonymous
 
 -- | Append a string to a name.
 strName :: Name -> String -> Name
-strName pre r = unsafePerformIO $ do
-  withNamePtr pre $ \pre_ptr -> do
-    withLeanStringPtr r $ \r_ptr -> do
-      tryAllocName (lean_name_mk_str pre_ptr r_ptr)
-{-# NOINLINE strName #-}
+strName pre r = tryAllocName (lean_name_mk_str pre r)
 
 -- | Append a numeric index to a name.
 idxName :: Name -> Word32 -> Name
-idxName pre i = unsafePerformIO $ do
-  withNamePtr pre $ \pre_ptr -> do
-    tryAllocName (lean_name_mk_idx pre_ptr (fromIntegral i))
-{-# NOINLINE idxName #-}
+idxName pre i = tryAllocName (lean_name_mk_idx pre i)
 
 -- | A view of head of a lean name.
 data NameView
@@ -107,16 +98,12 @@ data NameView
 
 -- | View the head of a Lean name.
 viewName :: Name -> NameView
-viewName nm = unsafePerformIO $ do
-  withNamePtr nm $ \name_ptr -> do
-    if lean_name_is_anonymous name_ptr then
-      return $! AnonymousName
-    else if lean_name_is_str name_ptr then do
-      ptr <- tryAllocName   $ lean_name_get_prefix name_ptr
-      r   <- tryAllocString $ lean_name_get_str    name_ptr
-      return $! StringName ptr r
-    else assert (lean_name_is_idx name_ptr) $ do
-      ptr <- tryAllocName $ lean_name_get_prefix name_ptr
-      idx <- tryGetUInt $ lean_name_get_idx name_ptr
-      return $! IndexName ptr (fromIntegral idx)
-{-# NOINLINE viewName #-}
+viewName nm =
+  if lean_name_is_anonymous nm then
+    AnonymousName
+  else if lean_name_is_str nm then do
+    StringName (tryAllocName $ lean_name_get_prefix nm)
+               (unsafePerformIO $ tryAllocString $ lean_name_get_str nm)
+  else assert (lean_name_is_idx nm) $ do
+    IndexName (tryAllocName $ lean_name_get_prefix nm)
+              (unsafePerformIO $ tryGetUInt $ lean_name_get_idx nm)

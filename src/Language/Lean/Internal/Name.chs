@@ -31,8 +31,8 @@ withNamePtr (Name nm) = withForeignPtr nm
 
 -- | Call a C layer function that attempts to allocate a
 -- new name.
-tryAllocName :: LeanPartialFn NamePtr -> IO Name
-tryAllocName mk_name =
+tryAllocName :: LeanPartialFn NamePtr -> Name
+tryAllocName mk_name = unsafePerformIO $ do
   fmap Name $ tryAllocLeanValue lean_name_del_ptr $ mk_name
 
 {#fun pure unsafe lean_name_eq
@@ -51,7 +51,7 @@ instance Eq Name where
 
 showName :: Name -> String
 showName nm = unsafePerformIO $ do
-    tryAllocString $ lean_name_to_string nm
+  tryAllocString $ lean_name_to_string nm
 
 instance Show Name where
   show = showName
