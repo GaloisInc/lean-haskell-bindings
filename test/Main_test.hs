@@ -6,6 +6,7 @@ import Test.Tasty.Ingredients
 import Test.Tasty.Runners.AntXML
 
 import Tests.Name (nameTests)
+import Tests.Options (optionsTests)
 
 main :: IO ()
 main = defaultMainWithIngredients ingrs tests
@@ -16,4 +17,5 @@ ingrs = antXMLRunner : defaultIngredients
 tests :: TestTree
 tests = testGroup "lean-bindings"
   [ nameTests
+  , optionsTests
   ]

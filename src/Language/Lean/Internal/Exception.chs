@@ -8,6 +8,7 @@ module Language.Lean.Internal.Exception
   , ExceptionPtr
   , throwLeanException
   , leanKernelException
+  , leanOtherException
   , LeanPartialFn
   , tryLeanPartialFn
   , tryAllocString
@@ -64,6 +65,9 @@ leanExceptionFromPtr ptr = do
 
 leanKernelException :: String -> LeanException
 leanKernelException = LeanException LeanKernelException
+
+leanOtherException :: String -> LeanException
+leanOtherException = LeanException LeanOtherException
 
 getLeanExceptionKind :: ExceptionPtr -> LeanExceptionKind
 getLeanExceptionKind ptr = do

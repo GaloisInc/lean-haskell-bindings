@@ -36,6 +36,7 @@ executable test
   build-depends:
     base,
     lean-bindings,
+    lens,
     tasty,
     tasty-ant-xml,
     tasty-hunit

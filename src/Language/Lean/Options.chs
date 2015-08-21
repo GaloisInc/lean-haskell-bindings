@@ -16,7 +16,9 @@ module Language.Lean.Options
   , stringOption
   ) where
 
+import Control.Exception (throw)
 import Control.Lens
+import Data.Maybe (fromMaybe)
 import Foreign
 import Foreign.C
 import System.IO.Unsafe
@@ -122,9 +124,12 @@ optionsGet :: (LeanPartialFn a -> IO b)
            -> (Options -> Name -> LeanPartialFn a)
            -> Options
            -> Name
-           -> b
+           -> Maybe b
 optionsGet tryGetVal leanGetter o nm = unsafePerformIO $ do
-  tryGetVal $ leanGetter o nm
+  if o `containsOption` nm then
+    fmap Just $ tryGetVal $ leanGetter o nm
+  else
+    return Nothing
 
 -- | Sets a Lean option with a new value
 optionsSet :: (Options -> Name -> a -> LeanPartialFn OptionsPtr)
@@ -136,41 +141,43 @@ optionsSet leanSetter o nm v = tryAllocOptions $ leanSetter o nm v
 
 -- | Lens for getting and setting boolean options without
 --   rewriting equivalent values
-simpleLensEq :: (Eq a) => (s -> a) -> (s -> a -> s) -> Simple Lens s a
-simpleLensEq getter setter f o = fmap setFun (f oldVal)
+simpleLensEq :: (Eq a) => (s -> Name -> Maybe a) -> (s -> Name -> a -> s) -> Name -> Simple Lens s a
+simpleLensEq getter setter nm f o = fmap setFun (f oldVal)
   where
-    oldVal = getter o
+    maybeVal = getter o nm
+    -- This will only throw an error if f demands oldVal
+    oldVal = fromMaybe (throw (leanOtherException msg)) maybeVal
+      where msg = "options object does not contain entry " ++ show nm
     setFun newVal
-     | oldVal == newVal = o
-     | otherwise        = setter o newVal
+     | Just v <- maybeVal, v == newVal = o
+     | otherwise = setter o nm newVal
 
 boolOption :: Name -> Simple Lens Options Bool
-boolOption nm = simpleLensEq (`optGet` nm) (`optSet` nm)
+boolOption = simpleLensEq optGet optSet
   where
     optGet = optionsGet tryGetBool lean_options_get_bool
     optSet = optionsSet lean_options_set_bool
 
 intOption :: Name -> Simple Lens Options Int32
-intOption nm = simpleLensEq (`optGet` nm) (`optSet` nm)
+intOption = simpleLensEq optGet optSet
   where
     optGet = optionsGet tryGetInt lean_options_get_int
     optSet = optionsSet lean_options_set_int
 
 uintOption :: Name -> Simple Lens Options Word32
-uintOption nm = simpleLensEq (`optGet` nm) (`optSet` nm)
+uintOption = simpleLensEq optGet optSet
   where
     optGet = optionsGet tryGetUInt lean_options_get_unsigned
     optSet = optionsSet lean_options_set_unsigned
 
 doubleOption :: Name -> Simple Lens Options Double
-doubleOption nm = simpleLensEq (`optGet` nm) (`optSet` nm)
+doubleOption = simpleLensEq optGet optSet
   where
     optGet = optionsGet tryGetDouble lean_options_get_double
     optSet = optionsSet lean_options_set_double
 
 stringOption :: Name -> Simple Lens Options String
-stringOption nm = simpleLensEq (`optGet` nm) (`optSet` nm)
+stringOption = simpleLensEq optGet optSet
   where
     optGet = optionsGet tryAllocString lean_options_get_string
     optSet = optionsSet lean_options_set_string
-
