@@ -40,6 +40,20 @@ import System.IO.Unsafe
 #include "lean_options.h"
 #include "lean_univ.h"
 
+type WithPointer b p a = b -> (p -> IO a) -> IO a
+
+withForeignArray :: Storable p => WithPointer b p a -> Int -> [b] -> (Ptr p -> IO a) -> IO a
+withForeignArray withPtr n l action = do
+  allocaArray n $ \ptr -> do
+    withForeignArray' withPtr ptr l action
+
+withForeignArray' :: Storable p => WithPointer b p a -> Ptr p -> [b] -> (Ptr p -> IO a) -> IO a
+withForeignArray' _ arrayPtr [] action = action arrayPtr
+withForeignArray' withPtr arrayPtr (h:r) action = do
+  withPtr h $ \ptr -> do
+    poke arrayPtr ptr
+    withForeignArray' withPtr (arrayPtr `plusPtr` sizeOf ptr) r action
+
 
 -- | A lean universe
 newtype Univ = Univ (ForeignPtr Univ)
@@ -49,14 +63,12 @@ newtype Univ = Univ (ForeignPtr Univ)
 foreign import ccall "&lean_univ_del"
   lean_univ_del_ptr :: FunPtr (UnivPtr -> IO ())
 
--- | Call a C layer function that attempts to allocate a
--- new universe
+-- | Call a C layer function that attempts to allocate a new universe and is pure.
 tryAllocUniv :: LeanPartialFn UnivPtr
              -> Univ
 tryAllocUniv mk_name = unsafePerformIO $ tryAllocUnivIO mk_name
 
--- | Call a C layer function that attempts to allocate a
--- new universe
+-- | Call a C layer function that attempts to allocate a new universe.
 tryAllocUnivIO :: LeanPartialFn UnivPtr
                -> IO Univ
 tryAllocUnivIO mk_name = fmap Univ $ tryAllocLeanValue lean_univ_del_ptr $ mk_name
@@ -237,26 +249,12 @@ viewUniv x =
 normalizeUniv :: Univ -> Univ
 normalizeUniv x = tryAllocUniv $ lean_univ_normalize x
 
-type WithPointer b p a = b -> (p -> IO a) -> IO a
-
-withForeignArray :: Storable p => WithPointer b p a -> Int -> [b] -> (Ptr p -> IO a) -> IO a
-withForeignArray withPtr n l action = do
-  allocaArray n $ \ptr -> do
-    withForeignArray' withPtr ptr l action
-
-withForeignArray' :: Storable p => WithPointer b p a -> Ptr p -> [b] -> (Ptr p -> IO a) -> IO a
-withForeignArray' _ arrayPtr [] action = action arrayPtr
-withForeignArray' withPtr arrayPtr (h:r) action = do
-  withPtr h $ \ptr -> do
-    poke arrayPtr ptr
-    withForeignArray' withPtr (arrayPtr `plusPtr` sizeOf ptr) r action
-
 -- | Instantiate the parameters with universes
 instantiateUniv :: Univ -> [(Name, Univ)] -> Univ
-instantiateUniv x args = unsafePerformIO $ do
+instantiateUniv x args = tryAllocUniv $ \r_ptr e_ptr -> do
   let sz = length args
   when (sz > fromIntegral (maxBound :: Word32)) $ do
     throw $ leanKernelException "Lean does not support instantiating more than 2^32 paramters universe parameters."
   withForeignArray withNamePtr sz (fst <$> args) $ \name_array -> do
     withForeignArray withUnivPtr sz (snd <$> args) $ \univ_array -> do
-      tryAllocUnivIO $ lean_univ_instantiate x (fromIntegral sz) name_array univ_array
+       lean_univ_instantiate x (fromIntegral sz) name_array univ_array r_ptr e_ptr
