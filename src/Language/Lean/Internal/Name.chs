@@ -11,7 +11,6 @@ import Foreign.C
 import System.IO.Unsafe
 
 {#import Language.Lean.Internal.Exception #}
-import Language.Lean.Internal.Utils
 
 #include "lean_macros.h"
 #include "lean_bool.h"
@@ -27,36 +26,32 @@ foreign import ccall "&lean_name_del"
 newtype Name = Name (ForeignPtr Name)
 
 -- | Run an action with the underlying name pointer.
-withNamePtr :: WithValueFn Name NamePtr a
+withNamePtr :: Name -> (NamePtr -> IO a) -> IO a
 withNamePtr (Name nm) = withForeignPtr nm
 
 -- | Call a C layer function that attempts to allocate a
 -- new name.
-tryAllocName :: (Ptr NamePtr -> Ptr ExceptionPtr -> IO Bool)
-           -> IO Name
+tryAllocName :: LeanPartialFn NamePtr -> IO Name
 tryAllocName mk_name =
   fmap Name $ tryAllocLeanValue lean_name_del_ptr $ mk_name
 
 {#fun pure unsafe lean_name_eq
-  { `NamePtr'
-  , `NamePtr'
+  { withNamePtr* `Name'
+  , withNamePtr* `Name'
   } -> `Bool' #}
 
 {#fun unsafe lean_name_to_string
-  { `NamePtr'
+  { withNamePtr* `Name'
   , id `Ptr CString'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 instance Eq Name where
-  (==) = withBinaryPred withNamePtr lean_name_eq
-  {-# NOINLINE (==) #-}
+  (==) = lean_name_eq
 
 showName :: Name -> String
 showName nm = unsafePerformIO $ do
-  withNamePtr nm $ \pre_ptr ->
-    tryAllocString $ lean_name_to_string pre_ptr
-{-# NOINLINE showName #-}
+    tryAllocString $ lean_name_to_string nm
 
 instance Show Name where
   show = showName

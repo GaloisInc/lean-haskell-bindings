@@ -13,7 +13,6 @@ import Foreign.C
 import System.IO.Unsafe
 
 {#import Language.Lean.Internal.Exception #}
-import Language.Lean.Internal.Utils
 
 #include "lean_macros.h"
 #include "lean_bool.h"
@@ -61,7 +60,7 @@ tryAllocOptions mk_options = unsafePerformIO $ do
   fmap Options $ tryAllocLeanValue lean_options_del_ptr $ mk_options
 
 -- | Run an action with the underlying pointer.
-withOptionsPtr :: WithValueFn Options OptionsPtr a
+withOptionsPtr :: Options -> (OptionsPtr -> IO a) -> IO a
 withOptionsPtr (Options x) = withForeignPtr x
 
 instance Eq Options where

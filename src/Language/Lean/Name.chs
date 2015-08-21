@@ -16,8 +16,6 @@ import Foreign
 import Foreign.C
 import System.IO.Unsafe
 
-import Language.Lean.Internal.Utils
-
 {#import Language.Lean.Internal.Exception #}
 {#import Language.Lean.Internal.Name #}
 {#import Language.Lean.Internal.String #}
