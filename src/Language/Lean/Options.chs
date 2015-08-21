@@ -8,6 +8,10 @@ module Language.Lean.Options
   , emptyOptions
   , optionsContains
   , boolOption
+  , doubleOption
+  , intOption
+  , uintOption
+  , stringOption
   ) where
 
 import Control.Exception (assert)
@@ -34,92 +38,93 @@ import Language.Lean.Internal.Utils
   } -> `Bool' #}
 
 {#fun unsafe lean_options_set_bool
-  { `OptionsPtr'
-  , `NamePtr'
+  { withOptionsPtr* `Options'
+  , withNamePtr* `Name'
   , `Bool'
   , id `Ptr OptionsPtr'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_options_set_int
-  { `OptionsPtr'
-  , `NamePtr'
-  , `CInt'
+  { withOptionsPtr* `Options'
+  , withNamePtr* `Name'
+  , `Int32'
   , id `Ptr OptionsPtr'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_options_set_unsigned
-  { `OptionsPtr'
-  , `NamePtr'
-  , `CUInt'
+  { withOptionsPtr* `Options'
+  , withNamePtr* `Name'
+  , `Word32'
   , id `Ptr OptionsPtr'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_options_set_double
-  { `OptionsPtr'
-  , `NamePtr'
-  , `CDouble'
+  { withOptionsPtr* `Options'
+  , withNamePtr* `Name'
+  , `Double'
   , id `Ptr OptionsPtr'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_options_set_string
-  { `OptionsPtr'
-  , `NamePtr'
-  , `CString'
+  { withOptionsPtr* `Options'
+  , withNamePtr* `Name'
+  , withLeanStringPtr* `String'
   , id `Ptr OptionsPtr'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_options_join
-  { `OptionsPtr'
-  , `OptionsPtr'
+  { withOptionsPtr* `Options'
+  , withOptionsPtr* `Options'
   , id `Ptr OptionsPtr'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 {#fun pure unsafe lean_options_empty
-  { `OptionsPtr'
+  { withOptionsPtr* `Options'
   } -> `Bool' #}
 
-{#fun pure unsafe lean_options_contains
-  { `OptionsPtr'
-  , `NamePtr'
+-- | Indicate whether name is set in the lean options.
+{#fun pure unsafe lean_options_contains as optionsContains
+  { withOptionsPtr* `Options'
+  , withNamePtr* `Name'
   } -> `Bool' #}
 
 {#fun unsafe lean_options_get_bool
-  { `OptionsPtr'
-  , `NamePtr'
+  { withOptionsPtr* `Options'
+  , withNamePtr* `Name'
   , id `Ptr CInt'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_options_get_int
-  { `OptionsPtr'
-  , `NamePtr'
+  { withOptionsPtr* `Options'
+  , withNamePtr* `Name'
   , id `Ptr CInt'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_options_get_unsigned
-  { `OptionsPtr'
-  , `NamePtr'
+  { withOptionsPtr* `Options'
+  , withNamePtr* `Name'
   , id `Ptr CUInt'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_options_get_double
-  { `OptionsPtr'
-  , `NamePtr'
+  { withOptionsPtr* `Options'
+  , withNamePtr* `Name'
   , id `Ptr CDouble'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_options_get_string
-  { `OptionsPtr'
-  , `NamePtr'
+  { withOptionsPtr* `Options'
+  , withNamePtr* `Name'
   , id `Ptr CString'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
@@ -127,36 +132,24 @@ import Language.Lean.Internal.Utils
 emptyOptions :: Options
 emptyOptions = unsafePerformIO $
   tryAllocOptions lean_options_mk_empty
-{-# NOINLINE emptyOptions #-}
-
-optionsContains :: Options -> Name -> Bool
-optionsContains o nm = unsafePerformIO $ do
-  withOptionsPtr o $ \o_ptr ->
-    withNamePtr nm $ \nm_ptr ->
-      return $ lean_options_contains o_ptr nm_ptr
-{-# NOINLINE optionsContains #-}
 
 -- | Retrieves a value for a Lean option
 optionsGet :: (LeanPartialFn a -> IO b)
-           -> (OptionsPtr -> NamePtr -> LeanPartialFn a)
+           -> (Options -> Name -> LeanPartialFn a)
            -> Options
            -> Name
            -> b
 optionsGet tryGetVal leanGetter o nm = unsafePerformIO $ do
-  withOptionsPtr o $ \o_ptr ->
-    withNamePtr nm $ \nm_ptr ->
-      tryGetVal $ leanGetter o_ptr nm_ptr
+  tryGetVal $ leanGetter o nm
 
 -- | Sets a Lean option with a new value
-optionsSet :: (OptionsPtr -> NamePtr -> a -> LeanPartialFn OptionsPtr)
+optionsSet :: (Options -> Name -> a -> LeanPartialFn OptionsPtr)
            -> Options
            -> Name
            -> a
            -> Options
 optionsSet leanSetter o nm v = unsafePerformIO $ do
-  withOptionsPtr o $ \o_ptr ->
-    withNamePtr nm $ \nm_ptr ->
-      tryAllocOptions $ leanSetter o_ptr nm_ptr v
+  tryAllocOptions $ leanSetter o nm v
 
 -- | Lens for getting and setting boolean options without
 --   rewriting equivalent values
@@ -169,8 +162,32 @@ simpleLensEq getter setter f o = fmap setFun (f oldVal)
      | otherwise        = setter o newVal
 
 boolOption :: Name -> Simple Lens Options Bool
-boolOption nm = simpleLensEq (`optionsGetBool` nm) (`optionsSetBool` nm)
+boolOption nm = simpleLensEq (`optGet` nm) (`optSet` nm)
   where
-    optionsGetBool = optionsGet tryGetBool lean_options_get_bool
-    optionsSetBool = optionsSet lean_options_set_bool
-{-# NOINLINE boolOption #-}
+    optGet = optionsGet tryGetBool lean_options_get_bool
+    optSet = optionsSet lean_options_set_bool
+
+intOption :: Name -> Simple Lens Options Int32
+intOption nm = simpleLensEq (`optGet` nm) (`optSet` nm)
+  where
+    optGet = optionsGet tryGetInt lean_options_get_int
+    optSet = optionsSet lean_options_set_int
+
+uintOption :: Name -> Simple Lens Options Word32
+uintOption nm = simpleLensEq (`optGet` nm) (`optSet` nm)
+  where
+    optGet = optionsGet tryGetUInt lean_options_get_unsigned
+    optSet = optionsSet lean_options_set_unsigned
+
+doubleOption :: Name -> Simple Lens Options Double
+doubleOption nm = simpleLensEq (`optGet` nm) (`optSet` nm)
+  where
+    optGet = optionsGet tryGetDouble lean_options_get_double
+    optSet = optionsSet lean_options_set_double
+
+stringOption :: Name -> Simple Lens Options String
+stringOption nm = simpleLensEq (`optGet` nm) (`optSet` nm)
+  where
+    optGet = optionsGet tryAllocString lean_options_get_string
+    optSet = optionsSet lean_options_set_string
+

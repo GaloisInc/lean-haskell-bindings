@@ -11,12 +11,15 @@ module Language.Lean.Internal.Exception
   , tryLeanPartialFn
   , tryAllocString
   , tryGetBool
+  , tryGetDouble
+  , tryGetInt
   , tryGetUInt
   , tryAllocLeanValue
   ) where
 
 import Control.Exception (finally, throwIO)
 import Control.Monad
+import Data.Coerce (coerce)
 import Foreign
 import Foreign.C
 
@@ -94,14 +97,22 @@ tryAllocString mk_string =
   tryLeanPartialFn mk_string $ \ptr -> do
      decodeLeanString ptr `finally` lean_string_del ptr
 
-tryGetUInt :: LeanPartialFn CUInt -> IO CUInt
+tryGetUInt :: LeanPartialFn CUInt -> IO Word32
 tryGetUInt mk_uint =
-  tryLeanPartialFn mk_uint $ return
+  tryLeanPartialFn mk_uint $ return . coerce
 
 tryGetBool :: LeanPartialFn CInt -> IO Bool
 tryGetBool mk_bool =
   tryLeanPartialFn mk_bool $ \v -> do
     return $ toEnum (fromIntegral v)
+
+tryGetDouble :: LeanPartialFn CDouble -> IO Double
+tryGetDouble mk_double =
+  tryLeanPartialFn mk_double $ return . coerce
+
+tryGetInt :: LeanPartialFn CInt -> IO Int32
+tryGetInt mk_int =
+  tryLeanPartialFn mk_int $ return . coerce
 
 tryAllocLeanValue :: FunPtr (Ptr a -> IO ())
                    -> LeanPartialFn (Ptr a)
