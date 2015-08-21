@@ -1,6 +1,9 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Main (main) where
 
 import qualified Language.Lean as Lean
+import Data.Monoid
+import Control.Exception
 
 main :: IO ()
 main = do
@@ -10,8 +13,7 @@ main = do
     Lean.AnonymousName -> return ()
     _ -> fail "Expected anonymous name."
 
-  let n2 = a `Lean.strName` "foo"
-             `Lean.strName` "bla"
+  let n2 = "foo.bla"
 
   putStrLn $ "Lean name: " ++ show n2
 
@@ -34,3 +36,9 @@ main = do
     s3 = lean_get_exception_message(ex);
     printf("Lean exception: %s\n", s3);
 -}
+
+  let badName = "foo.1dog"
+  res <- try $ (return $! badName) :: IO (Either Lean.LeanException Lean.Name)
+  case res of
+    Left _ -> return ()
+    Right _ -> fail "Expected failure while building Lean name."

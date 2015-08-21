@@ -7,6 +7,7 @@ module Language.Lean.Internal.Exception
     -- * FFI types
   , ExceptionPtr
   , throwLeanException
+  , leanKernelException
   , LeanPartialFn
   , tryLeanPartialFn
   , tryAllocString
@@ -60,6 +61,9 @@ leanExceptionFromPtr :: ExceptionPtr -> IO LeanException
 leanExceptionFromPtr ptr = do
   msg <- mkLeanString (lean_exception_get_message ptr)
   return $! LeanException (getLeanExceptionKind ptr) msg
+
+leanKernelException :: String -> LeanException
+leanKernelException = LeanException LeanKernelException
 
 getLeanExceptionKind :: ExceptionPtr -> LeanExceptionKind
 getLeanExceptionKind ptr = do

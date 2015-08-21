@@ -13,6 +13,7 @@ data LeanExceptionKind
    | LeanOutOfMemory
    | LeanInterrupted
    | LeanKernelException
+     -- ^ Errors from Lean misuse
    | LeanOtherException
   deriving (Show)
 
