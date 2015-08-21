@@ -35,7 +35,11 @@ library
 executable test
   build-depends:
     base,
-    lean-bindings
+    lean-bindings,
+    tasty,
+    tasty-ant-xml,
+    tasty-hunit
+
   ghc-options: -Wall
   hs-source-dirs: test
   main-is: Main_test.hs
