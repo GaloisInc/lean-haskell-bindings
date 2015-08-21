@@ -9,8 +9,6 @@ module Language.Lean.Name
   , idxName
   , NameView(..)
   , viewName
-  , NamePtr
-  , withNamePtr
   ) where
 
 import Control.Exception (assert)
@@ -21,14 +19,13 @@ import System.IO.Unsafe
 import Language.Lean.Internal.Utils
 
 {#import Language.Lean.Internal.Exception #}
+{#import Language.Lean.Internal.Name #}
 {#import Language.Lean.Internal.String #}
 
 #include "lean_macros.h"
 #include "lean_bool.h"
 #include "lean_exception.h"
 #include "lean_name.h"
-
-{#pointer lean_name as NamePtr -> Name#}
 
 {#fun unsafe lean_name_mk_anonymous
   { id `Ptr NamePtr'
@@ -49,15 +46,6 @@ import Language.Lean.Internal.Utils
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
 
-{-
-{#fun unsafe lean_del_name
-  { `NamePtr'
-  } -> `()' #}
--}
-
-foreign import ccall "&lean_name_del"
-  lean_name_del_ptr :: FunPtr (NamePtr -> IO ())
-
 {#fun pure unsafe lean_name_is_anonymous
   { `NamePtr'
   } -> `Bool' #}
@@ -68,11 +56,6 @@ foreign import ccall "&lean_name_del"
 
 {#fun pure unsafe lean_name_is_idx
   { `NamePtr'
-  } -> `Bool' #}
-
-{#fun pure unsafe lean_name_eq
-  { `NamePtr'
-  , `NamePtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_name_get_prefix
@@ -92,26 +75,6 @@ foreign import ccall "&lean_name_del"
   , id `Ptr CUInt'
   , id `Ptr ExceptionPtr'
   } -> `Bool' #}
-
-{#fun unsafe lean_name_to_string
-  { `NamePtr'
-  , id `Ptr CString'
-  , id `Ptr ExceptionPtr'
-  } -> `Bool' #}
-
--- | A Lean name
-newtype Name = Name (ForeignPtr Name)
-
--- | Call a C layer function that attempts to allocate a
--- new name.
-tryAllocName :: (Ptr NamePtr -> Ptr ExceptionPtr -> IO Bool)
-           -> IO Name
-tryAllocName mk_name =
-  fmap Name $ tryAllocLeanValue lean_name_del_ptr $ mk_name
-
--- | Run an action with the underlying name pointer.
-withNamePtr :: WithValueFn Name NamePtr a
-withNamePtr (Name nm) = withForeignPtr nm
 
 -- | The root "anonymous" name
 anonymousName :: Name
@@ -134,6 +97,7 @@ idxName pre i = unsafePerformIO $ do
     tryAllocName (lean_name_mk_idx pre_ptr (fromIntegral i))
 {-# NOINLINE idxName #-}
 
+-- | A view of head of a lean name.
 data NameView
    = AnonymousName
      -- ^ The anonymous name.
@@ -143,6 +107,7 @@ data NameView
      -- ^ A name with a numeric value appended.
   deriving (Show)
 
+-- | View the head of a Lean name.
 viewName :: Name -> NameView
 viewName nm = unsafePerformIO $ do
   withNamePtr nm $ \name_ptr -> do
@@ -157,16 +122,3 @@ viewName nm = unsafePerformIO $ do
       idx <- tryGetUInt $ lean_name_get_idx name_ptr
       return $! IndexName ptr (fromIntegral idx)
 {-# NOINLINE viewName #-}
-
-instance Eq Name where
-  (==) = withBinaryPred withNamePtr lean_name_eq
-  {-# NOINLINE (==) #-}
-
-showName :: Name -> String
-showName nm = unsafePerformIO $ do
-  withNamePtr nm $ \pre_ptr ->
-    tryAllocString $ lean_name_to_string pre_ptr
-{-# NOINLINE showName #-}
-
-instance Show Name where
-  show = showName

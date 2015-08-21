@@ -17,9 +17,9 @@ import System.IO.Unsafe
 
 
 {#import Language.Lean.Internal.Exception #}
+{#import Language.Lean.Internal.Name #}
+{#import Language.Lean.Internal.Options #}
 {#import Language.Lean.Internal.String #}
-{#import Language.Lean.Name #}
-{#import Language.Lean.Options #}
 
 #include "lean_macros.h"
 #include "lean_bool.h"
@@ -222,4 +222,3 @@ showUnivUsing u options = unsafePerformIO $ do
 
 instance Show Univ where
   show = showUniv
-

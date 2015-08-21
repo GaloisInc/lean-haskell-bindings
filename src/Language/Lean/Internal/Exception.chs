@@ -14,9 +14,8 @@ module Language.Lean.Internal.Exception
   , tryAllocLeanValue
   ) where
 
-import Control.Exception (Exception(..), finally, throwIO)
+import Control.Exception (finally, throwIO)
 import Control.Monad
-import Data.Typeable
 import Foreign
 import Foreign.C
 

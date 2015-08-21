@@ -18,6 +18,8 @@ library
   ghc-options: -Wall
   exposed-modules:
     Language.Lean.Internal.Exception
+    Language.Lean.Internal.Name
+    Language.Lean.Internal.Options
     Language.Lean.Internal.String
     Language.Lean.Exception
     Language.Lean.Name
