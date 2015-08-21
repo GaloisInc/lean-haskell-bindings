@@ -136,20 +136,41 @@ optionsContains o nm = unsafePerformIO $ do
       return $ lean_options_contains o_ptr nm_ptr
 {-# NOINLINE optionsContains #-}
 
-
-optionsGetBool :: Options -> Name -> Bool
-optionsGetBool o nm = unsafePerformIO $ do
+-- | Retrieves a value for a Lean option
+optionsGet :: (LeanPartialFn a -> IO b)
+           -> (OptionsPtr -> NamePtr -> LeanPartialFn a)
+           -> Options
+           -> Name
+           -> b
+optionsGet tryGetVal leanGetter o nm = unsafePerformIO $ do
   withOptionsPtr o $ \o_ptr ->
     withNamePtr nm $ \nm_ptr ->
-      tryGetBool $ lean_options_get_bool o_ptr nm_ptr
-{-# NOINLINE optionsGetBool #-}
+      tryGetVal $ leanGetter o_ptr nm_ptr
 
-optionsSetBool :: Options -> Name -> Bool -> Options
-optionsSetBool o nm v = unsafePerformIO $ do
+-- | Sets a Lean option with a new value
+optionsSet :: (OptionsPtr -> NamePtr -> a -> LeanPartialFn OptionsPtr)
+           -> Options
+           -> Name
+           -> a
+           -> Options
+optionsSet leanSetter o nm v = unsafePerformIO $ do
   withOptionsPtr o $ \o_ptr ->
     withNamePtr nm $ \nm_ptr ->
-      tryAllocOptions $ lean_options_set_bool o_ptr nm_ptr v
-{-# NOINLINE optionsSetBool #-}
+      tryAllocOptions $ leanSetter o_ptr nm_ptr v
+
+-- | Lens for getting and setting boolean options without
+--   rewriting equivalent values
+simpleLensEq :: (Eq a) => (s -> a) -> (s -> a -> s) -> Simple Lens s a
+simpleLensEq getter setter f o = fmap setFun (f oldVal)
+  where
+    oldVal = getter o
+    setFun newVal
+     | oldVal == newVal = o
+     | otherwise        = setter o newVal
 
 boolOption :: Name -> Simple Lens Options Bool
-boolOption name = lens (`optionsGetBool` name) (`optionsSetBool` name)
+boolOption nm = simpleLensEq (`optionsGetBool` nm) (`optionsSetBool` nm)
+  where
+    optionsGetBool = optionsGet tryGetBool lean_options_get_bool
+    optionsSetBool = optionsSet lean_options_set_bool
+{-# NOINLINE boolOption #-}

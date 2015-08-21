@@ -7,7 +7,8 @@ module Language.Lean.Internal.Exception
     -- * FFI types
   , ExceptionPtr
   , throwLeanException
-  , tryPartialLeanFn
+  , LeanPartialFn
+  , tryLeanPartialFn
   , tryAllocString
   , tryGetBool
   , tryGetUInt
@@ -73,11 +74,13 @@ getLeanExceptionKind ptr = do
     LEAN_OTHER_EXCEPTION -> do
       LeanOtherException
 
-tryPartialLeanFn :: Storable a
-                 => (Ptr a -> Ptr ExceptionPtr -> IO Bool)
+type LeanPartialFn a = (Ptr a -> Ptr ExceptionPtr -> IO Bool)
+
+tryLeanPartialFn :: Storable a
+                 => LeanPartialFn a
                  -> (a -> IO r)
                  -> IO r
-tryPartialLeanFn alloc_fn next =
+tryLeanPartialFn alloc_fn next =
   alloca $ \ret_ptr ->do
     alloca $ \ex_ptr ->do
       success <- alloc_fn ret_ptr ex_ptr
@@ -86,26 +89,22 @@ tryPartialLeanFn alloc_fn next =
         throwLeanException ex
       next =<< peek ret_ptr
 
-
-tryAllocString :: (Ptr CString -> Ptr ExceptionPtr -> IO Bool)
-               -> IO String
+tryAllocString :: LeanPartialFn CString -> IO String
 tryAllocString mk_string =
-  tryPartialLeanFn mk_string $ \ptr -> do
+  tryLeanPartialFn mk_string $ \ptr -> do
      decodeLeanString ptr `finally` lean_string_del ptr
 
-tryGetUInt :: (Ptr CUInt -> Ptr ExceptionPtr -> IO Bool)
-           -> IO CUInt
+tryGetUInt :: LeanPartialFn CUInt -> IO CUInt
 tryGetUInt mk_uint =
-  tryPartialLeanFn mk_uint $ return
+  tryLeanPartialFn mk_uint $ return
 
-tryGetBool :: (Ptr CInt -> Ptr ExceptionPtr -> IO Bool)
-           -> IO Bool
+tryGetBool :: LeanPartialFn CInt -> IO Bool
 tryGetBool mk_bool =
-  tryPartialLeanFn mk_bool $ \v -> do
+  tryLeanPartialFn mk_bool $ \v -> do
     return $ toEnum (fromIntegral v)
 
 tryAllocLeanValue :: FunPtr (Ptr a -> IO ())
-                   -> (Ptr (Ptr a) -> Ptr ExceptionPtr -> IO Bool)
+                   -> LeanPartialFn (Ptr a)
                    -> IO (ForeignPtr a)
 tryAllocLeanValue free_fn alloc_fn =
-  tryPartialLeanFn alloc_fn $ newForeignPtr free_fn
+  tryLeanPartialFn alloc_fn $ newForeignPtr free_fn
