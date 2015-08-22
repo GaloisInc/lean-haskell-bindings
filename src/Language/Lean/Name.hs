@@ -23,5 +23,3 @@ module Language.Lean.Name
   ) where
 
 import Language.Lean.Internal.Name
-
-
