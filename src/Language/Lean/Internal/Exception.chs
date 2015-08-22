@@ -6,11 +6,12 @@ module Language.Lean.Internal.Exception
   , LeanExceptionKind(..)
     -- * FFI types
   , ExceptionPtr
+  , OutExceptionPtr
   , throwLeanException
   , leanKernelException
   , leanOtherException
+    -- * Partial functions
   , LeanPartialFn
-  , tryLeanPartialFn
   , tryAllocString
   , tryGetBool
   , tryGetDouble
@@ -24,6 +25,7 @@ import Control.Monad
 import Data.Coerce (coerce)
 import Foreign
 import Foreign.C
+import System.IO.Unsafe
 
 import Language.Lean.Exception
 import Language.Lean.Internal.String
@@ -32,36 +34,33 @@ import Language.Lean.Internal.String
 #include "lean_exception.h"
 
 {#pointer lean_exception as ExceptionPtr newtype#}
+{#pointer *lean_exception as OutExceptionPtr -> ExceptionPtr #}
 
 deriving instance Storable ExceptionPtr
 
 {#fun unsafe lean_exception_del
-  { `ExceptionPtr'
-  } -> `()' #}
+  { `ExceptionPtr' } -> `()' #}
 
-{#fun unsafe lean_exception_get_message
-  { id `ExceptionPtr'
-  } -> `CString' #}
+{#fun pure unsafe lean_exception_get_message
+  { `ExceptionPtr' } -> `String' getLeanString* #}
 
 {#enum lean_exception_kind as ExceptionKind { upcaseFirstLetter }
          deriving (Eq)#}
 
 {#fun pure unsafe lean_exception_get_kind
-  { id `ExceptionPtr'
-  } -> `ExceptionKind' #}
+  { `ExceptionPtr' } -> `ExceptionKind' #}
 
 -- | Convert the ExceptionPtr to a Lean exception and throw
 -- it while releasing the ExceptionPtr
 throwLeanException :: ExceptionPtr -> IO a
 throwLeanException ptr = do
-  ex <- leanExceptionFromPtr ptr
+  (throwIO $! leanExceptionFromPtr ptr)
     `finally` lean_exception_del ptr
-  throwIO $ ex
 
-leanExceptionFromPtr :: ExceptionPtr -> IO LeanException
+leanExceptionFromPtr :: ExceptionPtr -> LeanException
 leanExceptionFromPtr ptr = do
-  msg <- mkLeanString (lean_exception_get_message ptr)
-  return $! LeanException (getLeanExceptionKind ptr) msg
+  LeanException (getLeanExceptionKind ptr)
+                (lean_exception_get_message ptr)
 
 leanKernelException :: String -> LeanException
 leanKernelException = LeanException LeanKernelException
@@ -85,13 +84,16 @@ getLeanExceptionKind ptr = do
     LEAN_OTHER_EXCEPTION -> do
       LeanOtherException
 
+------------------------------------------------------------------------
+-- Partial functions
+
 type LeanPartialFn a = (Ptr a -> Ptr ExceptionPtr -> IO Bool)
 
 tryLeanPartialFn :: Storable a
-                 => LeanPartialFn a
-                 -> (a -> IO r)
-                 -> IO r
-tryLeanPartialFn alloc_fn next =
+                 => (a -> IO r)
+                 -> LeanPartialFn a
+                 -> r
+tryLeanPartialFn next alloc_fn = unsafePerformIO $ do
   alloca $ \ret_ptr ->do
     alloca $ \ex_ptr ->do
       success <- alloc_fn ret_ptr ex_ptr
@@ -100,30 +102,22 @@ tryLeanPartialFn alloc_fn next =
         throwLeanException ex
       next =<< peek ret_ptr
 
-tryAllocString :: LeanPartialFn CString -> IO String
-tryAllocString mk_string =
-  tryLeanPartialFn mk_string $ \ptr -> do
-     decodeLeanString ptr `finally` lean_string_del ptr
+tryGetBool :: LeanPartialFn CInt -> Bool
+tryGetBool = tryLeanPartialFn (return . toEnum . fromIntegral)
 
-tryGetUInt :: LeanPartialFn CUInt -> IO Word32
-tryGetUInt mk_uint =
-  tryLeanPartialFn mk_uint $ return . coerce
+tryGetUInt :: LeanPartialFn CUInt -> Word32
+tryGetUInt = tryLeanPartialFn $ return . coerce
 
-tryGetBool :: LeanPartialFn CInt -> IO Bool
-tryGetBool mk_bool =
-  tryLeanPartialFn mk_bool $ \v -> do
-    return $ toEnum (fromIntegral v)
+tryGetInt :: LeanPartialFn CInt -> Int32
+tryGetInt = tryLeanPartialFn $ return . coerce
 
-tryGetDouble :: LeanPartialFn CDouble -> IO Double
-tryGetDouble mk_double =
-  tryLeanPartialFn mk_double $ return . coerce
+tryGetDouble :: LeanPartialFn CDouble -> Double
+tryGetDouble = tryLeanPartialFn $ return . coerce
 
-tryGetInt :: LeanPartialFn CInt -> IO Int32
-tryGetInt mk_int =
-  tryLeanPartialFn mk_int $ return . coerce
+tryAllocString :: LeanPartialFn CString -> String
+tryAllocString = tryLeanPartialFn getLeanString
 
 tryAllocLeanValue :: FunPtr (Ptr a -> IO ())
                    -> LeanPartialFn (Ptr a)
-                   -> IO (ForeignPtr a)
-tryAllocLeanValue free_fn alloc_fn =
-  tryLeanPartialFn alloc_fn $ newForeignPtr free_fn
+                   -> ForeignPtr a
+tryAllocLeanValue free_fn = tryLeanPartialFn $ newForeignPtr free_fn

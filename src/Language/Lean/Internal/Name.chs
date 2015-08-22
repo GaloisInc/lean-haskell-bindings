@@ -9,7 +9,7 @@ module Language.Lean.Internal.Name
     -- * Internal declarations
   , NamePtr
   , tryAllocName
-  , withNamePtr
+  , withName
   ) where
 
 import Control.Exception (assert, throw)
@@ -27,93 +27,74 @@ import System.IO.Unsafe
 #include "lean_exception.h"
 #include "lean_name.h"
 
+-- | A Lean name
+{#pointer lean_name as Name foreign newtype#}
+
 {#pointer lean_name as NamePtr -> Name#}
 
 foreign import ccall "&lean_name_del"
   lean_name_del_ptr :: FunPtr (NamePtr -> IO ())
 
--- | A Lean name
-newtype Name = Name (ForeignPtr Name)
-
--- | Run an action with the underlying name pointer.
-withNamePtr :: Name -> (NamePtr -> IO a) -> IO a
-withNamePtr (Name nm) = withForeignPtr nm
-
 -- | Call a C layer function that attempts to allocate a
 -- new name.
 tryAllocName :: LeanPartialFn NamePtr -> Name
-tryAllocName mk_name = unsafePerformIO $ do
-  fmap Name $ tryAllocLeanValue lean_name_del_ptr $ mk_name
+tryAllocName mk_name =
+  Name $ tryAllocLeanValue lean_name_del_ptr $ mk_name
 
-{#fun pure unsafe lean_name_eq
-  { withNamePtr* `Name'
-  , withNamePtr* `Name'
-  } -> `Bool' #}
+{#fun pure unsafe lean_name_eq { `Name' , `Name' } -> `Bool' #}
 
 {#fun unsafe lean_name_to_string
-  { withNamePtr* `Name'
+  { `Name'
   , id `Ptr CString'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_name_mk_anonymous
   { id `Ptr NamePtr'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_name_mk_str
-  { withNamePtr* `Name'
+  { `Name'
   , withLeanStringPtr* `String'
   , id `Ptr NamePtr'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_name_mk_idx
-  { withNamePtr* `Name'
+  { `Name'
   , `Word32'
   , id `Ptr NamePtr'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
-{#fun pure unsafe lean_name_is_anonymous
-  { withNamePtr* `Name'
-  } -> `Bool' #}
-
-{#fun pure unsafe lean_name_is_str
-  { withNamePtr* `Name'
-  } -> `Bool' #}
-
-{#fun pure unsafe lean_name_is_idx
-  { withNamePtr* `Name'
-  } -> `Bool' #}
+{#fun pure unsafe lean_name_is_anonymous { `Name' } -> `Bool' #}
+{#fun pure unsafe lean_name_is_str       { `Name' } -> `Bool' #}
+{#fun pure unsafe lean_name_is_idx       { `Name' } -> `Bool' #}
 
 {#fun unsafe lean_name_get_prefix
-  { withNamePtr* `Name'
+  { `Name'
   , id `Ptr NamePtr'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_name_get_str
-  { withNamePtr* `Name'
+  { `Name'
   , id `Ptr CString'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_name_get_idx
-  { withNamePtr* `Name'
+  { `Name'
   , id `Ptr CUInt'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 instance Eq Name where
   (==) = lean_name_eq
 
-showName :: Name -> String
-showName nm = unsafePerformIO $ do
-  tryAllocString $ lean_name_to_string nm
-
 instance Show Name where
-  show = showName
+  show nm = tryAllocString $ lean_name_to_string nm
 
 -- | The root "anonymous" name
 anonymousName :: Name
@@ -161,10 +142,10 @@ viewName nm =
     AnonymousName
   else if lean_name_is_str nm then do
     StringName (tryAllocName $ lean_name_get_prefix nm)
-               (unsafePerformIO $ tryAllocString $ lean_name_get_str nm)
+               (tryAllocString $ lean_name_get_str nm)
   else assert (lean_name_is_idx nm) $ do
     IndexName (tryAllocName $ lean_name_get_prefix nm)
-              (unsafePerformIO $ tryGetUInt $ lean_name_get_idx nm)
+              (tryGetUInt $ lean_name_get_idx nm)
 
 instance Monoid Name where
   mempty  = anonymousName
@@ -173,4 +154,3 @@ instance Monoid Name where
       AnonymousName   -> x
       StringName yn s -> strName (mappend x yn) s
       IndexName  yn i -> idxName (mappend x yn) i
-

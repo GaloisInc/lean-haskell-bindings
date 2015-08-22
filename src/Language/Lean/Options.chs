@@ -36,101 +36,99 @@ import System.IO.Unsafe
 #include "lean_options.h"
 
 {#fun unsafe lean_options_set_bool
-  { withOptionsPtr* `Options'
-  , withNamePtr* `Name'
+  { `Options'
+  , `Name'
   , `Bool'
   , id `Ptr OptionsPtr'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_options_set_int
-  { withOptionsPtr* `Options'
-  , withNamePtr* `Name'
+  { `Options'
+  , `Name'
   , `Int32'
   , id `Ptr OptionsPtr'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_options_set_unsigned
-  { withOptionsPtr* `Options'
-  , withNamePtr* `Name'
+  { `Options'
+  , `Name'
   , `Word32'
   , id `Ptr OptionsPtr'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_options_set_double
-  { withOptionsPtr* `Options'
-  , withNamePtr* `Name'
+  { `Options'
+  , `Name'
   , `Double'
   , id `Ptr OptionsPtr'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_options_set_string
-  { withOptionsPtr* `Options'
-  , withNamePtr* `Name'
+  { `Options'
+  , `Name'
   , withLeanStringPtr* `String'
   , id `Ptr OptionsPtr'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun pure unsafe lean_options_empty as nullOptions
-  { withOptionsPtr* `Options'
+  { `Options'
   } -> `Bool' #}
 
 -- | Indicate whether name is set in the lean options.
 {#fun pure unsafe lean_options_contains as containsOption
-  { withOptionsPtr* `Options'
-  , withNamePtr* `Name'
+  { `Options'
+  , `Name'
   } -> `Bool' #}
 
 {#fun unsafe lean_options_get_bool
-  { withOptionsPtr* `Options'
-  , withNamePtr* `Name'
+  { `Options'
+  , `Name'
   , id `Ptr CInt'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_options_get_int
-  { withOptionsPtr* `Options'
-  , withNamePtr* `Name'
+  { `Options'
+  , `Name'
   , id `Ptr CInt'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_options_get_unsigned
-  { withOptionsPtr* `Options'
-  , withNamePtr* `Name'
+  { `Options'
+  , `Name'
   , id `Ptr CUInt'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_options_get_double
-  { withOptionsPtr* `Options'
-  , withNamePtr* `Name'
+  { `Options'
+  , `Name'
   , id `Ptr CDouble'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_options_get_string
-  { withOptionsPtr* `Options'
-  , withNamePtr* `Name'
+  { `Options'
+  , `Name'
   , id `Ptr CString'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 -- | Retrieves a value for a Lean option
-optionsGet :: (LeanPartialFn a -> IO b)
+optionsGet :: (LeanPartialFn a -> b)
            -> (Options -> Name -> LeanPartialFn a)
            -> Options
            -> Name
            -> Maybe b
-optionsGet tryGetVal leanGetter o nm = unsafePerformIO $ do
-  if o `containsOption` nm then
-    fmap Just $ tryGetVal $ leanGetter o nm
-  else
-    return Nothing
+optionsGet tryGetVal leanGetter o nm
+  | o `containsOption` nm = Just (tryGetVal $ leanGetter o nm)
+  | otherwise = Nothing
 
 -- | Sets a Lean option with a new value
 optionsSet :: (Options -> Name -> a -> LeanPartialFn OptionsPtr)

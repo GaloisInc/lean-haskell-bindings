@@ -17,21 +17,22 @@ module Language.Lean.Univ
   ( Univ
   , UnivView(..)
   , viewUniv
+  , geqUniv
   , showUniv
   , showUnivUsing
+  , normalizeUniv
+  , instantiateUniv
   ) where
 
-import Control.Exception (assert, throw)
+import Control.Exception (throw)
 import Control.Monad (when)
 import Foreign
 import Foreign.C
 import System.IO.Unsafe
 
-
 {#import Language.Lean.Internal.Exception #}
 {#import Language.Lean.Internal.Name #}
 {#import Language.Lean.Internal.Options #}
-{#import Language.Lean.Internal.String #}
 
 #include "lean_macros.h"
 #include "lean_bool.h"
@@ -56,7 +57,7 @@ withForeignArray' withPtr arrayPtr (h:r) action = do
 
 
 -- | A lean universe
-newtype Univ = Univ (ForeignPtr Univ)
+{#pointer lean_univ as Univ foreign newtype#}
 
 {#pointer lean_univ as UnivPtr -> Univ#}
 
@@ -64,155 +65,147 @@ foreign import ccall "&lean_univ_del"
   lean_univ_del_ptr :: FunPtr (UnivPtr -> IO ())
 
 -- | Call a C layer function that attempts to allocate a new universe and is pure.
-tryAllocUniv :: LeanPartialFn UnivPtr
-             -> Univ
-tryAllocUniv mk_name = unsafePerformIO $ tryAllocUnivIO mk_name
-
--- | Call a C layer function that attempts to allocate a new universe.
-tryAllocUnivIO :: LeanPartialFn UnivPtr
-               -> IO Univ
-tryAllocUnivIO mk_name = fmap Univ $ tryAllocLeanValue lean_univ_del_ptr $ mk_name
-
--- | Run an action with the underlying universe pointer.
-withUnivPtr :: Univ -> (UnivPtr -> IO a) -> IO a
-withUnivPtr (Univ nm) = withForeignPtr nm
+tryAllocUniv :: LeanPartialFn UnivPtr -> Univ
+tryAllocUniv = Univ . tryAllocLeanValue lean_univ_del_ptr
 
 {#fun unsafe lean_univ_mk_zero
   { id `Ptr UnivPtr'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_mk_succ
-  { withUnivPtr* `Univ'
+  { `Univ'
   , id `Ptr UnivPtr'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_mk_max
-  { withUnivPtr* `Univ'
-  , withUnivPtr* `Univ'
+  { `Univ'
+  , `Univ'
   , id `Ptr UnivPtr'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_mk_imax
-  { withUnivPtr* `Univ'
-  , withUnivPtr* `Univ'
+  { `Univ'
+  , `Univ'
   , id `Ptr UnivPtr'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_mk_param
-  { withNamePtr* `Name'
+  { `Name'
   , id `Ptr UnivPtr'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_mk_global
-  { withNamePtr* `Name'
+  { `Name'
   , id `Ptr UnivPtr'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 
 {#fun unsafe lean_univ_mk_meta
-  { withNamePtr* `Name'
+  { `Name'
   , id `Ptr UnivPtr'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_to_string
-  { withUnivPtr* `Univ'
+  { `Univ'
   , id `Ptr CString'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_to_string_using
-  { withUnivPtr* `Univ'
-  , withOptionsPtr* `Options'
+  { `Univ'
+  , `Options'
   , id `Ptr CString'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#enum lean_univ_kind as UnivKind { upcaseFirstLetter }
          deriving (Eq)#}
 
 {#fun pure unsafe lean_univ_get_kind
-  { withUnivPtr* `Univ'
+  { `Univ'
   } -> `UnivKind' #}
 
 {#fun unsafe lean_univ_eq
-  { withUnivPtr* `Univ'
-  , withUnivPtr* `Univ'
+  { `Univ'
+  , `Univ'
   , id `Ptr CInt'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_geq
-  { withUnivPtr* `Univ'
-  , withUnivPtr* `Univ'
+  { `Univ'
+  , `Univ'
   , id `Ptr CInt'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_get_pred
-  { withUnivPtr* `Univ'
+  { `Univ'
   , id `Ptr UnivPtr'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_get_max_lhs
-  { withUnivPtr* `Univ'
+  { `Univ'
   , id `Ptr UnivPtr'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_get_max_rhs
-  { withUnivPtr* `Univ'
+  { `Univ'
   , id `Ptr UnivPtr'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_get_name
-  { withUnivPtr* `Univ'
+  { `Univ'
   , id `Ptr NamePtr'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_normalize
-  { withUnivPtr* `Univ'
+  { `Univ'
   , id `Ptr UnivPtr'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_instantiate
-  { withUnivPtr* `Univ'
+  { `Univ'
   , `Word32'
   , id `Ptr NamePtr'
   , id `Ptr UnivPtr'
   , id `Ptr UnivPtr'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 eqUniv :: Univ -> Univ -> Bool
-eqUniv x y = unsafePerformIO $ tryGetBool $ lean_univ_eq x y
+eqUniv x y = tryGetBool $ lean_univ_eq x y
 
 geqUniv :: Univ -> Univ -> Bool
-geqUniv x y = unsafePerformIO $ tryGetBool $ lean_univ_geq x y
+geqUniv x y = tryGetBool $ lean_univ_geq x y
 
 instance Eq Univ where
   (==) = eqUniv
 
+-- | Shwo a universe.
 showUniv :: Univ -> String
-showUniv u = unsafePerformIO $ tryAllocString $ lean_univ_to_string u
+showUniv u = tryAllocString $ lean_univ_to_string u
 
+-- | Show a universe with the given options.
 showUnivUsing :: Univ -> Options -> String
-showUnivUsing u options = unsafePerformIO $ do
-  tryAllocString $ lean_univ_to_string_using u options
+showUnivUsing u options = tryAllocString $ lean_univ_to_string_using u options
 
 instance Show Univ where
   show = showUniv
 
+-- | A view of a universe.
 data UnivView
    = UnivZero
      -- ^ The zero universe.
@@ -255,6 +248,6 @@ instantiateUniv x args = tryAllocUniv $ \r_ptr e_ptr -> do
   let sz = length args
   when (sz > fromIntegral (maxBound :: Word32)) $ do
     throw $ leanKernelException "Lean does not support instantiating more than 2^32 paramters universe parameters."
-  withForeignArray withNamePtr sz (fst <$> args) $ \name_array -> do
-    withForeignArray withUnivPtr sz (snd <$> args) $ \univ_array -> do
+  withForeignArray withName sz (fst <$> args) $ \name_array -> do
+    withForeignArray withUniv sz (snd <$> args) $ \univ_array -> do
        lean_univ_instantiate x (fromIntegral sz) name_array univ_array r_ptr e_ptr

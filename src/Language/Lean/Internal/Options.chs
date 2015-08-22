@@ -1,11 +1,12 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 module Language.Lean.Internal.Options
   ( Options
-  , OptionsPtr
-  , tryAllocOptions
-  , withOptionsPtr
   , emptyOptions
   , joinOptions
+    -- * Low level FFI interfaces.
+  , OptionsPtr
+  , tryAllocOptions
+  , withOptions
   ) where
 
 import Foreign
@@ -21,8 +22,7 @@ import System.IO.Unsafe
 #include "lean_options.h"
 
 -- | A set of Lean configuration options
-newtype Options = Options (ForeignPtr Options)
-
+{#pointer lean_options as Options foreign newtype#}
 {#pointer lean_options as OptionsPtr -> Options#}
 
 foreign import ccall "&lean_options_del"
@@ -32,42 +32,35 @@ foreign import ccall "&lean_options_del"
 -- new options
 tryAllocOptions :: LeanPartialFn OptionsPtr
                 -> Options
-tryAllocOptions mk_options = unsafePerformIO $ do
-  fmap Options $ tryAllocLeanValue lean_options_del_ptr $ mk_options
-
--- | Run an action with the underlying pointer.
-withOptionsPtr :: Options -> (OptionsPtr -> IO a) -> IO a
-withOptionsPtr (Options x) = withForeignPtr x
+tryAllocOptions mk_options =
+  Options $ tryAllocLeanValue lean_options_del_ptr $ mk_options
 
 {#fun pure unsafe lean_options_eq
-  { withOptionsPtr* `Options'
-  , withOptionsPtr* `Options'
-  } -> `Bool' #}
+  { `Options', `Options' } -> `Bool' #}
 
 {#fun unsafe lean_options_to_string
-  { withOptionsPtr* `Options'
+  { `Options'
   , id `Ptr CString'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_options_mk_empty
   { id `Ptr OptionsPtr'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_options_join
-  { withOptionsPtr* `Options'
-  , withOptionsPtr* `Options'
+  { `Options'
+  , `Options'
   , id `Ptr OptionsPtr'
-  , id `Ptr ExceptionPtr'
+  , `OutExceptionPtr'
   } -> `Bool' #}
 
 instance Eq Options where
   (==) = lean_options_eq
 
 showOption :: Options -> String
-showOption x = unsafePerformIO $ do
-  tryAllocString $ lean_options_to_string x
+showOption x = tryAllocString $ lean_options_to_string x
 
 instance Show Options where
   show = showOption

@@ -2,13 +2,14 @@
 module Language.Lean.Internal.String
   ( mkLeanString
   , mkLeanText
+  , getLeanString
   , decodeLeanString
   , withLeanStringPtr
   , withLeanTextPtr
   , lean_string_del
   ) where
 
-import Control.Exception (bracket)
+import Control.Exception (bracket, finally)
 import qualified Data.ByteString as BS
 import Data.ByteString.Unsafe (unsafePackCString, unsafeUseAsCString)
 import Data.String
@@ -21,8 +22,7 @@ import Foreign.C (CChar, CString)
 #include "lean_string.h"
 
 {#fun unsafe lean_string_del
-  { `CString'
-  } -> `()' #}
+  { `CString' } -> `()' #}
 
 -- | This decodes a CString as Lean text
 decodeLeanText :: CString -> IO Text
@@ -45,6 +45,11 @@ mkLeanText alloc = bracket alloc lean_string_del $ decodeLeanText
 -- a @Text@ value, and frees the string.
 mkLeanString :: IO CString -> IO String
 mkLeanString alloc = bracket alloc lean_string_del $ decodeLeanString
+
+-- | This calls a function that allocates a Lean string, parses it as
+-- a @Text@ value, and frees the string.
+getLeanString :: CString -> IO String
+getLeanString ptr = decodeLeanString ptr `finally` lean_string_del ptr
 
 -- | Use the string as a Lean string
 withLeanStringPtr :: String -> (CString -> IO a) -> IO a

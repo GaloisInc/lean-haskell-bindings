@@ -23,14 +23,14 @@ library
   ghc-options: -Wall
   exposed-modules:
     Language.Lean
+    Language.Lean.Internal.String
+    Language.Lean.Internal.Exception
+    Language.Lean.Internal.Name
+    Language.Lean.Internal.Options
     Language.Lean.Exception
     Language.Lean.Name
     Language.Lean.Options
     Language.Lean.Univ
-    Language.Lean.Internal.Exception
-    Language.Lean.Internal.Name
-    Language.Lean.Internal.Options
-    Language.Lean.Internal.String
 
 executable test
   build-depends:
