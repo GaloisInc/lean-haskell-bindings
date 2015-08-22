@@ -21,7 +21,7 @@ module Language.Lean.Univ
   , showUniv
   , showUnivUsing
   , normalizeUniv
-  , instantiateUniv
+--  , instantiateUniv
   ) where
 
 import Control.Exception (throw)
@@ -41,6 +41,7 @@ import System.IO.Unsafe
 #include "lean_options.h"
 #include "lean_univ.h"
 
+{-
 type WithPointer b p a = b -> (p -> IO a) -> IO a
 
 withForeignArray :: Storable p => WithPointer b p a -> Int -> [b] -> (Ptr p -> IO a) -> IO a
@@ -54,12 +55,12 @@ withForeignArray' withPtr arrayPtr (h:r) action = do
   withPtr h $ \ptr -> do
     poke arrayPtr ptr
     withForeignArray' withPtr (arrayPtr `plusPtr` sizeOf ptr) r action
-
+-}
 
 -- | A lean universe
 {#pointer lean_univ as Univ foreign newtype#}
-
 {#pointer lean_univ as UnivPtr -> Univ#}
+{#pointer *lean_univ as OutUnivPtr -> UnivPtr #}
 
 foreign import ccall "&lean_univ_del"
   lean_univ_del_ptr :: FunPtr (UnivPtr -> IO ())
@@ -69,46 +70,46 @@ tryAllocUniv :: LeanPartialFn UnivPtr -> Univ
 tryAllocUniv = Univ . tryAllocLeanValue lean_univ_del_ptr
 
 {#fun unsafe lean_univ_mk_zero
-  { id `Ptr UnivPtr'
+  { `OutUnivPtr'
   , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_mk_succ
   { `Univ'
-  , id `Ptr UnivPtr'
+  , `OutUnivPtr'
   , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_mk_max
   { `Univ'
   , `Univ'
-  , id `Ptr UnivPtr'
+  , `OutUnivPtr'
   , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_mk_imax
   { `Univ'
   , `Univ'
-  , id `Ptr UnivPtr'
+  , `OutUnivPtr'
   , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_mk_param
   { `Name'
-  , id `Ptr UnivPtr'
+  , `OutUnivPtr'
   , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_mk_global
   { `Name'
-  , id `Ptr UnivPtr'
+  , `OutUnivPtr'
   , `OutExceptionPtr'
   } -> `Bool' #}
 
 
 {#fun unsafe lean_univ_mk_meta
   { `Name'
-  , id `Ptr UnivPtr'
+  , `OutUnivPtr'
   , `OutExceptionPtr'
   } -> `Bool' #}
 
@@ -148,42 +149,44 @@ tryAllocUniv = Univ . tryAllocLeanValue lean_univ_del_ptr
 
 {#fun unsafe lean_univ_get_pred
   { `Univ'
-  , id `Ptr UnivPtr'
+  , `OutUnivPtr'
   , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_get_max_lhs
   { `Univ'
-  , id `Ptr UnivPtr'
+  , `OutUnivPtr'
   , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_get_max_rhs
   { `Univ'
-  , id `Ptr UnivPtr'
+  , `OutUnivPtr'
   , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_get_name
   { `Univ'
-  , id `Ptr NamePtr'
+  , `OutNamePtr'
   , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_univ_normalize
   { `Univ'
-  , id `Ptr UnivPtr'
+  , `OutUnivPtr'
   , `OutExceptionPtr'
   } -> `Bool' #}
 
+{-
 {#fun unsafe lean_univ_instantiate
   { `Univ'
   , `Word32'
-  , id `Ptr NamePtr'
-  , id `Ptr UnivPtr'
-  , id `Ptr UnivPtr'
+  , `OutNamePtr'
+  , `OutUnivPtr'
+  , `OutUnivPtr'
   , `OutExceptionPtr'
   } -> `Bool' #}
+-}
 
 eqUniv :: Univ -> Univ -> Bool
 eqUniv x y = tryGetBool $ lean_univ_eq x y
@@ -242,6 +245,7 @@ viewUniv x =
 normalizeUniv :: Univ -> Univ
 normalizeUniv x = tryAllocUniv $ lean_univ_normalize x
 
+{-
 -- | Instantiate the parameters with universes
 instantiateUniv :: Univ -> [(Name, Univ)] -> Univ
 instantiateUniv x args = tryAllocUniv $ \r_ptr e_ptr -> do
@@ -251,3 +255,4 @@ instantiateUniv x args = tryAllocUniv $ \r_ptr e_ptr -> do
   withForeignArray withName sz (fst <$> args) $ \name_array -> do
     withForeignArray withUniv sz (snd <$> args) $ \univ_array -> do
        lean_univ_instantiate x (fromIntegral sz) name_array univ_array r_ptr e_ptr
+-}

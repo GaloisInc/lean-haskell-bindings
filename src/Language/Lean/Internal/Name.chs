@@ -8,6 +8,7 @@ module Language.Lean.Internal.Name
   , viewName
     -- * Internal declarations
   , NamePtr
+  , OutNamePtr
   , tryAllocName
   , withName
   ) where
@@ -31,6 +32,7 @@ import System.IO.Unsafe
 {#pointer lean_name as Name foreign newtype#}
 
 {#pointer lean_name as NamePtr -> Name#}
+{#pointer *lean_name as OutNamePtr -> NamePtr #}
 
 foreign import ccall "&lean_name_del"
   lean_name_del_ptr :: FunPtr (NamePtr -> IO ())
@@ -50,21 +52,21 @@ tryAllocName mk_name =
   } -> `Bool' #}
 
 {#fun unsafe lean_name_mk_anonymous
-  { id `Ptr NamePtr'
+  { `OutNamePtr'
   , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_name_mk_str
   { `Name'
   , withLeanStringPtr* `String'
-  , id `Ptr NamePtr'
+  , `OutNamePtr'
   , `OutExceptionPtr'
   } -> `Bool' #}
 
 {#fun unsafe lean_name_mk_idx
   { `Name'
   , `Word32'
-  , id `Ptr NamePtr'
+  , `OutNamePtr'
   , `OutExceptionPtr'
   } -> `Bool' #}
 
@@ -74,7 +76,7 @@ tryAllocName mk_name =
 
 {#fun unsafe lean_name_get_prefix
   { `Name'
-  , id `Ptr NamePtr'
+  , `OutNamePtr'
   , `OutExceptionPtr'
   } -> `Bool' #}
 
