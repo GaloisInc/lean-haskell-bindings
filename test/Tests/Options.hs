@@ -1,10 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Tests.Options (optionsTests) where
 
-import Control.Exception (try)
 import Control.Lens
 import Control.Monad
-import System.IO
 
 import Test.Tasty
 import Test.Tasty.HUnit

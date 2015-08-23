@@ -5,6 +5,7 @@ module Language.Lean.Internal.Options
   , joinOptions
     -- * Low level FFI interfaces.
   , OptionsPtr
+  , OutOptionsPtr
   , tryAllocOptions
   , withOptions
   ) where
@@ -24,6 +25,7 @@ import System.IO.Unsafe
 -- | A set of Lean configuration options
 {#pointer lean_options as Options foreign newtype#}
 {#pointer lean_options as OptionsPtr -> Options#}
+{#pointer *lean_options as OutOptionsPtr -> OptionsPtr #}
 
 foreign import ccall "&lean_options_del"
   lean_options_del_ptr :: FunPtr (OptionsPtr -> IO ())
@@ -35,35 +37,12 @@ tryAllocOptions :: LeanPartialFn OptionsPtr
 tryAllocOptions mk_options =
   Options $ tryAllocLeanValue lean_options_del_ptr $ mk_options
 
-{#fun pure unsafe lean_options_eq
-  { `Options', `Options' } -> `Bool' #}
+------------------------------------------------------------------------
+-- Monoid instance
 
-{#fun unsafe lean_options_to_string
-  { `Options'
-  , id `Ptr CString'
-  , `OutExceptionPtr'
-  } -> `Bool' #}
-
-{#fun unsafe lean_options_mk_empty
-  { id `Ptr OptionsPtr'
-  , `OutExceptionPtr'
-  } -> `Bool' #}
-
-{#fun unsafe lean_options_join
-  { `Options'
-  , `Options'
-  , id `Ptr OptionsPtr'
-  , `OutExceptionPtr'
-  } -> `Bool' #}
-
-instance Eq Options where
-  (==) = lean_options_eq
-
-showOption :: Options -> String
-showOption x = tryAllocString $ lean_options_to_string x
-
-instance Show Options where
-  show = showOption
+instance Monoid Options where
+  mempty  = emptyOptions
+  mappend = joinOptions
 
 -- | An empty set of options
 emptyOptions :: Options
@@ -74,6 +53,38 @@ emptyOptions = tryAllocOptions lean_options_mk_empty
 joinOptions :: Options -> Options -> Options
 joinOptions x y = tryAllocOptions $ lean_options_join x y
 
-instance Monoid Options where
-  mempty  = emptyOptions
-  mappend = joinOptions
+{#fun unsafe lean_options_mk_empty
+  { `OutOptionsPtr'
+  , `OutExceptionPtr'
+  } -> `Bool' #}
+
+{#fun unsafe lean_options_join
+  { `Options'
+  , `Options'
+  , `OutOptionsPtr'
+  , `OutExceptionPtr'
+  } -> `Bool' #}
+
+------------------------------------------------------------------------
+-- Eq instance
+
+instance Eq Options where
+  (==) = lean_options_eq
+
+{#fun pure unsafe lean_options_eq
+  { `Options', `Options' } -> `Bool' #}
+
+------------------------------------------------------------------------
+-- Show instance
+
+instance Show Options where
+  show = showOption
+
+showOption :: Options -> String
+showOption x = tryAllocString $ lean_options_to_string x
+
+{#fun unsafe lean_options_to_string
+  { `Options'
+  , id `Ptr CString'
+  , `OutExceptionPtr'
+  } -> `Bool' #}

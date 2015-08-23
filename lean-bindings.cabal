@@ -10,12 +10,23 @@ description:
   This package contains Haskell bindings to the
   <http://leanprover.github.io/ Lean Theorem Prover>.
 
+flag use-integer-simple
+  description: Use this when compiling using a ghc that uses integer-simple instead of integer-gmp.
+  default: False
+
 library
   build-depends:
     base,
     bytestring,
     lens,
     text
+
+  if flag(use-integer-simple)
+     build-depends: integer-simple
+  else
+     build-depends: integer-gmp >= 1.0.0.0
+
+
   extra-libraries:
     leanshared
   hs-source-dirs: src
@@ -28,6 +39,7 @@ library
     Language.Lean.Internal.Name
     Language.Lean.Internal.Options
     Language.Lean.Exception
+    Language.Lean.List
     Language.Lean.Name
     Language.Lean.Options
     Language.Lean.Univ

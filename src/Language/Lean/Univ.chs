@@ -9,27 +9,41 @@ Portability : POSIX
 
 This module defines functions for constructing and deconstructing lean universes.
 -}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DoAndIfThenElse #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TypeFamilies #-}
 module Language.Lean.Univ
   ( Univ
+  , zeroUniv
+  , succUniv
+  , maxUniv
+  , imaxUniv
+  , paramUniv
+  , globalUniv
+  , metaUniv
   , UnivView(..)
   , viewUniv
   , geqUniv
   , showUniv
   , showUnivUsing
+    -- * Operations on universe levels
   , normalizeUniv
---  , instantiateUniv
+  , instantiateUniv
+  , instantiateUniv2
   ) where
 
-import Control.Exception (throw)
-import Control.Monad (when)
+import Control.Lens (toListOf)
 import Foreign
 import Foreign.C
+import GHC.Exts
 import System.IO.Unsafe
 
+import Language.Lean.List
 {#import Language.Lean.Internal.Exception #}
 {#import Language.Lean.Internal.Name #}
 {#import Language.Lean.Internal.Options #}
@@ -57,7 +71,7 @@ withForeignArray' withPtr arrayPtr (h:r) action = do
     withForeignArray' withPtr (arrayPtr `plusPtr` sizeOf ptr) r action
 -}
 
--- | A lean universe
+-- | A Lean universe level
 {#pointer lean_univ as Univ foreign newtype#}
 {#pointer lean_univ as UnivPtr -> Univ#}
 {#pointer *lean_univ as OutUnivPtr -> UnivPtr #}
@@ -69,16 +83,31 @@ foreign import ccall "&lean_univ_del"
 tryAllocUniv :: LeanPartialFn UnivPtr -> Univ
 tryAllocUniv = Univ . tryAllocLeanValue lean_univ_del_ptr
 
+------------------------------------------------------------------------
+-- Options for constructing universes
+
+-- | The zero universe
+zeroUniv :: Univ
+zeroUniv = tryAllocUniv $ lean_univ_mk_zero
+
 {#fun unsafe lean_univ_mk_zero
   { `OutUnivPtr'
   , `OutExceptionPtr'
   } -> `Bool' #}
+
+-- | Successor of the universe
+succUniv :: Univ -> Univ
+succUniv x = tryAllocUniv $ lean_univ_mk_succ x
 
 {#fun unsafe lean_univ_mk_succ
   { `Univ'
   , `OutUnivPtr'
   , `OutExceptionPtr'
   } -> `Bool' #}
+
+-- | The max of two universes.
+maxUniv :: Univ -> Univ -> Univ
+maxUniv x y = tryAllocUniv $ lean_univ_mk_max x y
 
 {#fun unsafe lean_univ_mk_max
   { `Univ'
@@ -87,6 +116,10 @@ tryAllocUniv = Univ . tryAllocLeanValue lean_univ_del_ptr
   , `OutExceptionPtr'
   } -> `Bool' #}
 
+-- | The imax of two universes.
+imaxUniv :: Univ -> Univ -> Univ
+imaxUniv x y = tryAllocUniv $ lean_univ_mk_imax x y
+
 {#fun unsafe lean_univ_mk_imax
   { `Univ'
   , `Univ'
@@ -94,11 +127,19 @@ tryAllocUniv = Univ . tryAllocLeanValue lean_univ_del_ptr
   , `OutExceptionPtr'
   } -> `Bool' #}
 
+-- | A universe parameter of the given name.
+paramUniv :: Name -> Univ
+paramUniv x = tryAllocUniv $ lean_univ_mk_param x
+
 {#fun unsafe lean_univ_mk_param
   { `Name'
   , `OutUnivPtr'
   , `OutExceptionPtr'
   } -> `Bool' #}
+
+-- | A global universe with the given name.
+globalUniv :: Name -> Univ
+globalUniv x = tryAllocUniv $ lean_univ_mk_global x
 
 {#fun unsafe lean_univ_mk_global
   { `Name'
@@ -106,12 +147,59 @@ tryAllocUniv = Univ . tryAllocLeanValue lean_univ_del_ptr
   , `OutExceptionPtr'
   } -> `Bool' #}
 
+-- | A universe meta-variable with the given name.
+metaUniv :: Name -> Univ
+metaUniv x = tryAllocUniv $ lean_univ_mk_meta x
 
 {#fun unsafe lean_univ_mk_meta
   { `Name'
   , `OutUnivPtr'
   , `OutExceptionPtr'
   } -> `Bool' #}
+
+------------------------------------------------------------------------
+-- Equality and comparison of universes.
+
+instance Eq Univ where
+  (==) = eqUniv
+
+-- | Return whether two universes are equal.
+eqUniv :: Univ -> Univ -> Bool
+eqUniv x y = tryGetBool $ lean_univ_eq x y
+
+{#fun unsafe lean_univ_eq
+  { `Univ'
+  , `Univ'
+  , id `Ptr CInt'
+  , `OutExceptionPtr'
+  } -> `Bool' #}
+
+-- | @geqUniv x y@ returns @true@ if @y@ is a larger universe level
+-- than @x@ for all possible assignments to the variables in the
+-- @x@ and @y@.
+geqUniv :: Univ -> Univ -> Bool
+geqUniv x y = tryGetBool $ lean_univ_geq x y
+
+{#fun unsafe lean_univ_geq
+  { `Univ'
+  , `Univ'
+  , id `Ptr CInt'
+  , `OutExceptionPtr'
+  } -> `Bool' #}
+
+------------------------------------------------------------------------
+-- Univ instance
+
+-- | Show a universe.
+showUniv :: Univ -> String
+showUniv u = tryAllocString $ lean_univ_to_string u
+
+-- | Show a universe with the given options.
+showUnivUsing :: Univ -> Options -> String
+showUnivUsing u options = tryAllocString $ lean_univ_to_string_using u options
+
+instance Show Univ where
+  show = showUniv
 
 {#fun unsafe lean_univ_to_string
   { `Univ'
@@ -126,26 +214,36 @@ tryAllocUniv = Univ . tryAllocLeanValue lean_univ_del_ptr
   , `OutExceptionPtr'
   } -> `Bool' #}
 
+------------------------------------------------------------------------
+-- Univ Num instance
+
+-- This instance is only so that we can describe explicit
+-- universe levels using integer literals.  All other methods will throw an
+-- error if called.
+instance Num Univ where
+  (+) = error "(+) is undefined on Lean universe levels"
+  (-) = error "(-) is undefined on Lean universe levels"
+  (*) = error "(*) is undefined on Lean universe levels"
+  abs x = x
+  signum = error "signum is undefined on Lean universe levels"
+  negate = error "Lean universe levels cannot be negated."
+
+  fromInteger i0 | i0 < 0 = error "Universes cannot be negative."
+                 | otherwise = go zeroUniv i0
+    where -- Make sure first argument is evaluated
+          go r _ | seq r False = error "unexpected"
+          go r 0 = r
+          go r i = go (succUniv r) i
+
+------------------------------------------------------------------------
+-- View
+
 {#enum lean_univ_kind as UnivKind { upcaseFirstLetter }
          deriving (Eq)#}
 
 {#fun pure unsafe lean_univ_get_kind
   { `Univ'
   } -> `UnivKind' #}
-
-{#fun unsafe lean_univ_eq
-  { `Univ'
-  , `Univ'
-  , id `Ptr CInt'
-  , `OutExceptionPtr'
-  } -> `Bool' #}
-
-{#fun unsafe lean_univ_geq
-  { `Univ'
-  , `Univ'
-  , id `Ptr CInt'
-  , `OutExceptionPtr'
-  } -> `Bool' #}
 
 {#fun unsafe lean_univ_get_pred
   { `Univ'
@@ -171,43 +269,6 @@ tryAllocUniv = Univ . tryAllocLeanValue lean_univ_del_ptr
   , `OutExceptionPtr'
   } -> `Bool' #}
 
-{#fun unsafe lean_univ_normalize
-  { `Univ'
-  , `OutUnivPtr'
-  , `OutExceptionPtr'
-  } -> `Bool' #}
-
-{-
-{#fun unsafe lean_univ_instantiate
-  { `Univ'
-  , `Word32'
-  , `OutNamePtr'
-  , `OutUnivPtr'
-  , `OutUnivPtr'
-  , `OutExceptionPtr'
-  } -> `Bool' #}
--}
-
-eqUniv :: Univ -> Univ -> Bool
-eqUniv x y = tryGetBool $ lean_univ_eq x y
-
-geqUniv :: Univ -> Univ -> Bool
-geqUniv x y = tryGetBool $ lean_univ_geq x y
-
-instance Eq Univ where
-  (==) = eqUniv
-
--- | Shwo a universe.
-showUniv :: Univ -> String
-showUniv u = tryAllocString $ lean_univ_to_string u
-
--- | Show a universe with the given options.
-showUnivUsing :: Univ -> Options -> String
-showUnivUsing u options = tryAllocString $ lean_univ_to_string_using u options
-
-instance Show Univ where
-  show = showUniv
-
 -- | A view of a universe.
 data UnivView
    = UnivZero
@@ -226,6 +287,7 @@ data UnivView
      -- ^ Meta variable with the given name.
   deriving (Show)
 
+-- | Create a view of the universe.
 viewUniv :: Univ -> UnivView
 viewUniv x =
   case lean_univ_get_kind x of
@@ -241,18 +303,131 @@ viewUniv x =
    LEAN_UNIV_GLOBAL -> UnivGlobal (tryAllocName $ lean_univ_get_name x)
    LEAN_UNIV_META   -> UnivMeta   (tryAllocName $ lean_univ_get_name x)
 
+------------------------------------------------------------------------
+-- Normalize
+
+{#fun unsafe lean_univ_normalize
+  { `Univ'
+  , `OutUnivPtr'
+  , `OutExceptionPtr'
+  } -> `Bool' #}
+
 -- | Return the normal form for a universe.
 normalizeUniv :: Univ -> Univ
 normalizeUniv x = tryAllocUniv $ lean_univ_normalize x
 
-{-
+------------------------------------------------------------------------
+-- Univ Lists
+
+-- | Definition for liss of universes.
+newtype instance List Univ = ListUniv (ForeignPtr (List Univ))
+
+-- | A list of Lean universe levels.
+{#pointer lean_list_univ as ListUniv foreign newtype nocode#}
+{#pointer lean_list_univ as ListUnivPtr -> ListUniv #}
+{#pointer *lean_list_univ as OutListUnivPtr -> ListUnivPtr #}
+
+-- Code for List Univ
+type ListUniv = List Univ
+
+withListUniv :: List Univ -> (Ptr (List Univ) -> IO a) -> IO a
+withListUniv (ListUniv p) = withForeignPtr p
+
+-- | Call a C layer function that attempts to allocate a new universe and is pure.
+tryAllocListUniv :: LeanPartialFn ListUnivPtr -> ListUniv
+tryAllocListUniv = ListUniv . tryAllocLeanValue lean_list_univ_del_ptr
+
+foreign import ccall "&lean_list_univ_del"
+  lean_list_univ_del_ptr :: FunPtr (ListUnivPtr -> IO ())
+
+------------------------------------------------------------------------
+-- ListUniv Eq instance
+
+instance Eq (List Univ) where
+  x == y = tryGetBool $ lean_list_univ_eq x y
+
+{#fun unsafe lean_list_univ_eq
+   { `ListUniv'
+   , `ListUniv'
+   , id `Ptr CInt'
+   , `OutExceptionPtr'
+   } -> `Bool' #}
+
+------------------------------------------------------------------------
+-- ListUniv IsListIso instance
+
+instance IsListIso (List Univ) Univ where
+  nil = tryAllocListUniv $ lean_list_univ_mk_nil
+  h <| r = tryAllocListUniv $ lean_list_univ_mk_cons h r
+
+  viewList l =
+    if lean_list_univ_is_cons l then
+      tryAllocUniv (lean_list_univ_head l)
+        :< tryAllocListUniv (lean_list_univ_tail l)
+    else
+      Nil
+
+{#fun unsafe lean_list_univ_mk_nil
+   { `OutListUnivPtr'
+   , `OutExceptionPtr'
+   } -> `Bool' #}
+
+{#fun unsafe lean_list_univ_mk_cons
+   { `Univ'
+   , `ListUniv'
+   , `OutListUnivPtr'
+   , `OutExceptionPtr'
+   } -> `Bool' #}
+
+{#fun pure unsafe lean_list_univ_is_cons
+   { `ListUniv'
+   } -> `Bool' #}
+
+{#fun unsafe lean_list_univ_head
+   { `ListUniv'
+   , `OutUnivPtr'
+   , `OutExceptionPtr'
+   } -> `Bool' #}
+
+{#fun unsafe lean_list_univ_tail
+   { `ListUniv'
+   , `OutListUnivPtr'
+   , `OutExceptionPtr'
+   } -> `Bool' #}
+
+------------------------------------------------------------------------
+-- ListUniv IsList instance
+
+instance IsList (List Univ) where
+  type Item ListUniv = Univ
+  fromList = fromListDefault
+  toList = toListOf traverseList
+
+------------------------------------------------------------------------
+-- ListUniv Show instance
+
+instance Show (List Univ) where
+  showsPrec _ l = showList (toList l)
+
+------------------------------------------------------------------------
+-- Instantiate
+
 -- | Instantiate the parameters with universes
-instantiateUniv :: Univ -> [(Name, Univ)] -> Univ
-instantiateUniv x args = tryAllocUniv $ \r_ptr e_ptr -> do
-  let sz = length args
-  when (sz > fromIntegral (maxBound :: Word32)) $ do
-    throw $ leanKernelException "Lean does not support instantiating more than 2^32 paramters universe parameters."
-  withForeignArray withName sz (fst <$> args) $ \name_array -> do
-    withForeignArray withUniv sz (snd <$> args) $ \univ_array -> do
-       lean_univ_instantiate x (fromIntegral sz) name_array univ_array r_ptr e_ptr
--}
+instantiateUniv :: Univ -> [(Name,Univ)] -> Univ
+instantiateUniv u bindings =
+  instantiateUniv2 u (fromList (fst <$> bindings)) (fromList (snd <$> bindings))
+
+-- | Instantiate the parameters with universes using separate lists for names and levels.
+instantiateUniv2 :: Univ
+                 -> List Name
+                 -> List Univ
+                 -> Univ
+instantiateUniv2 u nms args = tryAllocUniv $ lean_univ_instantiate u nms args
+
+{#fun unsafe lean_univ_instantiate
+  { `Univ'
+  , `ListName'
+  , `ListUniv'
+  , `OutUnivPtr'
+  , `OutExceptionPtr'
+  } -> `Bool' #}
