@@ -184,7 +184,7 @@ newtype instance List Name = ListName (ForeignPtr (List Name))
 {#pointer lean_list_name as ListNamePtr -> ListName #}
 {#pointer *lean_list_name as OutListNamePtr -> ListNamePtr #}
 
--- Code for List Name
+-- Synonym for List Name
 type ListName = List Name
 
 withListName :: List Name -> (Ptr (List Name) -> IO a) -> IO a

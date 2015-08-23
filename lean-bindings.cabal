@@ -38,6 +38,10 @@ library
     Language.Lean.Internal.Exception
     Language.Lean.Internal.Name
     Language.Lean.Internal.Options
+    Language.Lean.Internal.Univ
+    Language.Lean.Internal.Expr
+    Language.Lean.Internal.Decl
+    Language.Lean.Internal.Env
     Language.Lean.Exception
     Language.Lean.List
     Language.Lean.Name
