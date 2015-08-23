@@ -1,7 +1,10 @@
 *~
 .cabal-sandbox
+.projectile
 .stack-work
 .lean_trace
+cabal.config
 cabal.sandbox.config
 deps
 dist
+stack.yaml
