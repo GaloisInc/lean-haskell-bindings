@@ -242,7 +242,7 @@ instance Num Univ where
     where -- Make sure first argument is evaluated
           go r _ | seq r False = error "unexpected"
           go r 0 = r
-          go r i = go (succUniv r) i
+          go r i = go (succUniv r) (i-1)
 
 ------------------------------------------------------------------------
 -- View
