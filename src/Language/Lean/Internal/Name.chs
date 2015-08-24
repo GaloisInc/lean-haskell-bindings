@@ -58,6 +58,11 @@ instance Eq Name where
 
 {#fun pure unsafe lean_name_eq { `Name' , `Name' } -> `Bool' #}
 
+instance Ord Name where
+   x <= y = not (lean_name_quick_lt y x)
+
+{#fun pure unsafe lean_name_quick_lt { `Name' , `Name' } -> `Bool' #}
+
 instance Show Name where
   show nm = tryAllocString $ lean_name_to_string nm
 

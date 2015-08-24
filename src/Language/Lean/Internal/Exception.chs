@@ -16,6 +16,7 @@ module Language.Lean.Internal.Exception
   , tryAllocString
   , tryGetBool
   , tryGetDouble
+  , tryGetEnum
   , tryGetInt
   , tryGetUInt
   , tryAllocLeanValue
@@ -149,6 +150,11 @@ tryGetInt = tryLeanPartialFn $ return . coerce
 -- | Try to run a Lean partial function that returns a double.
 tryGetDouble :: LeanPartialFn CDouble -> Double
 tryGetDouble = tryLeanPartialFn $ return . coerce
+
+-- | Try to run a Lean partial function that returns an enum type
+tryGetEnum :: (Enum a) => LeanPartialFn CInt -> a
+tryGetEnum = tryLeanPartialFn $ return . toEnum . fromIntegral
+
 
 -- | Try to run a Lean partial function that returns a string.
 tryAllocString :: LeanPartialFn CString -> String
