@@ -12,6 +12,7 @@ module Language.Lean.Internal.Name
     -- * Internal declarations
   , NamePtr
   , OutNamePtr
+  , allocName
   , tryAllocName
   , withName
   , ListName
@@ -48,6 +49,10 @@ import Language.Lean.List
 
 foreign import ccall "&lean_name_del"
   lean_name_del_ptr :: FunPtr (NamePtr -> IO ())
+
+-- | Create a name from a name pointer.
+allocName :: NamePtr -> IO Name
+allocName ptr = Name <$> newForeignPtr lean_name_del_ptr ptr
 
 -- | Call a C layer function that attempts to allocate a
 -- new name.

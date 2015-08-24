@@ -24,6 +24,7 @@ module Language.Lean.Internal.Decl
   , withEnv
   , DeclPtr
   , OutDeclPtr
+  , allocDecl
   , tryAllocDecl
   , withDecl
   , CertDeclPtr
@@ -66,6 +67,10 @@ import Language.Lean.List
 {#pointer lean_decl as Decl foreign newtype#}
 {#pointer lean_decl as DeclPtr -> Decl#}
 {#pointer *lean_decl as OutDeclPtr -> DeclPtr#}
+
+-- | Create a declaration from a declaration pointer.
+allocDecl :: DeclPtr -> IO Decl
+allocDecl ptr = Decl <$> newForeignPtr lean_decl_del_ptr ptr
 
 -- | Call a C layer function that attempts to allocate a
 -- new declaration.
@@ -264,4 +269,3 @@ check e d = tryAllocCertDecl $ lean_decl_check e d
 
 {#fun unsafe lean_decl_check
   { `Env', `Decl', `OutCertDeclPtr', `OutExceptionPtr' } -> `Bool' #}
-

@@ -38,6 +38,7 @@ module Language.Lean.Internal.Univ
   , UnivPtr
   , OutUnivPtr
   , withUniv
+  , allocUniv
   , tryAllocUniv
   , ListUniv
   , ListUnivPtr
@@ -87,6 +88,10 @@ withForeignArray' withPtr arrayPtr (h:r) action = do
 
 foreign import ccall "&lean_univ_del"
   lean_univ_del_ptr :: FunPtr (UnivPtr -> IO ())
+
+-- | Create a universe level from a pointer.
+allocUniv :: UnivPtr -> IO Univ
+allocUniv ptr = Univ <$> newForeignPtr lean_univ_del_ptr ptr
 
 -- | Call a C layer function that attempts to allocate a new universe and is pure.
 tryAllocUniv :: LeanPartialFn UnivPtr -> Univ
