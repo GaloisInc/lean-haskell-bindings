@@ -16,6 +16,8 @@ module Language.Lean.Internal.Name
   , withName
   , ListName
   , ListNamePtr
+  , OutListNamePtr
+  , tryAllocListName
   , withListName
   ) where
 

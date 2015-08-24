@@ -5,7 +5,7 @@
 module Language.Lean.Internal.Expr
   ( MacroDef
   , Expr
-    -- Constructors
+    -- * Constructors
   , varExpr
   , sortExpr
   , constExpr
@@ -16,7 +16,7 @@ module Language.Lean.Internal.Expr
   , localExpr
   , localExtExpr
   , metavarExpr
-    -- View
+    -- * View
   , ExprView(..)
   , viewExpr
     -- * Internal interface
