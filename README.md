@@ -1,3 +1,13 @@
+<table>
+  <tr>
+    <th>License</th><th>Ubuntu</th>
+  </tr>
+  <tr>
+    <td><a href="LICENSE"><img src="https://img.shields.io/badge/license-APACHE_2-green.svg?dummy" title="License"/></a></td>
+    <td><a href="https://travis-ci.org/GaloisInc/lean-haskell-bindings"><img src="https://travis-ci.org/GaloisInc/lean-haskell-bindings.svg?branch=master" title="Ubuntu 12.04 LTS 64bit, g++-4.9"/></a></td>
+  </tr>
+</table>
+
 This contains Haskell bindings to the lean theorem prover.
 
 To build this, you must build lean with shared libraries, and run `cabal install`.
