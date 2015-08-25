@@ -1,0 +1,5 @@
+language: haskell
+ghc:
+- '7.8'
+install:
+- ./scripts/get_dependencies.sh
