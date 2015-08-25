@@ -3,7 +3,6 @@
 module Tests.Univ (univTests) where
 
 import Control.Lens
-import Control.Monad
 
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -41,7 +40,6 @@ u = Lean.succUniv (Lean.maxUniv (Lean.paramUniv "l_1") 1)
 
 testMax :: Assertion
 testMax = assert $ Lean.viewUniv (Lean.maxUniv p1 1) == Lean.UnivMax p1 1
-
 
 testIMax :: Assertion
 testIMax = assert $ Lean.viewUniv (Lean.imaxUniv 1 p1) == Lean.UnivIMax 1 p1

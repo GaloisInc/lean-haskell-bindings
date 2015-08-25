@@ -55,7 +55,8 @@ library
     Language.Lean.Options
     Language.Lean.Univ
 
-executable test
+test-suite test
+  type: exitcode-stdio-1.0
   build-depends:
     base,
     lean-bindings,
@@ -63,6 +64,8 @@ executable test
     tasty,
     tasty-ant-xml,
     tasty-hunit
+  extra-libraries:
+    leanshared
 
   ghc-options: -Wall
   hs-source-dirs: test
