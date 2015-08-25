@@ -17,11 +17,11 @@ fi
 mkdir -p build
 pushd build > /dev/null
 
-if [ ! -f build.ninja ]; then
-    cmake -DCMAKE_BUILD_TYPE=DEBUG -G Ninja ../src
+if [ ! -f Makefile ]; then
+    cmake -DCMAKE_BUILD_TYPE=DEBUG ../src
 fi
 
-ninja libleanshared.dylib
+make libleanshared.dylib
 popd > /dev/null # deps/lean/build
 popd > /dev/null # deps/lean
 popd > /dev/null # deps
