@@ -175,11 +175,7 @@ metaUniv x = tryAllocUniv $ lean_univ_mk_meta x
 -- Equality and comparison of universes.
 
 instance Eq Univ where
-  (==) = eqUniv
-
--- | Return whether two universes are equal.
-eqUniv :: Univ -> Univ -> Bool
-eqUniv x y = tryGetBool $ lean_univ_eq x y
+  x == y = tryGetBool $ lean_univ_eq x y
 
 {#fun unsafe lean_univ_eq
   { `Univ'
@@ -187,6 +183,17 @@ eqUniv x y = tryGetBool $ lean_univ_eq x y
   , id `Ptr CInt'
   , `OutExceptionPtr'
   } -> `Bool' #}
+
+instance Ord Univ where
+  x <= y = not (tryGetBool $ y `lean_univ_quick_lt` x)
+
+{#fun unsafe lean_univ_quick_lt
+  { `Univ'
+  , `Univ'
+  , id `Ptr CInt'
+  , `OutExceptionPtr'
+  } -> `Bool' #}
+
 
 -- | @geqUniv x y@ returns @true@ if @y@ is a larger universe level
 -- than @x@ for all possible assignments to the variables in the
@@ -268,7 +275,7 @@ data UnivView
      -- ^ Reference to a global universe.
    | UnivMeta !Name
      -- ^ Meta variable with the given name.
-  deriving (Show)
+  deriving (Eq, Ord, Show)
 
 -- | Create a view of the universe.
 viewUniv :: Univ -> UnivView

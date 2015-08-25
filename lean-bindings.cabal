@@ -33,7 +33,6 @@ library
   else
      build-depends: integer-gmp >= 1.0.0.0
 
-
   extra-libraries:
     leanshared
   hs-source-dirs: src
