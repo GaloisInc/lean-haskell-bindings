@@ -35,7 +35,7 @@ $CABAL install alex
 $CABAL install happy
 
 cabal install c2hs
-cabal install --only-dependencies
+cabal install --only-dependencies --enable-tests
 
 ########################################################################
 ## Lean
