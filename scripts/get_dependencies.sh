@@ -1,6 +1,45 @@
 #!/bin/bash
 set -ex
 
+########################################################################
+## Cabal packages
+
+if [ ! -f cabal.config ]; then
+    wget https://www.stackage.org/lts/cabal.config -O - > cabal.config
+fi
+
+ls -l /opt/ghc/7.10.2
+
+export PATH="$PWD/.cabal-sandbox/bin:$PATH"
+export PATH="/opt/ghc/7.10.2/bin:$PATH"
+which ghc
+
+cabal sandbox init
+cabal update
+
+ls -la .
+ls -l .cabal-sandbox || echo "sandbox not found"
+ls -l .cabal-sandbox/bin || echo "not found"
+
+type cabal
+type alex
+
+cabal install -v cabal-install
+CABAL=$(which cabal)
+
+type cabal
+cabal --version
+$CABAL --version
+
+$CABAL install alex
+$CABAL install happy
+
+cabal install c2hs
+cabal install --only-dependencies
+
+########################################################################
+## Lean
+
 mkdir -p deps
 
 pushd deps > /dev/null
@@ -13,33 +52,22 @@ else
     pushd lean > /dev/null
 fi
 
-
 mkdir -p build
 pushd build > /dev/null
 
-which clang-3.5 || echo "not found"
-which clang-3.6 || echo "not found"
-which clang || echo "not found"
-
 if [ ! -f Makefile ]; then
-    cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_CXX_COMPILER=clang-3.6 ../src
+    cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_CXX_COMPILER=g++-4.9 ../src
 fi
 
-make libleanshared.dylib
+make leanshared || cat Makefile
 popd > /dev/null # deps/lean/build
 popd > /dev/null # deps/lean
 popd > /dev/null # deps
 
+########################################################################
+## cabal.config
 
-if [ ! -f cabal.config ]; then
-cat <<EOF > cabal.config
+cat <<EOF >> cabal.config
 extra-include-dirs: $PWD/deps/lean/src/api
 extra-lib-dirs:     $PWD/deps/lean/build
 EOF
-
-    wget https://www.stackage.org/lts/cabal.config -O - >> cabal.config
-fi
-cabal sandbox init
-cabal update
-cabal install c2hs
-cabal install --only-dependencies
