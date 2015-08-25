@@ -136,7 +136,7 @@ optionsSet :: (Options -> Name -> a -> LeanPartialFn OptionsPtr)
            -> Name
            -> a
            -> Options
-optionsSet leanSetter o nm v = tryAllocOptions $ leanSetter o nm v
+optionsSet leanSetter o nm v = tryGetOptions $ leanSetter o nm v
 
 -- | Lens for getting and setting boolean options without
 --   rewriting equivalent values
@@ -178,5 +178,5 @@ doubleOption = simpleLensEq optGet optSet
 stringOption :: Name -> Simple Lens Options String
 stringOption = simpleLensEq optGet optSet
   where
-    optGet = optionsGet tryAllocString lean_options_get_string
+    optGet = optionsGet tryGetString lean_options_get_string
     optSet = optionsSet lean_options_set_string

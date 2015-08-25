@@ -1,6 +1,7 @@
 {-# LANGUAGE DoAndIfThenElse #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE StandaloneDeriving #-}
 module Language.Lean.Internal.Exception
   ( LeanException(..)
@@ -11,18 +12,26 @@ module Language.Lean.Internal.Exception
   , throwLeanException
   , leanKernelException
   , leanOtherException
-    -- * Partial functions
+    -- * Partial operations
+  , LeanPartialAction
+  , runLeanPartialAction
   , LeanPartialFn
+  , IsLeanValue(..)
+    -- * Functions that return a result in IO
   , tryAllocString
+  , tryAllocLeanValue
+    -- * Functions that are pure.
+  , tryGetString
   , tryGetBool
   , tryGetDouble
   , tryGetEnum
   , tryGetInt
   , tryGetUInt
-  , tryAllocLeanValue
+  , tryGetLeanValue
   ) where
 
 import Control.Exception
+import Control.Monad (when)
 import Data.Coerce (coerce)
 import Data.Typeable
 import Foreign
@@ -110,60 +119,90 @@ getLeanExceptionKind ptr = do
 ------------------------------------------------------------------------
 -- Partial functions
 
--- | A lean partial function ia
+-- | A lean partial function is an action that may fail
+type LeanPartialAction = (Ptr ExceptionPtr -> IO Bool)
+
+runLeanPartialAction :: LeanPartialAction
+                     -> IO ()
+runLeanPartialAction action =
+  alloca $ \ex_ptr -> do
+    success <- action ex_ptr
+    when (not success) $ do
+      throwLeanException =<< peek ex_ptr
+{-# INLINE runLeanPartialAction #-}
+
+-- | A lean partial function is a function that returns a value of type @a@, but
+-- may fail.
 type LeanPartialFn a = (Ptr a -> Ptr ExceptionPtr -> IO Bool)
 
 runLeanPartialFn :: Storable a
                  => LeanPartialFn a
                  -> IO a
 runLeanPartialFn alloc_fn =
-  alloca $ \ret_ptr ->
-    alloca $ \ex_ptr -> do
-      success <- alloc_fn ret_ptr ex_ptr
-      if success then
-        peek ret_ptr
-      else
-        throwLeanException =<< peek ex_ptr
-
+  alloca $ \ret_ptr -> do
+    runLeanPartialAction (alloc_fn ret_ptr)
+    peek ret_ptr
 {-# INLINE runLeanPartialFn #-}
 
 tryLeanPartialFn :: Storable a
+                     => (a -> IO r)
+                     -> LeanPartialFn a
+                     -> IO r
+tryLeanPartialFn = \next alloc_fn -> runLeanPartialFn alloc_fn >>= next
+{-# INLINE tryLeanPartialFn #-}
+
+tryPureLeanPartialFn :: Storable a
                  => (a -> IO r)
                  -> LeanPartialFn a
                  -> r
-tryLeanPartialFn next alloc_fn = unsafePerformIO $ do
-  runLeanPartialFn alloc_fn >>= next
-{-# INLINE tryLeanPartialFn #-}
+tryPureLeanPartialFn next = unsafePerformIO . tryLeanPartialFn  next
+{-# INLINE tryPureLeanPartialFn #-}
 
 -- | Try to run a Lean partial function that returns a Boolean argument.
 tryGetBool :: LeanPartialFn CInt -> Bool
-tryGetBool = tryLeanPartialFn (return . toEnum . fromIntegral)
+tryGetBool = tryPureLeanPartialFn (return . toEnum . fromIntegral)
 
 -- | Try to run a Lean partial function that returns a unsigned integer.
 tryGetUInt :: LeanPartialFn CUInt -> Word32
-tryGetUInt = tryLeanPartialFn $ return . coerce
+tryGetUInt = tryPureLeanPartialFn $ return . coerce
 
 -- | Try to run a Lean partial function that returns a signed integer.
 tryGetInt :: LeanPartialFn CInt -> Int32
-tryGetInt = tryLeanPartialFn $ return . coerce
+tryGetInt = tryPureLeanPartialFn $ return . coerce
 
 -- | Try to run a Lean partial function that returns a double.
 tryGetDouble :: LeanPartialFn CDouble -> Double
-tryGetDouble = tryLeanPartialFn $ return . coerce
+tryGetDouble = tryPureLeanPartialFn $ return . coerce
 
 -- | Try to run a Lean partial function that returns an enum type
 tryGetEnum :: (Enum a) => LeanPartialFn CInt -> a
-tryGetEnum = tryLeanPartialFn $ return . toEnum . fromIntegral
-
+tryGetEnum = tryPureLeanPartialFn $ return . toEnum . fromIntegral
 
 -- | Try to run a Lean partial function that returns a string.
-tryAllocString :: LeanPartialFn CString -> String
+tryAllocString :: LeanPartialFn CString -> IO String
 tryAllocString = tryLeanPartialFn getLeanString
+
+-- | Try to run a Lean partial function that returns a string.
+tryGetString :: LeanPartialFn CString -> String
+tryGetString = tryPureLeanPartialFn getLeanString
+
+class IsLeanValue v p where
+  mkLeanValue :: Ptr p -> IO v
 
 -- | Try to run a Lean partial function that returns a Lean value
 -- that will need to be freed.
-tryAllocLeanValue :: FunPtr (Ptr a -> IO ())
+tryAllocLeanValue :: IsLeanValue a p
+                  => LeanPartialFn (Ptr p)
+                  -> IO a
+tryAllocLeanValue = tryLeanPartialFn mkLeanValue
+
+-- | Try to run a Lean partial function that returns a Lean value
+-- that will need to be freed.
+--
+-- Other than allocating a new value or exception, the function
+-- must be pure
+tryGetLeanValue :: FunPtr (Ptr a -> IO ())
                      -- ^ Pointer to function that releases resource.
                   -> LeanPartialFn (Ptr a)
                   -> ForeignPtr a
-tryAllocLeanValue free_fn = tryLeanPartialFn $ newForeignPtr free_fn
+tryGetLeanValue free_fn = tryPureLeanPartialFn $ newForeignPtr free_fn

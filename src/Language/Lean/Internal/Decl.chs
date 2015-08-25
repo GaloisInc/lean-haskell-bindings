@@ -25,11 +25,11 @@ module Language.Lean.Internal.Decl
   , DeclPtr
   , OutDeclPtr
   , allocDecl
-  , tryAllocDecl
+  , tryGetDecl
   , withDecl
   , CertDeclPtr
   , OutCertDeclPtr
-  , tryAllocCertDecl
+  , tryGetCertDecl
   , withCertDecl
   ) where
 
@@ -74,9 +74,9 @@ allocDecl ptr = Decl <$> newForeignPtr lean_decl_del_ptr ptr
 
 -- | Call a C layer function that attempts to allocate a
 -- new declaration.
-tryAllocDecl :: LeanPartialFn DeclPtr -> Decl
-tryAllocDecl mk =
-  Decl $ tryAllocLeanValue lean_decl_del_ptr $ mk
+tryGetDecl :: LeanPartialFn DeclPtr -> Decl
+tryGetDecl mk =
+  Decl $ tryGetLeanValue lean_decl_del_ptr $ mk
 
 foreign import ccall "&lean_decl_del"
   lean_decl_del_ptr :: FunPtr (DeclPtr -> IO ())
@@ -92,9 +92,9 @@ foreign import ccall "&lean_decl_del"
 
 -- | Call a C layer function that attempts to allocate a
 -- new certified declaration.
-tryAllocCertDecl :: LeanPartialFn CertDeclPtr -> CertDecl
-tryAllocCertDecl mk =
-  CertDecl $ tryAllocLeanValue lean_cert_decl_del_ptr $ mk
+tryGetCertDecl :: LeanPartialFn CertDeclPtr -> CertDecl
+tryGetCertDecl mk =
+  CertDecl $ tryGetLeanValue lean_cert_decl_del_ptr $ mk
 
 foreign import ccall "&lean_cert_decl_del"
   lean_cert_decl_del_ptr :: FunPtr (CertDeclPtr -> IO ())
@@ -106,7 +106,7 @@ foreign import ccall "&lean_cert_decl_del"
 -- @params@, and type @tp@. Note that declartions are universe
 -- polymorphic in Lean.
 axiomDecl :: Name -> List Name -> Expr -> Decl
-axiomDecl nm params tp = tryAllocDecl $ lean_decl_mk_axiom nm params tp
+axiomDecl nm params tp = tryGetDecl $ lean_decl_mk_axiom nm params tp
 
 {#fun unsafe lean_decl_mk_axiom
   { `Name'
@@ -120,7 +120,7 @@ axiomDecl nm params tp = tryAllocDecl $ lean_decl_mk_axiom nm params tp
 -- @params@, and type @tp@. Constants and axioms in Lean are
 -- essentially the same thing.
 constDecl :: Name -> List Name -> Expr -> Decl
-constDecl nm params tp = tryAllocDecl $ lean_decl_mk_const nm params tp
+constDecl nm params tp = tryGetDecl $ lean_decl_mk_const nm params tp
 
 {#fun unsafe lean_decl_mk_const
   { `Name'
@@ -135,7 +135,7 @@ constDecl nm params tp = tryAllocDecl $ lean_decl_mk_const nm params tp
 -- @o@ indicating whether normalization will lazily unfold it or
 -- not.
 defDecl :: Name -> List Name -> Expr -> Expr -> Word32 -> Bool -> Decl
-defDecl nm params tp v h o = tryAllocDecl $ lean_decl_mk_def nm params tp v h o
+defDecl nm params tp v h o = tryGetDecl $ lean_decl_mk_def nm params tp v h o
 
 {#fun unsafe lean_decl_mk_def
   { `Name'
@@ -154,7 +154,7 @@ defDecl nm params tp v h o = tryAllocDecl $ lean_decl_mk_def nm params tp v h o
 -- is computed using information from the environment.
 defWithDecl :: Env -> Name -> List Name -> Expr -> Expr -> Bool -> Decl
 defWithDecl e nm params tp v o =
-  tryAllocDecl $ lean_decl_mk_def_with e nm params tp v o
+  tryGetDecl $ lean_decl_mk_def_with e nm params tp v o
 
 {#fun unsafe lean_decl_mk_def_with
   { `Env'
@@ -174,7 +174,7 @@ defWithDecl e nm params tp v o =
 -- theroem if there is nothing else to be done when checking whether
 -- two terms are definitionally equal or not.
 thmDecl :: Name -> List Name -> Expr -> Expr -> Word32 -> Decl
-thmDecl nm params tp v h = tryAllocDecl $ lean_decl_mk_thm nm params tp v h
+thmDecl nm params tp v h = tryGetDecl $ lean_decl_mk_thm nm params tp v h
 
 {#fun unsafe lean_decl_mk_thm
   { `Name'
@@ -194,7 +194,7 @@ thmDecl nm params tp v h = tryAllocDecl $ lean_decl_mk_thm nm params tp v h
 -- two terms are definitionally equal or not. The definitional height
 -- is computed from environment.
 thmWithDecl :: Env -> Name -> List Name -> Expr -> Expr -> Decl
-thmWithDecl e nm params tp v = tryAllocDecl $ lean_decl_mk_thm_with e nm params tp v
+thmWithDecl e nm params tp v = tryGetDecl $ lean_decl_mk_thm_with e nm params tp v
 
 {#fun unsafe lean_decl_mk_thm_with
   { `Env'
@@ -210,19 +210,19 @@ thmWithDecl e nm params tp v = tryAllocDecl $ lean_decl_mk_thm_with e nm params 
 -- Projections
 
 declName :: Decl -> Name
-declName d = tryAllocName $ lean_decl_get_name d
+declName d = tryGetName $ lean_decl_get_name d
 
 {#fun unsafe lean_decl_get_name
   { `Decl', `OutNamePtr', `OutExceptionPtr' } -> `Bool' #}
 
 declUnivParams :: Decl -> List Name
-declUnivParams d = tryAllocListName $ lean_decl_get_univ_params d
+declUnivParams d = tryGetListName $ lean_decl_get_univ_params d
 
 {#fun unsafe lean_decl_get_univ_params
   { `Decl', `OutListNamePtr', `OutExceptionPtr' } -> `Bool' #}
 
 declType :: Decl -> Expr
-declType d = tryAllocExpr $ lean_decl_get_type d
+declType d = tryGetExpr $ lean_decl_get_type d
 
 {#fun unsafe lean_decl_get_type
   { `Decl', `OutExprPtr', `OutExceptionPtr' } -> `Bool' #}
@@ -239,11 +239,11 @@ viewDecl x =
     LEAN_DECL_CONST -> DeclConst
     LEAN_DECL_AXIOM -> DeclAxiom
     LEAN_DECL_DEF ->
-      DeclDef (tryAllocExpr $ lean_decl_get_value x)
+      DeclDef (tryGetExpr $ lean_decl_get_value x)
               (tryGetUInt $ lean_decl_get_height x)
               (tryGetBool $ lean_decl_get_conv_opt x)
     LEAN_DECL_THM ->
-      DeclThm (tryAllocExpr $ lean_decl_get_value x)
+      DeclThm (tryGetExpr $ lean_decl_get_value x)
               (tryGetUInt $ lean_decl_get_height x)
 
 {#enum lean_decl_kind as DeclKind { upcaseFirstLetter }
@@ -265,7 +265,7 @@ viewDecl x =
 -- Certified declarations
 
 check :: Env -> Decl -> CertDecl
-check e d = tryAllocCertDecl $ lean_decl_check e d
+check e d = tryGetCertDecl $ lean_decl_check e d
 
 {#fun unsafe lean_decl_check
   { `Env', `Decl', `OutCertDeclPtr', `OutExceptionPtr' } -> `Bool' #}

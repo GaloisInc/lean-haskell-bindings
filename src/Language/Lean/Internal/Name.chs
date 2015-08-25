@@ -13,12 +13,12 @@ module Language.Lean.Internal.Name
   , NamePtr
   , OutNamePtr
   , allocName
-  , tryAllocName
+  , tryGetName
   , withName
   , ListName
   , ListNamePtr
   , OutListNamePtr
-  , tryAllocListName
+  , tryGetListName
   , withListName
   ) where
 
@@ -56,9 +56,9 @@ allocName ptr = Name <$> newForeignPtr lean_name_del_ptr ptr
 
 -- | Call a C layer function that attempts to allocate a
 -- new name.
-tryAllocName :: LeanPartialFn NamePtr -> Name
-tryAllocName mk_name =
-  Name $ tryAllocLeanValue lean_name_del_ptr $ mk_name
+tryGetName :: LeanPartialFn NamePtr -> Name
+tryGetName mk_name =
+  Name $ tryGetLeanValue lean_name_del_ptr $ mk_name
 
 instance Eq Name where
   (==) = lean_name_eq
@@ -71,7 +71,7 @@ instance Ord Name where
 {#fun pure unsafe lean_name_quick_lt { `Name' , `Name' } -> `Bool' #}
 
 instance Show Name where
-  show nm = tryAllocString $ lean_name_to_string nm
+  show nm = tryGetString $ lean_name_to_string nm
 
 {#fun unsafe lean_name_to_string
   { `Name'
@@ -84,16 +84,16 @@ instance Show Name where
 
 -- | The root "anonymous" name
 anonymousName :: Name
-anonymousName = tryAllocName lean_name_mk_anonymous
+anonymousName = tryGetName lean_name_mk_anonymous
 
 -- | Append a string to a name.
 strName :: Name -> String -> Name
-strName pre r = tryAllocName (lean_name_mk_str pre r)
+strName pre r = tryGetName (lean_name_mk_str pre r)
 
 -- | Append a numeric index to a name.
 -- The name
 idxName :: Name -> Word32 -> Name
-idxName pre i = tryAllocName (lean_name_mk_idx pre i)
+idxName pre i = tryGetName (lean_name_mk_idx pre i)
 
 {#fun unsafe lean_name_mk_anonymous
   { `OutNamePtr'
@@ -133,10 +133,10 @@ viewName nm =
   if lean_name_is_anonymous nm then
     AnonymousName
   else if lean_name_is_str nm then do
-    StringName (tryAllocName $ lean_name_get_prefix nm)
-               (tryAllocString $ lean_name_get_str nm)
+    StringName (tryGetName $ lean_name_get_prefix nm)
+               (tryGetString $ lean_name_get_str nm)
   else assert (lean_name_is_idx nm) $ do
-    IndexName (tryAllocName $ lean_name_get_prefix nm)
+    IndexName (tryGetName $ lean_name_get_prefix nm)
               (tryGetUInt $ lean_name_get_idx nm)
 
 {#fun pure unsafe lean_name_is_anonymous { `Name' } -> `Bool' #}
@@ -203,8 +203,8 @@ withListName :: List Name -> (Ptr (List Name) -> IO a) -> IO a
 withListName (ListName p) = withForeignPtr p
 
 -- | Call a C layer function that attempts to allocate a new universe and is pure.
-tryAllocListName :: LeanPartialFn ListNamePtr -> ListName
-tryAllocListName = ListName . tryAllocLeanValue lean_list_name_del_ptr
+tryGetListName :: LeanPartialFn ListNamePtr -> ListName
+tryGetListName = ListName . tryGetLeanValue lean_list_name_del_ptr
 
 foreign import ccall "&lean_list_name_del"
   lean_list_name_del_ptr :: FunPtr (ListNamePtr -> IO ())
@@ -224,13 +224,13 @@ instance Eq (List Name) where
 -- ListName IsListIso instance
 
 instance IsListIso (List Name) Name where
-  nil = tryAllocListName $ lean_list_name_mk_nil
-  h <| r = tryAllocListName $ lean_list_name_mk_cons h r
+  nil = tryGetListName $ lean_list_name_mk_nil
+  h <| r = tryGetListName $ lean_list_name_mk_cons h r
 
   viewList l =
     if lean_list_name_is_cons l then
-      tryAllocName (lean_list_name_head l)
-        :< tryAllocListName (lean_list_name_tail l)
+      tryGetName (lean_list_name_head l)
+        :< tryGetListName (lean_list_name_tail l)
     else
       Nil
 

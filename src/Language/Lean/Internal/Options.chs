@@ -1,4 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 module Language.Lean.Internal.Options
   ( Options
   , emptyOptions
@@ -6,7 +7,7 @@ module Language.Lean.Internal.Options
     -- * Low level FFI interfaces.
   , OptionsPtr
   , OutOptionsPtr
-  , tryAllocOptions
+  , tryGetOptions
   , withOptions
   ) where
 
@@ -30,12 +31,15 @@ import System.IO.Unsafe
 foreign import ccall "&lean_options_del"
   lean_options_del_ptr :: FunPtr (OptionsPtr -> IO ())
 
+instance IsLeanValue Options Options where
+  mkLeanValue = fmap Options . newForeignPtr lean_options_del_ptr
+
 -- | Call a C layer function that attempts to allocate a
 -- new options
-tryAllocOptions :: LeanPartialFn OptionsPtr
+tryGetOptions :: LeanPartialFn OptionsPtr
                 -> Options
-tryAllocOptions mk_options =
-  Options $ tryAllocLeanValue lean_options_del_ptr $ mk_options
+tryGetOptions mk_options =
+  Options $ tryGetLeanValue lean_options_del_ptr $ mk_options
 
 ------------------------------------------------------------------------
 -- Monoid instance
@@ -46,12 +50,12 @@ instance Monoid Options where
 
 -- | An empty set of options
 emptyOptions :: Options
-emptyOptions = tryAllocOptions lean_options_mk_empty
+emptyOptions = tryGetOptions lean_options_mk_empty
 
 -- | Combine two options where the assignments from the second
 -- argument override the assignments from the first.
 joinOptions :: Options -> Options -> Options
-joinOptions x y = tryAllocOptions $ lean_options_join x y
+joinOptions x y = tryGetOptions $ lean_options_join x y
 
 {#fun unsafe lean_options_mk_empty
   { `OutOptionsPtr'
@@ -81,7 +85,7 @@ instance Show Options where
   show = showOption
 
 showOption :: Options -> String
-showOption x = tryAllocString $ lean_options_to_string x
+showOption x = tryGetString $ lean_options_to_string x
 
 {#fun unsafe lean_options_to_string
   { `Options'

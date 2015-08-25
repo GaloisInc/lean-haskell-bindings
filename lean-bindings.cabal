@@ -31,7 +31,7 @@ library
   if flag(use-integer-simple)
      build-depends: integer-simple
   else
-     build-depends: integer-gmp >= 1.0.0.0
+     build-depends: integer-gmp
 
   extra-libraries:
     leanshared
@@ -42,6 +42,7 @@ library
     Language.Lean
     Language.Lean.Internal.String
     Language.Lean.Internal.Exception
+    Language.Lean.Internal.IOS
     Language.Lean.Internal.Name
     Language.Lean.Internal.Options
     Language.Lean.Internal.Univ

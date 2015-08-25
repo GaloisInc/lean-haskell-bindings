@@ -26,7 +26,7 @@ module Language.Lean.Internal.Env
     -- * Foreign interface
   , EnvPtr
   , OutEnvPtr
-  , tryAllocEnv
+  , tryGetEnv
   , withEnv
   , trustFromUInt
   , trustUInt
@@ -86,9 +86,9 @@ runLeanFold wrapFn allocFn foldFn h e = unsafePerformIO $ do
 
 -- | Call a C layer function that attempts to allocate a
 -- new declaration.
-tryAllocEnv :: LeanPartialFn EnvPtr -> Env
-tryAllocEnv mk =
-  Env $ tryAllocLeanValue lean_env_del_ptr $ mk
+tryGetEnv :: LeanPartialFn EnvPtr -> Env
+tryGetEnv mk =
+  Env $ tryGetLeanValue lean_env_del_ptr $ mk
 
 foreign import ccall "&lean_env_del"
   lean_env_del_ptr :: FunPtr (EnvPtr -> IO ())
@@ -117,7 +117,7 @@ trustHigh = TrustLevel {#const LEAN_TRUST_HIGH#}
 -- @params@, and type @tp@. Note that declartions are universe
 -- polymorphic in Lean.
 stdEnv :: TrustLevel -> Env
-stdEnv lvl = tryAllocEnv $ lean_env_mk_std lvl
+stdEnv lvl = tryGetEnv $ lean_env_mk_std lvl
 
 {#fun unsafe lean_env_mk_std
   { trustUInt `TrustLevel'
@@ -129,7 +129,7 @@ stdEnv lvl = tryAllocEnv $ lean_env_mk_std lvl
 -- @params@, and type @tp@. Note that declartions are universe
 -- polymorphic in Lean.
 hottEnv :: TrustLevel -> Env
-hottEnv lvl = tryAllocEnv $ lean_env_mk_hott lvl
+hottEnv lvl = tryGetEnv $ lean_env_mk_hott lvl
 
 {#fun unsafe lean_env_mk_hott
   { trustUInt `TrustLevel'
@@ -139,7 +139,7 @@ hottEnv lvl = tryAllocEnv $ lean_env_mk_hott lvl
 
 -- | Add a new global universe with the given name.
 envAddUniv :: Env -> Name -> Env
-envAddUniv e u = tryAllocEnv $ lean_env_add_univ e u
+envAddUniv e u = tryGetEnv $ lean_env_add_univ e u
 
 {#fun unsafe lean_env_add_univ
   { `Env'
@@ -151,7 +151,7 @@ envAddUniv e u = tryAllocEnv $ lean_env_add_univ e u
 -- | Create a new environment by adding the given certified declaration to the
 -- environment.
 envAddDecl :: Env -> CertDecl -> Env
-envAddDecl e d = tryAllocEnv $ lean_env_add e d
+envAddDecl e d = tryGetEnv $ lean_env_add e d
 
 {#fun unsafe lean_env_add
   { `Env'
@@ -168,7 +168,7 @@ envAddDecl e d = tryAllocEnv $ lean_env_add e d
 --  * The theorem was certified in an environment which is not an ancestor of the environment.
 --  * The environment does not contain an axiom with the given name.
 envReplaceAxiom :: Env -> CertDecl -> Env
-envReplaceAxiom e d = tryAllocEnv $ lean_env_replace e d
+envReplaceAxiom e d = tryGetEnv $ lean_env_replace e d
 
 {#fun unsafe lean_env_replace
   { `Env'
@@ -202,7 +202,7 @@ envReplaceAxiom e d = tryAllocEnv $ lean_env_replace e d
 envLookupDecl :: Name -> Env -> Maybe Decl
 envLookupDecl nm e =
   if lean_env_contains_decl e nm then
-    Just (tryAllocDecl $ lean_env_get_decl e nm)
+    Just (tryGetDecl $ lean_env_get_decl e nm)
   else
     Nothing
 
@@ -225,7 +225,7 @@ envLookupDecl nm e =
 -- That is, @envForget x `envIsDescendant y@ will return false for any environment
 -- @y@ that is not pointer equal to the result @envForget x@.
 envForget :: Env -> Env
-envForget x = tryAllocEnv $ lean_env_forget x
+envForget x = tryGetEnv $ lean_env_forget x
 
 -- |  Return the declaration with the given name in the environment if any.
 {#fun unsafe lean_env_forget
