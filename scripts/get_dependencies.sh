@@ -17,8 +17,12 @@ fi
 mkdir -p build
 pushd build > /dev/null
 
+which clang-3.5 || echo "not found"
+which clang-3.6 || echo "not found"
+which clang || echo "not found"
+
 if [ ! -f Makefile ]; then
-    cmake -DCMAKE_BUILD_TYPE=DEBUG ../src
+    cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_CXX_COMPILER=clang-3.6 ../src
 fi
 
 make libleanshared.dylib
