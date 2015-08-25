@@ -9,7 +9,7 @@ if [ -d lean ]; then
     pushd lean > /dev/null
     git pull
 else
-    git clone git@github.com:leanprover/lean.git
+    git clone https://github.com/leanprover/lean.git
     pushd lean > /dev/null
 fi
 
@@ -30,10 +30,10 @@ popd > /dev/null # deps
 if [ ! -f cabal.config ]; then
 cat <<EOF > cabal.config
 extra-include-dirs: $PWD/deps/lean/src/api
-extra-lib-dirs:     $PWD/lean/build
+extra-lib-dirs:     $PWD/deps/lean/build
 EOF
 
-    wget https://www.stackage.org/lts-2/cabal.config -O - >> cabal.config
+    wget https://www.stackage.org/lts/cabal.config -O - >> cabal.config
 fi
 cabal sandbox init
 cabal update
