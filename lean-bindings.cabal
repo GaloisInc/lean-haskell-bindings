@@ -2,13 +2,20 @@ name: lean-bindings
 version: 0.1
 author: Joe Hendrix
 maintainer: jhendrix@galois.com
-license: Apache-2
+license: Apache-2.0
 license-file: LICENSE
 build-type: Simple
 cabal-version: >= 1.9.2
+category: Language, Formal Languages, Foreign, FFI, Theorem Provers
+
+synopsis: Haskell bindings to the <http://leanprover.github.io/ Lean Theorem Prover>.
 description:
   This package contains Haskell bindings to the
   <http://leanprover.github.io/ Lean Theorem Prover>.
+
+source-repository head
+  type: git
+  location: https://github.com/GaloisInc/lean-haskell-bindings.git
 
 flag use-integer-simple
   description: Use this when compiling using a ghc that uses integer-simple instead of integer-gmp.
@@ -16,7 +23,7 @@ flag use-integer-simple
 
 library
   build-depends:
-    base,
+    base >= 4.6 && < 5,
     bytestring,
     lens,
     text
