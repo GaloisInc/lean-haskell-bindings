@@ -35,6 +35,7 @@ module Language.Lean.Univ
   , normalizeUniv
   , instantiateUniv
   , instantiateUniv2
+  , univLt
   ) where
 
 --import Control.Lens (toListOf)

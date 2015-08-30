@@ -17,6 +17,7 @@ module Language.Lean.Internal.Env
   , envContainsProofIrrelProp
   , envIsImpredicative
   , envContainsUniv
+  , envContainsDecl
   , envLookupDecl
   , envIsDescendant
     -- * Operations
@@ -180,7 +181,6 @@ envReplaceAxiom e d = tryGetEnv $ lean_env_replace e d
 ------------------------------------------------------------------------
 -- Env Projections
 
-
 --  | Return the trust level of the given environment.
 {#fun pure unsafe lean_env_trust_level as envTrustLevel
   { `Env' } -> `TrustLevel' trustFromUInt #}
@@ -199,15 +199,16 @@ envReplaceAxiom e d = tryGetEnv $ lean_env_replace e d
     { `Env', `Name' } -> `Bool' #}
 
 -- |  Return @true@ iff the environment contains a declaration with the name.
+{#fun pure unsafe lean_env_contains_decl as envContainsDecl
+    { `Env', `Name' } -> `Bool' #}
+
+-- |  Lookup the declaration with the given name in the environment.
 envLookupDecl :: Name -> Env -> Maybe Decl
 envLookupDecl nm e =
-  if lean_env_contains_decl e nm then
+  if envContainsDecl e nm then
     Just (tryGetDecl $ lean_env_get_decl e nm)
   else
     Nothing
-
-{#fun pure unsafe lean_env_contains_decl
-    { `Env', `Name' } -> `Bool' #}
 
 -- |  Return the declaration with the given name in the environment if any.
 {#fun unsafe lean_env_get_decl

@@ -8,7 +8,7 @@ module Language.Lean.Internal.Decl
   , defDecl
   , defWithDecl
   , thmDecl
-  , thmWithDecl
+--  , thmWithDecl
     -- * Projections
   , declName
   , declUnivParams
@@ -186,6 +186,7 @@ thmDecl nm params tp v h = tryGetDecl $ lean_decl_mk_thm nm params tp v h
   , `OutExceptionPtr'
   } -> `Bool' #}
 
+{-
 -- | Create a theorem with name @nm@, universe parameters names
 -- @params@, type @tp@, value @v@, definitional height @h@. Theorems
 -- and definitions are essentially the same thing in Lean, except in
@@ -205,6 +206,7 @@ thmWithDecl e nm params tp v = tryGetDecl $ lean_decl_mk_thm_with e nm params tp
   , `OutDeclPtr'
   , `OutExceptionPtr'
   } -> `Bool' #}
+-}
 
 ------------------------------------------------------------------------
 -- Projections
@@ -228,10 +230,11 @@ declType d = tryGetExpr $ lean_decl_get_type d
   { `Decl', `OutExprPtr', `OutExceptionPtr' } -> `Bool' #}
 
 data DeclView
- = DeclConst
- | DeclAxiom
- | DeclDef Expr Word32 Bool
- | DeclThm Expr Word32
+  = DeclConst
+  | DeclAxiom
+  | DeclDef Expr Word32 Bool
+  | DeclThm Expr Word32
+ deriving (Eq, Show)
 
 viewDecl :: Decl -> DeclView
 viewDecl x =

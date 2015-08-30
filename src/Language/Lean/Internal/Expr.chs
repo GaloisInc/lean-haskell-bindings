@@ -5,6 +5,7 @@
 module Language.Lean.Internal.Expr
   ( MacroDef
   , Expr
+  , BinderKind(..)
     -- * Constructors
   , varExpr
   , sortExpr
@@ -16,9 +17,11 @@ module Language.Lean.Internal.Expr
   , localExpr
   , localExtExpr
   , metavarExpr
-    -- * View
+    -- * Projection function
   , ExprView(..)
   , viewExpr
+    -- * Operations
+  , exprLt
     -- * Internal interface
   , ListExpr
   , MacroDefPtr
@@ -171,8 +174,8 @@ appExpr f a = tryGetExpr $ lean_expr_mk_app f a
   } -> `Bool' #}
 
 -- | Create a lambda abstraction for expressions
-lambdaExpr :: Name -> Expr -> Expr -> BinderKind -> Expr
-lambdaExpr nm tp b k = tryGetExpr $ lean_expr_mk_lambda nm tp b k
+lambdaExpr :: BinderKind -> Name -> Expr -> Expr -> Expr
+lambdaExpr k nm tp b = tryGetExpr $ lean_expr_mk_lambda nm tp b k
 
 {#fun unsafe lean_expr_mk_lambda
   { `Name'
@@ -184,8 +187,8 @@ lambdaExpr nm tp b k = tryGetExpr $ lean_expr_mk_lambda nm tp b k
   } -> `Bool' #}
 
 -- | Create a pi abstraction for expressions
-piExpr :: Name -> Expr -> Expr -> BinderKind -> Expr
-piExpr nm tp b k = tryGetExpr $ lean_expr_mk_pi nm tp b k
+piExpr :: BinderKind -> Name -> Expr -> Expr -> Expr
+piExpr k nm tp b = tryGetExpr $ lean_expr_mk_pi nm tp b k
 
 {#fun unsafe lean_expr_mk_pi
   { `Name'
@@ -221,8 +224,8 @@ localExpr nm tp = tryGetExpr $ lean_expr_mk_local nm tp
 -- | @localExtExpr nm ppnm tp k@ returns a local constant with name
 -- @nm@, pretty print name @ppnm@, type @tp@, and binder annotation
 -- @k@.
-localExtExpr :: Name -> Name -> Expr -> BinderKind -> Expr
-localExtExpr nm ppnm tp k = tryGetExpr $ lean_expr_mk_local_ext nm ppnm tp k
+localExtExpr :: BinderKind -> Name -> Name -> Expr -> Expr
+localExtExpr k nm ppnm tp = tryGetExpr $ lean_expr_mk_local_ext nm ppnm tp k
 
 {#fun unsafe lean_expr_mk_local_ext
   { `Name'
@@ -271,6 +274,13 @@ instance Ord Expr where
 {#fun unsafe lean_expr_quick_lt
  { `Expr' , `Expr', id `Ptr CInt', `OutExceptionPtr' } -> `Bool' #}
 
+-- | Return true if first expression is structurally less than other.
+exprLt :: Expr -> Expr -> Bool
+exprLt x y = tryGetBool $ lean_expr_lt x y
+
+{#fun unsafe lean_expr_lt
+ { `Expr' , `Expr', id `Ptr CInt', `OutExceptionPtr' } -> `Bool' #}
+
 ------------------------------------------------------------------------
 -- Expression view
 
@@ -278,11 +288,11 @@ data ExprView
   = ExprVar Word32
   | ExprSort Univ
   | ExprConst Name (List Univ)
-  | ExprLocal Name Name Expr BinderKind
+  | ExprLocal BinderKind Name Name Expr
   | ExprMeta Name Expr
   | ExprApp Expr Expr
-  | ExprLambda Name Expr Expr BinderKind
-  | ExprPi Name Expr Expr BinderKind
+  | ExprLambda BinderKind Name Expr Expr
+  | ExprPi     BinderKind Name Expr Expr
   | ExprMacro MacroDef (List Expr)
   deriving (Eq)
 
@@ -297,10 +307,10 @@ viewExpr x =
       ExprConst (tryGetName $ lean_expr_get_const_name x)
                 (tryGetListUniv $ lean_expr_get_const_univs x)
     LEAN_EXPR_LOCAL ->
-      ExprLocal (tryGetName $ lean_expr_get_mlocal_name x)
+      ExprLocal (tryGetEnum $ lean_expr_get_local_binder_kind x)
+                (tryGetName $ lean_expr_get_mlocal_name x)
                 (tryGetName $ lean_expr_get_local_pp_name x)
                 (tryGetExpr $ lean_expr_get_mlocal_type x)
-                (tryGetEnum   $ lean_expr_get_local_binder_kind x)
     LEAN_EXPR_META ->
       ExprMeta  (tryGetName $ lean_expr_get_mlocal_name x)
                 (tryGetExpr $ lean_expr_get_mlocal_type x)
@@ -308,15 +318,15 @@ viewExpr x =
       ExprApp (tryGetExpr $ lean_expr_get_app_fun x)
               (tryGetExpr $ lean_expr_get_app_arg x)
     LEAN_EXPR_LAMBDA ->
-      ExprLambda (tryGetName $ lean_expr_get_binding_name x)
+      ExprLambda (tryGetEnum $ lean_expr_get_binding_binder_kind x)
+                 (tryGetName $ lean_expr_get_binding_name x)
                  (tryGetExpr $ lean_expr_get_binding_domain x)
                  (tryGetExpr $ lean_expr_get_binding_body x)
-                 (tryGetEnum   $ lean_expr_get_binding_binder_kind x)
     LEAN_EXPR_PI ->
-      ExprPi (tryGetName $ lean_expr_get_binding_name x)
+      ExprPi (tryGetEnum $ lean_expr_get_binding_binder_kind x)
+             (tryGetName $ lean_expr_get_binding_name x)
              (tryGetExpr $ lean_expr_get_binding_domain x)
              (tryGetExpr $ lean_expr_get_binding_body x)
-             (tryGetEnum   $ lean_expr_get_binding_binder_kind x)
     LEAN_EXPR_MACRO ->
       ExprMacro (tryGetMacroDef $ lean_expr_get_macro_def x)
                 (tryGetListExpr $ lean_expr_get_macro_args x)

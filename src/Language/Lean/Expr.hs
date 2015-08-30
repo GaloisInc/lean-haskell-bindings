@@ -1,6 +1,7 @@
 module Language.Lean.Expr
   ( MacroDef
   , Expr
+  , BinderKind(..)
     -- * Constructors
   , varExpr
   , sortExpr
@@ -15,6 +16,8 @@ module Language.Lean.Expr
     -- * View
   , ExprView(..)
   , viewExpr
+    -- * Operations
+  , exprLt
   ) where
 
 import Language.Lean.Internal.Expr

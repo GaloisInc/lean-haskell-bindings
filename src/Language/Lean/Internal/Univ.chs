@@ -34,6 +34,7 @@ module Language.Lean.Internal.Univ
   , normalizeUniv
   , instantiateUniv
   , instantiateUniv2
+  , univLt
     -- * Internal Operations
   , UnivPtr
   , OutUnivPtr
@@ -188,6 +189,17 @@ instance Ord Univ where
   x <= y = not (tryGetBool $ y `lean_univ_quick_lt` x)
 
 {#fun unsafe lean_univ_quick_lt
+  { `Univ'
+  , `Univ'
+  , id `Ptr CInt'
+  , `OutExceptionPtr'
+  } -> `Bool' #}
+
+-- | Total ordering over universes using structural equality.
+univLt :: Univ -> Univ -> Bool
+univLt x y = tryGetBool $ x `lean_univ_lt` y
+
+{#fun unsafe lean_univ_lt
   { `Univ'
   , `Univ'
   , id `Ptr CInt'
