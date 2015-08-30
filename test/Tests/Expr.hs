@@ -32,4 +32,4 @@ testConst = do
   assert (not (e1 == e2))
   assert (Lean.viewExpr e2 == Lean.ExprConst "id" [0, 0])
   assert (Lean.viewExpr e3 == Lean.ExprConst "func" [0, 0])
-  putStrLn $ "expr: " ++ show e3
+  assert (show e3 == "func.{0 0}")
