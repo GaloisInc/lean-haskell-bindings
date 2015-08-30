@@ -7,5 +7,5 @@
 # * "deps/lean/build/debug" contains a successful build of lean with the
 #   shared library.
 
-cabal install --only-dependencies
-cabal install --extra-lib-dirs=$PWD/deps/lean/build/debug --extra-include-dirs=$PWD/deps/lean/src/api
+cabal install --only-dependencies --enable-tests
+cabal install --extra-lib-dirs=$PWD/deps/lean/build/debug --extra-include-dirs=$PWD/deps/lean/src/api --enable-test

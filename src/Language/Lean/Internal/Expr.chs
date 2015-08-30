@@ -73,6 +73,12 @@ foreign import ccall "&lean_macro_def_del"
   lean_macro_def_del_ptr :: FunPtr (MacroDefPtr -> IO ())
 
 ------------------------------------------------------------------------
+-- MacroDef eq
+
+instance Eq MacroDef where
+  (==) = error "Equality comparison with macro definitions is not yet implemented."
+
+------------------------------------------------------------------------
 -- BinderKind declaration
 {#enum lean_binder_kind as BinderKind { underscoreToCase, upcaseFirstLetter }
    with prefix = "LEAN_"
@@ -254,15 +260,16 @@ instance Show Expr where
 -- Expression Comparison
 
 instance Eq Expr where
-  (==) = lean_expr_eq
+  x == y = tryGetBool $ lean_expr_eq x y
 
-{#fun pure unsafe lean_expr_eq { `Expr' , `Expr' } -> `Bool' #}
-
+{#fun unsafe lean_expr_eq
+ { `Expr' , `Expr', id `Ptr CInt', `OutExceptionPtr' } -> `Bool' #}
 
 instance Ord Expr where
-   x <= y = not (lean_expr_quick_lt y x)
+   x <= y = not $ tryGetBool $ lean_expr_quick_lt y x
 
-{#fun pure unsafe lean_expr_quick_lt { `Expr' , `Expr' } -> `Bool' #}
+{#fun unsafe lean_expr_quick_lt
+ { `Expr' , `Expr', id `Ptr CInt', `OutExceptionPtr' } -> `Bool' #}
 
 ------------------------------------------------------------------------
 -- Expression view
@@ -277,6 +284,7 @@ data ExprView
   | ExprLambda Name Expr Expr BinderKind
   | ExprPi Name Expr Expr BinderKind
   | ExprMacro MacroDef (List Expr)
+  deriving (Eq)
 
 viewExpr :: Expr -> ExprView
 viewExpr x =
@@ -433,5 +441,3 @@ instance IsList (List Expr) where
 
 instance Show (List Expr) where
   showsPrec _ l = showList (toList l)
-
-

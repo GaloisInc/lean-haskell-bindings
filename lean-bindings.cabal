@@ -50,6 +50,7 @@ library
     Language.Lean.Internal.Env
     Language.Lean.Internal.IOS
     Language.Lean.Exception
+    Language.Lean.Expr
     Language.Lean.List
     Language.Lean.Name
     Language.Lean.Options

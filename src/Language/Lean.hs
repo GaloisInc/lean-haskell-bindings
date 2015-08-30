@@ -15,6 +15,7 @@ module Language.Lean
   , module Language.Lean.Name
   , module Language.Lean.Options
   , module Language.Lean.Univ
+  , module Language.Lean.Expr
   ) where
 
 import Language.Lean.Exception
@@ -22,3 +23,4 @@ import Language.Lean.List
 import Language.Lean.Name
 import Language.Lean.Options
 import Language.Lean.Univ
+import Language.Lean.Expr
