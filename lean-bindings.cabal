@@ -40,13 +40,6 @@ library
   ghc-options: -Wall
   exposed-modules:
     Language.Lean
-    Language.Lean.Env
-    Language.Lean.Exception
-    Language.Lean.Expr
-    Language.Lean.List
-    Language.Lean.Name
-    Language.Lean.Options
-    Language.Lean.Univ
     Language.Lean.Internal.String
     Language.Lean.Internal.Exception
     Language.Lean.Internal.Name
@@ -56,6 +49,14 @@ library
     Language.Lean.Internal.Decl
     Language.Lean.Internal.Env
     Language.Lean.Internal.IOS
+    Language.Lean.Internal.Typechecker
+    Language.Lean.Env
+    Language.Lean.Exception
+    Language.Lean.Expr
+    Language.Lean.List
+    Language.Lean.Name
+    Language.Lean.Options
+    Language.Lean.Univ
 
 test-suite test
   type: exitcode-stdio-1.0

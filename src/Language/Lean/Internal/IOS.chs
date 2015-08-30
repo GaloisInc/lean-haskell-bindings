@@ -69,7 +69,7 @@ newtype IOState (tp :: IOStateType) = IOState (ForeignPtr SomeIOState)
 someIOS :: IOState tp -> SomeIOState
 someIOS (IOState p) = SomeIOState (castForeignPtr p)
 
-instance IsLeanValue (IOState tp) SomeIOState where
+instance IsLeanValue (IOState tp) (Ptr SomeIOState) where
   mkLeanValue = fmap IOState . newForeignPtr lean_ios_del_ptr
 
 -- | Run a computation with an io state.

@@ -1,8 +1,11 @@
 {-# LANGUAGE DoAndIfThenElse #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 module Language.Lean.Internal.Exception
   ( LeanException(..)
   , LeanExceptionKind(..)
@@ -133,7 +136,7 @@ runLeanPartialAction action =
 
 -- | A lean partial function is a function that returns a value of type @a@, but
 -- may fail.
-type LeanPartialFn a = (Ptr a -> Ptr ExceptionPtr -> IO Bool)
+type LeanPartialFn a = (Ptr a -> LeanPartialAction)
 
 runLeanPartialFn :: Storable a
                  => LeanPartialFn a
@@ -155,54 +158,73 @@ tryPureLeanPartialFn :: Storable a
                  => (a -> IO r)
                  -> LeanPartialFn a
                  -> r
-tryPureLeanPartialFn next = unsafePerformIO . tryLeanPartialFn  next
+tryPureLeanPartialFn = \next alloc_fn -> unsafePerformIO $ do
+  runLeanPartialFn alloc_fn >>= next
 {-# INLINE tryPureLeanPartialFn #-}
 
--- | Try to run a Lean partial function that returns a Boolean argument.
-tryGetBool :: LeanPartialFn CInt -> Bool
-tryGetBool = tryPureLeanPartialFn (return . toEnum . fromIntegral)
+class Storable p => IsLeanValue v p | v -> p where
+  mkLeanValue :: p -> IO v
 
--- | Try to run a Lean partial function that returns a unsigned integer.
-tryGetUInt :: LeanPartialFn CUInt -> Word32
-tryGetUInt = tryPureLeanPartialFn $ return . coerce
+instance IsLeanValue Bool CInt where
+  mkLeanValue = return . toEnum . fromIntegral
 
--- | Try to run a Lean partial function that returns a signed integer.
-tryGetInt :: LeanPartialFn CInt -> Int32
-tryGetInt = tryPureLeanPartialFn $ return . coerce
+instance IsLeanValue Word32 CUInt where
+  mkLeanValue = return . coerce
 
--- | Try to run a Lean partial function that returns a double.
-tryGetDouble :: LeanPartialFn CDouble -> Double
-tryGetDouble = tryPureLeanPartialFn $ return . coerce
+instance IsLeanValue Int32 CInt where
+  mkLeanValue = return . coerce
 
--- | Try to run a Lean partial function that returns an enum type
-tryGetEnum :: (Enum a) => LeanPartialFn CInt -> a
-tryGetEnum = tryPureLeanPartialFn $ return . toEnum . fromIntegral
+instance IsLeanValue Double CDouble where
+  mkLeanValue = return . coerce
 
--- | Try to run a Lean partial function that returns a string.
-tryAllocString :: LeanPartialFn CString -> IO String
-tryAllocString = tryLeanPartialFn getLeanString
-
--- | Try to run a Lean partial function that returns a string.
-tryGetString :: LeanPartialFn CString -> String
-tryGetString = tryPureLeanPartialFn getLeanString
-
-class IsLeanValue v p where
-  mkLeanValue :: Ptr p -> IO v
+instance IsLeanValue String CString where
+  mkLeanValue = getLeanString
 
 -- | Try to run a Lean partial function that returns a Lean value
 -- that will need to be freed.
 tryAllocLeanValue :: IsLeanValue a p
-                  => LeanPartialFn (Ptr p)
+                  => LeanPartialFn p
                   -> IO a
 tryAllocLeanValue = tryLeanPartialFn mkLeanValue
+{-# INLINE tryAllocLeanValue #-}
 
 -- | Try to run a Lean partial function that returns a Lean value
 -- that will need to be freed.
 --
 -- Other than allocating a new value or exception, the function
 -- must be pure
-tryGetLeanValue :: FunPtr (Ptr a -> IO ())
-                     -- ^ Pointer to function that releases resource.
-                  -> LeanPartialFn (Ptr a)
-                  -> ForeignPtr a
-tryGetLeanValue free_fn = tryPureLeanPartialFn $ newForeignPtr free_fn
+tryGetLeanValue :: IsLeanValue a p
+                   -- ^ Pointer to function that releases resource.
+                => LeanPartialFn p
+                -> a
+tryGetLeanValue = tryPureLeanPartialFn mkLeanValue
+{-# INLINE tryGetLeanValue #-}
+
+
+-- | Try to run a Lean partial function that returns a Boolean argument.
+tryGetBool :: LeanPartialFn CInt -> Bool
+tryGetBool = tryGetLeanValue
+
+-- | Try to run a Lean partial function that returns a unsigned integer.
+tryGetUInt :: LeanPartialFn CUInt -> Word32
+tryGetUInt = tryGetLeanValue
+
+-- | Try to run a Lean partial function that returns a signed integer.
+tryGetInt :: LeanPartialFn CInt -> Int32
+tryGetInt = tryGetLeanValue
+
+-- | Try to run a Lean partial function that returns a double.
+tryGetDouble :: LeanPartialFn CDouble -> Double
+tryGetDouble = tryGetLeanValue
+
+-- | Try to run a Lean partial function that returns a string.
+tryAllocString :: LeanPartialFn CString -> IO String
+tryAllocString = tryAllocLeanValue
+
+-- | Try to run a Lean partial function that returns a string.
+tryGetString :: LeanPartialFn CString -> String
+tryGetString = tryGetLeanValue
+
+-- | Try to run a Lean partial function that returns an enum type
+tryGetEnum :: (Enum a) => LeanPartialFn CInt -> a
+tryGetEnum = tryPureLeanPartialFn $ return . toEnum . fromIntegral

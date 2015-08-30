@@ -39,13 +39,10 @@ module Language.Lean.Internal.Univ
   , UnivPtr
   , OutUnivPtr
   , withUniv
-  , allocUniv
-  , tryGetUniv
   , ListUniv
   , ListUnivPtr
   , OutListUnivPtr
   , withListUniv
-  , tryGetListUniv
   ) where
 
 import Control.Lens (toListOf)
@@ -66,22 +63,6 @@ import Language.Lean.List
 #include "lean_options.h"
 #include "lean_univ.h"
 
-{-
-type WithPointer b p a = b -> (p -> IO a) -> IO a
-
-withForeignArray :: Storable p => WithPointer b p a -> Int -> [b] -> (Ptr p -> IO a) -> IO a
-withForeignArray withPtr n l action = do
-  allocaArray n $ \ptr -> do
-    withForeignArray' withPtr ptr l action
-
-withForeignArray' :: Storable p => WithPointer b p a -> Ptr p -> [b] -> (Ptr p -> IO a) -> IO a
-withForeignArray' _ arrayPtr [] action = action arrayPtr
-withForeignArray' withPtr arrayPtr (h:r) action = do
-  withPtr h $ \ptr -> do
-    poke arrayPtr ptr
-    withForeignArray' withPtr (arrayPtr `plusPtr` sizeOf ptr) r action
--}
-
 -- | A Lean universe level
 {#pointer lean_univ as Univ foreign newtype#}
 {#pointer lean_univ as UnivPtr -> Univ#}
@@ -90,20 +71,15 @@ withForeignArray' withPtr arrayPtr (h:r) action = do
 foreign import ccall "&lean_univ_del"
   lean_univ_del_ptr :: FunPtr (UnivPtr -> IO ())
 
--- | Create a universe level from a pointer.
-allocUniv :: UnivPtr -> IO Univ
-allocUniv ptr = Univ <$> newForeignPtr lean_univ_del_ptr ptr
-
--- | Call a C layer function that attempts to allocate a new universe and is pure.
-tryGetUniv :: LeanPartialFn UnivPtr -> Univ
-tryGetUniv = Univ . tryGetLeanValue lean_univ_del_ptr
+instance IsLeanValue Univ (Ptr Univ) where
+  mkLeanValue = fmap Univ . newForeignPtr lean_univ_del_ptr
 
 ------------------------------------------------------------------------
 -- Options for constructing universes
 
 -- | The zero universe
 zeroUniv :: Univ
-zeroUniv = tryGetUniv $ lean_univ_mk_zero
+zeroUniv = tryGetLeanValue $ lean_univ_mk_zero
 
 {#fun unsafe lean_univ_mk_zero
   { `OutUnivPtr'
@@ -112,7 +88,7 @@ zeroUniv = tryGetUniv $ lean_univ_mk_zero
 
 -- | Successor of the universe
 succUniv :: Univ -> Univ
-succUniv x = tryGetUniv $ lean_univ_mk_succ x
+succUniv x = tryGetLeanValue $ lean_univ_mk_succ x
 
 {#fun unsafe lean_univ_mk_succ
   { `Univ'
@@ -122,7 +98,7 @@ succUniv x = tryGetUniv $ lean_univ_mk_succ x
 
 -- | The max of two universes.
 maxUniv :: Univ -> Univ -> Univ
-maxUniv x y = tryGetUniv $ lean_univ_mk_max x y
+maxUniv x y = tryGetLeanValue $ lean_univ_mk_max x y
 
 {#fun unsafe lean_univ_mk_max
   { `Univ'
@@ -133,7 +109,7 @@ maxUniv x y = tryGetUniv $ lean_univ_mk_max x y
 
 -- | The imax of two universes.
 imaxUniv :: Univ -> Univ -> Univ
-imaxUniv x y = tryGetUniv $ lean_univ_mk_imax x y
+imaxUniv x y = tryGetLeanValue $ lean_univ_mk_imax x y
 
 {#fun unsafe lean_univ_mk_imax
   { `Univ'
@@ -144,7 +120,7 @@ imaxUniv x y = tryGetUniv $ lean_univ_mk_imax x y
 
 -- | A universe parameter of the given name.
 paramUniv :: Name -> Univ
-paramUniv x = tryGetUniv $ lean_univ_mk_param x
+paramUniv x = tryGetLeanValue $ lean_univ_mk_param x
 
 {#fun unsafe lean_univ_mk_param
   { `Name'
@@ -154,7 +130,7 @@ paramUniv x = tryGetUniv $ lean_univ_mk_param x
 
 -- | A global universe with the given name.
 globalUniv :: Name -> Univ
-globalUniv x = tryGetUniv $ lean_univ_mk_global x
+globalUniv x = tryGetLeanValue $ lean_univ_mk_global x
 
 {#fun unsafe lean_univ_mk_global
   { `Name'
@@ -164,7 +140,7 @@ globalUniv x = tryGetUniv $ lean_univ_mk_global x
 
 -- | A universe meta-variable with the given name.
 metaUniv :: Name -> Univ
-metaUniv x = tryGetUniv $ lean_univ_mk_meta x
+metaUniv x = tryGetLeanValue $ lean_univ_mk_meta x
 
 {#fun unsafe lean_univ_mk_meta
   { `Name'
@@ -294,16 +270,16 @@ viewUniv :: Univ -> UnivView
 viewUniv x =
   case lean_univ_get_kind x of
    LEAN_UNIV_ZERO -> UnivZero
-   LEAN_UNIV_SUCC -> UnivSucc (tryGetUniv $ lean_univ_get_pred x)
+   LEAN_UNIV_SUCC -> UnivSucc (tryGetLeanValue $ lean_univ_get_pred x)
    LEAN_UNIV_MAX ->
-     UnivMax (tryGetUniv $ lean_univ_get_max_lhs x)
-             (tryGetUniv $ lean_univ_get_max_rhs x)
+     UnivMax (tryGetLeanValue $ lean_univ_get_max_lhs x)
+             (tryGetLeanValue $ lean_univ_get_max_rhs x)
    LEAN_UNIV_IMAX ->
-     UnivIMax (tryGetUniv $ lean_univ_get_max_lhs x)
-              (tryGetUniv $ lean_univ_get_max_rhs x)
-   LEAN_UNIV_PARAM  -> UnivParam  (tryGetName $ lean_univ_get_name x)
-   LEAN_UNIV_GLOBAL -> UnivGlobal (tryGetName $ lean_univ_get_name x)
-   LEAN_UNIV_META   -> UnivMeta   (tryGetName $ lean_univ_get_name x)
+     UnivIMax (tryGetLeanValue $ lean_univ_get_max_lhs x)
+              (tryGetLeanValue $ lean_univ_get_max_rhs x)
+   LEAN_UNIV_PARAM  -> UnivParam  (tryGetLeanValue $ lean_univ_get_name x)
+   LEAN_UNIV_GLOBAL -> UnivGlobal (tryGetLeanValue $ lean_univ_get_name x)
+   LEAN_UNIV_META   -> UnivMeta   (tryGetLeanValue $ lean_univ_get_name x)
 
 {#enum lean_univ_kind as UnivKind { upcaseFirstLetter }
          deriving (Eq)#}
@@ -353,9 +329,8 @@ type ListUniv = List Univ
 withListUniv :: List Univ -> (Ptr (List Univ) -> IO a) -> IO a
 withListUniv (ListUniv p) = withForeignPtr p
 
--- | Call a C layer function that attempts to allocate a new universe and is pure.
-tryGetListUniv :: LeanPartialFn ListUnivPtr -> ListUniv
-tryGetListUniv = ListUniv . tryGetLeanValue lean_list_univ_del_ptr
+instance IsLeanValue (List Univ) (Ptr (List Univ)) where
+  mkLeanValue = fmap ListUniv . newForeignPtr lean_list_univ_del_ptr
 
 foreign import ccall "&lean_list_univ_del"
   lean_list_univ_del_ptr :: FunPtr (ListUnivPtr -> IO ())
@@ -377,13 +352,13 @@ instance Eq (List Univ) where
 -- ListUniv IsListIso instance
 
 instance IsListIso (List Univ) Univ where
-  nil = tryGetListUniv $ lean_list_univ_mk_nil
-  h <| r = tryGetListUniv $ lean_list_univ_mk_cons h r
+  nil = tryGetLeanValue $ lean_list_univ_mk_nil
+  h <| r = tryGetLeanValue $ lean_list_univ_mk_cons h r
 
   viewList l =
     if lean_list_univ_is_cons l then
-      tryGetUniv (lean_list_univ_head l)
-        :< tryGetListUniv (lean_list_univ_tail l)
+      tryGetLeanValue (lean_list_univ_head l)
+        :< tryGetLeanValue (lean_list_univ_tail l)
     else
       Nil
 
@@ -440,7 +415,7 @@ instance Show (List Univ) where
 
 -- | Return the normal form for a universe.
 normalizeUniv :: Univ -> Univ
-normalizeUniv x = tryGetUniv $ lean_univ_normalize x
+normalizeUniv x = tryGetLeanValue $ lean_univ_normalize x
 
 ------------------------------------------------------------------------
 -- Instantiate
@@ -455,7 +430,7 @@ instantiateUniv2 :: Univ
                  -> List Name
                  -> List Univ
                  -> Univ
-instantiateUniv2 u nms args = tryGetUniv $ lean_univ_instantiate u nms args
+instantiateUniv2 u nms args = tryGetLeanValue $ lean_univ_instantiate u nms args
 
 {#fun unsafe lean_univ_instantiate
   { `Univ'

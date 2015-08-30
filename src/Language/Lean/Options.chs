@@ -136,7 +136,7 @@ optionsSet :: (Options -> Name -> a -> LeanPartialFn OptionsPtr)
            -> Name
            -> a
            -> Options
-optionsSet leanSetter o nm v = tryGetOptions $ leanSetter o nm v
+optionsSet leanSetter o nm v = tryGetLeanValue $ leanSetter o nm v
 
 -- | Lens for getting and setting boolean options without
 --   rewriting equivalent values

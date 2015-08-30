@@ -26,15 +26,12 @@ module Language.Lean.Internal.Expr
   , ListExpr
   , MacroDefPtr
   , OutMacroDefPtr
-  , tryGetMacroDef
   , withMacroDef
   , ExprPtr
   , OutExprPtr
-  , tryGetExpr
   , withExpr
   , ListExprPtr
   , OutListExprPtr
-  , tryGetListExpr
   , withListExpr
   ) where
 
@@ -66,11 +63,8 @@ import Language.Lean.List
 {#pointer lean_macro_def as MacroDefPtr -> MacroDef#}
 {#pointer *lean_macro_def as OutMacroDefPtr -> MacroDefPtr#}
 
--- | Call a C layer function that attempts to allocate a
--- new declaration.
-tryGetMacroDef :: LeanPartialFn MacroDefPtr -> MacroDef
-tryGetMacroDef mk =
-  MacroDef $ tryGetLeanValue lean_macro_def_del_ptr mk
+instance IsLeanValue MacroDef (Ptr MacroDef) where
+   mkLeanValue = fmap MacroDef . newForeignPtr lean_macro_def_del_ptr
 
 foreign import ccall "&lean_macro_def_del"
   lean_macro_def_del_ptr :: FunPtr (MacroDefPtr -> IO ())
@@ -95,11 +89,8 @@ instance Eq MacroDef where
 {#pointer lean_expr as ExprPtr -> Expr#}
 {#pointer *lean_expr as OutExprPtr -> ExprPtr#}
 
--- | Call a C layer function that attempts to allocate a
--- new expression
-tryGetExpr :: LeanPartialFn ExprPtr -> Expr
-tryGetExpr mk =
-  Expr $ tryGetLeanValue lean_expr_del_ptr mk
+instance IsLeanValue Expr (Ptr Expr) where
+   mkLeanValue = fmap Expr . newForeignPtr lean_expr_del_ptr
 
 foreign import ccall "&lean_expr_del"
   lean_expr_del_ptr :: FunPtr (ExprPtr -> IO ())
@@ -119,11 +110,8 @@ withListExpr (ListExpr p) = withForeignPtr p
 {#pointer lean_list_expr as ListExprPtr -> ListExpr#}
 {#pointer *lean_list_expr as OutListExprPtr -> ListExprPtr#}
 
--- | Call a C layer function that attempts to allocate a
--- list of expressions
-tryGetListExpr :: LeanPartialFn ListExprPtr -> List Expr
-tryGetListExpr mk =
-  ListExpr $ tryGetLeanValue lean_list_expr_del_ptr mk
+instance IsLeanValue (List Expr) (Ptr (List Expr)) where
+  mkLeanValue = fmap ListExpr . newForeignPtr lean_list_expr_del_ptr
 
 foreign import ccall "&lean_list_expr_del"
   lean_list_expr_del_ptr :: FunPtr (ListExprPtr -> IO ())
@@ -133,7 +121,7 @@ foreign import ccall "&lean_list_expr_del"
 
 -- | Create a variable with de-Bruijn index @i@. This is a bound variable.
 varExpr :: Word32 -> Expr
-varExpr i = tryGetExpr $ lean_expr_mk_var i
+varExpr i = tryGetLeanValue $ lean_expr_mk_var i
 
 {#fun unsafe lean_expr_mk_var
   { `Word32'
@@ -143,7 +131,7 @@ varExpr i = tryGetExpr $ lean_expr_mk_var i
 
 -- | @sortExpr u@ denotes lean @type u@
 sortExpr :: Univ -> Expr
-sortExpr u = tryGetExpr $ lean_expr_mk_sort u
+sortExpr u = tryGetLeanValue $ lean_expr_mk_sort u
 
 {#fun unsafe lean_expr_mk_sort
   { `Univ'
@@ -153,7 +141,7 @@ sortExpr u = tryGetExpr $ lean_expr_mk_sort u
 
 -- | Create a constant with a given name and universe parameters
 constExpr :: Name -> List Univ -> Expr
-constExpr nm params = tryGetExpr $ lean_expr_mk_const nm params
+constExpr nm params = tryGetLeanValue $ lean_expr_mk_const nm params
 
 {#fun unsafe lean_expr_mk_const
   { `Name'
@@ -164,7 +152,7 @@ constExpr nm params = tryGetExpr $ lean_expr_mk_const nm params
 
 -- | Create a function application for expressions
 appExpr :: Expr -> Expr -> Expr
-appExpr f a = tryGetExpr $ lean_expr_mk_app f a
+appExpr f a = tryGetLeanValue $ lean_expr_mk_app f a
 
 {#fun unsafe lean_expr_mk_app
   { `Expr'
@@ -175,7 +163,7 @@ appExpr f a = tryGetExpr $ lean_expr_mk_app f a
 
 -- | Create a lambda abstraction for expressions
 lambdaExpr :: BinderKind -> Name -> Expr -> Expr -> Expr
-lambdaExpr k nm tp b = tryGetExpr $ lean_expr_mk_lambda nm tp b k
+lambdaExpr k nm tp b = tryGetLeanValue $ lean_expr_mk_lambda nm tp b k
 
 {#fun unsafe lean_expr_mk_lambda
   { `Name'
@@ -188,7 +176,7 @@ lambdaExpr k nm tp b = tryGetExpr $ lean_expr_mk_lambda nm tp b k
 
 -- | Create a pi abstraction for expressions
 piExpr :: BinderKind -> Name -> Expr -> Expr -> Expr
-piExpr k nm tp b = tryGetExpr $ lean_expr_mk_pi nm tp b k
+piExpr k nm tp b = tryGetLeanValue $ lean_expr_mk_pi nm tp b k
 
 {#fun unsafe lean_expr_mk_pi
   { `Name'
@@ -201,7 +189,7 @@ piExpr k nm tp b = tryGetExpr $ lean_expr_mk_pi nm tp b k
 
 -- | Create a macro application for expressions
 macroExpr :: MacroDef -> List Expr -> Expr
-macroExpr m args = tryGetExpr $ lean_expr_mk_macro m args
+macroExpr m args = tryGetLeanValue $ lean_expr_mk_macro m args
 
 {#fun unsafe lean_expr_mk_macro
   { `MacroDef'
@@ -212,7 +200,7 @@ macroExpr m args = tryGetExpr $ lean_expr_mk_macro m args
 
 -- | Create a local constant with name @nm@ and type @tp@
 localExpr :: Name -> Expr -> Expr
-localExpr nm tp = tryGetExpr $ lean_expr_mk_local nm tp
+localExpr nm tp = tryGetLeanValue $ lean_expr_mk_local nm tp
 
 {#fun unsafe lean_expr_mk_local
   { `Name'
@@ -225,7 +213,7 @@ localExpr nm tp = tryGetExpr $ lean_expr_mk_local nm tp
 -- @nm@, pretty print name @ppnm@, type @tp@, and binder annotation
 -- @k@.
 localExtExpr :: BinderKind -> Name -> Name -> Expr -> Expr
-localExtExpr k nm ppnm tp = tryGetExpr $ lean_expr_mk_local_ext nm ppnm tp k
+localExtExpr k nm ppnm tp = tryGetLeanValue $ lean_expr_mk_local_ext nm ppnm tp k
 
 {#fun unsafe lean_expr_mk_local_ext
   { `Name'
@@ -238,7 +226,7 @@ localExtExpr k nm ppnm tp = tryGetExpr $ lean_expr_mk_local_ext nm ppnm tp k
 
 -- | Create a metavariable with the given name @nm@ and type @tp@.
 metavarExpr :: Name -> Expr -> Expr
-metavarExpr nm tp = tryGetExpr $ lean_expr_mk_metavar nm tp
+metavarExpr nm tp = tryGetLeanValue $ lean_expr_mk_metavar nm tp
 
 {#fun unsafe lean_expr_mk_metavar
   { `Name'
@@ -302,34 +290,34 @@ viewExpr x =
     LEAN_EXPR_VAR ->
       ExprVar (tryGetUInt $ lean_expr_get_var_idx x)
     LEAN_EXPR_SORT ->
-      ExprSort (tryGetUniv $ lean_expr_get_sort_univ x)
+      ExprSort (tryGetLeanValue $ lean_expr_get_sort_univ x)
     LEAN_EXPR_CONST ->
-      ExprConst (tryGetName $ lean_expr_get_const_name x)
-                (tryGetListUniv $ lean_expr_get_const_univs x)
+      ExprConst (tryGetLeanValue $ lean_expr_get_const_name x)
+                (tryGetLeanValue $ lean_expr_get_const_univs x)
     LEAN_EXPR_LOCAL ->
       ExprLocal (tryGetEnum $ lean_expr_get_local_binder_kind x)
-                (tryGetName $ lean_expr_get_mlocal_name x)
-                (tryGetName $ lean_expr_get_local_pp_name x)
-                (tryGetExpr $ lean_expr_get_mlocal_type x)
+                (tryGetLeanValue $ lean_expr_get_mlocal_name x)
+                (tryGetLeanValue $ lean_expr_get_local_pp_name x)
+                (tryGetLeanValue $ lean_expr_get_mlocal_type x)
     LEAN_EXPR_META ->
-      ExprMeta  (tryGetName $ lean_expr_get_mlocal_name x)
-                (tryGetExpr $ lean_expr_get_mlocal_type x)
+      ExprMeta  (tryGetLeanValue $ lean_expr_get_mlocal_name x)
+                (tryGetLeanValue $ lean_expr_get_mlocal_type x)
     LEAN_EXPR_APP ->
-      ExprApp (tryGetExpr $ lean_expr_get_app_fun x)
-              (tryGetExpr $ lean_expr_get_app_arg x)
+      ExprApp (tryGetLeanValue $ lean_expr_get_app_fun x)
+              (tryGetLeanValue $ lean_expr_get_app_arg x)
     LEAN_EXPR_LAMBDA ->
       ExprLambda (tryGetEnum $ lean_expr_get_binding_binder_kind x)
-                 (tryGetName $ lean_expr_get_binding_name x)
-                 (tryGetExpr $ lean_expr_get_binding_domain x)
-                 (tryGetExpr $ lean_expr_get_binding_body x)
+                 (tryGetLeanValue $ lean_expr_get_binding_name x)
+                 (tryGetLeanValue $ lean_expr_get_binding_domain x)
+                 (tryGetLeanValue $ lean_expr_get_binding_body x)
     LEAN_EXPR_PI ->
       ExprPi (tryGetEnum $ lean_expr_get_binding_binder_kind x)
-             (tryGetName $ lean_expr_get_binding_name x)
-             (tryGetExpr $ lean_expr_get_binding_domain x)
-             (tryGetExpr $ lean_expr_get_binding_body x)
+             (tryGetLeanValue $ lean_expr_get_binding_name x)
+             (tryGetLeanValue $ lean_expr_get_binding_domain x)
+             (tryGetLeanValue $ lean_expr_get_binding_body x)
     LEAN_EXPR_MACRO ->
-      ExprMacro (tryGetMacroDef $ lean_expr_get_macro_def x)
-                (tryGetListExpr $ lean_expr_get_macro_args x)
+      ExprMacro (tryGetLeanValue $ lean_expr_get_macro_def x)
+                (tryGetLeanValue $ lean_expr_get_macro_args x)
 
 {#enum lean_expr_kind as ExprKind { upcaseFirstLetter }
          deriving (Eq)#}
@@ -400,13 +388,13 @@ instance Eq (List Expr) where
 -- ListExpr IsListIso instance
 
 instance IsListIso (List Expr) Expr where
-  nil = tryGetListExpr $ lean_list_expr_mk_nil
-  h <| r = tryGetListExpr $ lean_list_expr_mk_cons h r
+  nil = tryGetLeanValue $ lean_list_expr_mk_nil
+  h <| r = tryGetLeanValue $ lean_list_expr_mk_cons h r
 
   viewList l =
     if lean_list_expr_is_cons l then
-      tryGetExpr (lean_list_expr_head l)
-        :< tryGetListExpr (lean_list_expr_tail l)
+      tryGetLeanValue (lean_list_expr_head l)
+        :< tryGetLeanValue (lean_list_expr_tail l)
     else
       Nil
 
