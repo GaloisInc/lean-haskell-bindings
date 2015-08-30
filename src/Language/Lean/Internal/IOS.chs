@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE EmptyDataDecls #-}
+{-# LANGUAGE ExplicitNamespaces #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE GADTs #-}
@@ -8,7 +9,7 @@
 {-# LANGUAGE RankNTypes #-}
 module Language.Lean.Internal.IOS
   ( IOState
-  , IOStateType(..)
+  , type IOStateType(..)
     -- * Stadnard IOState
   , mkStandardIOState
     -- * Buffered IOState
@@ -24,6 +25,9 @@ module Language.Lean.Internal.IOS
   , iosSetOptions
     -- * Operations using IOState
   , ppExpr
+    -- * External FFI declarations
+  , SomeIOState
+  , withSomeIOState
   ) where
 
 import Foreign
@@ -34,8 +38,9 @@ import Unsafe.Coerce (unsafeCoerce)
 {#import Language.Lean.Internal.Exception#}
 {#import Language.Lean.Internal.Options#}
 {#import Language.Lean.Internal.Expr#}
-{#import Language.Lean.Internal.Env #}
+{#import Language.Lean.Internal.Env#}
 
+-- | This describes the type of the @IOState@.
 data IOStateType
    = Standard
    | Buffered
@@ -60,24 +65,26 @@ foreign import ccall "&lean_ios_del"
 -- | The IO State
 newtype IOState (tp :: IOStateType) = IOState (ForeignPtr SomeIOState)
 
+-- | Lift an arbitray IOState to SomeIOState
 someIOS :: IOState tp -> SomeIOState
 someIOS (IOState p) = SomeIOState (castForeignPtr p)
 
 instance IsLeanValue (IOState tp) SomeIOState where
   mkLeanValue = fmap IOState . newForeignPtr lean_ios_del_ptr
 
-
+-- | Run a computation with an io state.
 withIOState :: IOState tp -> (Ptr SomeIOState -> IO a) -> IO a
 withIOState (IOState ptr) f = withForeignPtr ptr (f . castPtr)
 
+type BufferedIOState = IOState 'Buffered
+
+withBufferedIOState :: IOState 'Buffered -> (Ptr SomeIOState -> IO a) -> IO a
+withBufferedIOState = withIOState
+
+{#pointer lean_ios as BufferedIOState foreign newtype nocode#}
 
 withSomeIOState :: SomeIOState -> (Ptr SomeIOState -> IO a) -> IO a
 withSomeIOState (SomeIOState p) f = withForeignPtr p (f . castPtr)
-
-type BufferedIOState = IOState 'Buffered
-withBufferedIOState :: IOState 'Buffered -> (Ptr SomeIOState -> IO a) -> IO a
-withBufferedIOState = withIOState
-{#pointer lean_ios as BufferedIOState foreign newtype nocode#}
 
 {#pointer lean_ios as SomeIOState foreign newtype nocode#}
 
@@ -168,11 +175,11 @@ iosSetOptions ios ops = runLeanPartialAction $ lean_ios_set_options (someIOS ios
 -- Pretty print expression
 
 ppExpr :: Env -> IOState tp -> Expr -> IO String
-ppExpr env s e = tryAllocString $ lean_expr_to_pp_string env s e
+ppExpr env s e = tryAllocString $ lean_expr_to_pp_string env (someIOS s) e
 
 {#fun unsafe lean_expr_to_pp_string
   { `Env'
-  , withIOState* `IOState tp'
+  , `SomeIOState'
   , `Expr'
   , id `Ptr CString'
   , `OutExceptionPtr'
