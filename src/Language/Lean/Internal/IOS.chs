@@ -28,6 +28,7 @@ module Language.Lean.Internal.IOS
     -- * External FFI declarations
   , SomeIOState
   , withSomeIOState
+  , someIOS
   ) where
 
 import Foreign

@@ -50,12 +50,15 @@ library
     Language.Lean.Internal.Env
     Language.Lean.Internal.IOS
     Language.Lean.Internal.Typechecker
+    Language.Lean.Decl
     Language.Lean.Env
     Language.Lean.Exception
     Language.Lean.Expr
     Language.Lean.List
+    Language.Lean.Module
     Language.Lean.Name
     Language.Lean.Options
+    Language.Lean.Typechecker
     Language.Lean.Univ
 
 test-suite test
