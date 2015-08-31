@@ -59,7 +59,7 @@ if [ ! -f Makefile ]; then
     cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_CXX_COMPILER=g++-4.9 ../src
 fi
 
-make leanshared || cat Makefile
+make || cat Makefile
 popd > /dev/null # deps/lean/build
 popd > /dev/null # deps/lean
 popd > /dev/null # deps
