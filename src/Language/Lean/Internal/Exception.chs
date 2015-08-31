@@ -21,15 +21,9 @@ module Language.Lean.Internal.Exception
   , LeanPartialFn
   , IsLeanValue(..)
     -- * Functions that return a result in IO
-  , tryAllocString
   , tryAllocLeanValue
     -- * Functions that are pure.
-  , tryGetString
-  , tryGetBool
-  , tryGetDouble
   , tryGetEnum
-  , tryGetInt
-  , tryGetUInt
   , tryGetLeanValue
   ) where
 
@@ -194,36 +188,10 @@ tryAllocLeanValue = tryLeanPartialFn mkLeanValue
 -- Other than allocating a new value or exception, the function
 -- must be pure
 tryGetLeanValue :: IsLeanValue a p
-                   -- ^ Pointer to function that releases resource.
                 => LeanPartialFn p
                 -> a
 tryGetLeanValue = tryPureLeanPartialFn mkLeanValue
 {-# INLINE tryGetLeanValue #-}
-
-
--- | Try to run a Lean partial function that returns a Boolean argument.
-tryGetBool :: LeanPartialFn CInt -> Bool
-tryGetBool = tryGetLeanValue
-
--- | Try to run a Lean partial function that returns a unsigned integer.
-tryGetUInt :: LeanPartialFn CUInt -> Word32
-tryGetUInt = tryGetLeanValue
-
--- | Try to run a Lean partial function that returns a signed integer.
-tryGetInt :: LeanPartialFn CInt -> Int32
-tryGetInt = tryGetLeanValue
-
--- | Try to run a Lean partial function that returns a double.
-tryGetDouble :: LeanPartialFn CDouble -> Double
-tryGetDouble = tryGetLeanValue
-
--- | Try to run a Lean partial function that returns a string.
-tryAllocString :: LeanPartialFn CString -> IO String
-tryAllocString = tryAllocLeanValue
-
--- | Try to run a Lean partial function that returns a string.
-tryGetString :: LeanPartialFn CString -> String
-tryGetString = tryGetLeanValue
 
 -- | Try to run a Lean partial function that returns an enum type
 tryGetEnum :: (Enum a) => LeanPartialFn CInt -> a

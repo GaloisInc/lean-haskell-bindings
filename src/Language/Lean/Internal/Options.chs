@@ -78,7 +78,7 @@ instance Show Options where
   show = showOption
 
 showOption :: Options -> String
-showOption x = tryGetString $ lean_options_to_string x
+showOption x = tryGetLeanValue $ lean_options_to_string x
 
 {#fun unsafe lean_options_to_string
   { `Options'

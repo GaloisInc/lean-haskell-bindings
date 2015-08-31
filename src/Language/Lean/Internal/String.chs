@@ -1,3 +1,14 @@
+{-|
+Module      : Language.Lean.Internal.String
+Description : Low-level functions for working with strings
+Copyright   : (c) Galois Inc, 2015
+License     : Apache-2
+Maintainer  : jhendrix@galois.com, lcasburn@galois.com
+Stability   : experimental
+Portability : POSIX
+
+This module exports the main components of the Lean interface.
+-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 module Language.Lean.Internal.String
   ( mkLeanString
@@ -6,7 +17,6 @@ module Language.Lean.Internal.String
   , decodeLeanString
   , withLeanStringPtr
   , withLeanTextPtr
-  , lean_string_del
   ) where
 
 import Control.Exception (bracket, finally)

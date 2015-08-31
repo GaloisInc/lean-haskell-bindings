@@ -115,13 +115,13 @@ mkBufferedIOState o = tryAllocLeanValue $ lean_ios_mk_buffered o
  { `Options', `SomeIOStatePtrPtr', `OutExceptionPtr' } -> `Bool' #}
 
 getRegularOutput :: IOState 'Buffered -> IO String
-getRegularOutput s = tryAllocString $ lean_ios_get_regular s
+getRegularOutput s = tryAllocLeanValue $ lean_ios_get_regular s
 
 {#fun unsafe lean_ios_get_regular
  { `BufferedIOState', id `Ptr CString', `OutExceptionPtr' } -> `Bool' #}
 
 getDiagnosticOutput :: IOState 'Buffered -> IO String
-getDiagnosticOutput s = tryAllocString $ lean_ios_get_diagnostic s
+getDiagnosticOutput s = tryAllocLeanValue $ lean_ios_get_diagnostic s
 
 {#fun unsafe lean_ios_get_diagnostic
  { `BufferedIOState', id `Ptr CString', `OutExceptionPtr' } -> `Bool' #}
@@ -177,7 +177,7 @@ iosSetOptions ios ops = runLeanPartialAction $ lean_ios_set_options (someIOS ios
 -- Pretty print expression
 
 ppExpr :: Env -> IOState tp -> Expr -> IO String
-ppExpr env s e = tryAllocString $ lean_expr_to_pp_string env (someIOS s) e
+ppExpr env s e = tryAllocLeanValue $ lean_expr_to_pp_string env (someIOS s) e
 
 {#fun unsafe lean_expr_to_pp_string
   { `Env'

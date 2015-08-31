@@ -61,7 +61,7 @@ instance Ord Name where
 {#fun pure unsafe lean_name_quick_lt { `Name' , `Name' } -> `Bool' #}
 
 instance Show Name where
-  show nm = tryGetString $ lean_name_to_string nm
+  show nm = tryGetLeanValue $ lean_name_to_string nm
 
 {#fun unsafe lean_name_to_string
   { `Name'
@@ -124,10 +124,10 @@ viewName nm =
     AnonymousName
   else if lean_name_is_str nm then do
     StringName (tryGetLeanValue $ lean_name_get_prefix nm)
-               (tryGetString $ lean_name_get_str nm)
+               (tryGetLeanValue $ lean_name_get_str nm)
   else assert (lean_name_is_idx nm) $ do
     IndexName (tryGetLeanValue $ lean_name_get_prefix nm)
-              (tryGetUInt $ lean_name_get_idx nm)
+              (tryGetLeanValue $ lean_name_get_idx nm)
 
 {#fun pure unsafe lean_name_is_anonymous { `Name' } -> `Bool' #}
 {#fun pure unsafe lean_name_is_str       { `Name' } -> `Bool' #}

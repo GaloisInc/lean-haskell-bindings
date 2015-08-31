@@ -243,7 +243,7 @@ metavarExpr nm tp = tryGetLeanValue $ lean_expr_mk_metavar nm tp
 -- Expression Show instance
 
 instance Show Expr where
-  show x = tryGetString $ lean_expr_to_string x
+  show x = tryGetLeanValue $ lean_expr_to_string x
 
 {#fun unsafe lean_expr_to_string
   { `Expr'
@@ -255,20 +255,20 @@ instance Show Expr where
 -- Expression Comparison
 
 instance Eq Expr where
-  x == y = tryGetBool $ lean_expr_eq x y
+  x == y = tryGetLeanValue $ lean_expr_eq x y
 
 {#fun unsafe lean_expr_eq
  { `Expr' , `Expr', id `Ptr CInt', `OutExceptionPtr' } -> `Bool' #}
 
 instance Ord Expr where
-   x <= y = not $ tryGetBool $ lean_expr_quick_lt y x
+   x <= y = not $ tryGetLeanValue $ lean_expr_quick_lt y x
 
 {#fun unsafe lean_expr_quick_lt
  { `Expr' , `Expr', id `Ptr CInt', `OutExceptionPtr' } -> `Bool' #}
 
 -- | Return true if first expression is structurally less than other.
 exprLt :: Expr -> Expr -> Bool
-exprLt x y = tryGetBool $ lean_expr_lt x y
+exprLt x y = tryGetLeanValue $ lean_expr_lt x y
 
 {#fun unsafe lean_expr_lt
  { `Expr' , `Expr', id `Ptr CInt', `OutExceptionPtr' } -> `Bool' #}
@@ -292,7 +292,7 @@ viewExpr :: Expr -> ExprView
 viewExpr x =
   case lean_expr_get_kind x of
     LEAN_EXPR_VAR ->
-      ExprVar (tryGetUInt $ lean_expr_get_var_idx x)
+      ExprVar (tryGetLeanValue $ lean_expr_get_var_idx x)
     LEAN_EXPR_SORT ->
       ExprSort (tryGetLeanValue $ lean_expr_get_sort_univ x)
     LEAN_EXPR_CONST ->

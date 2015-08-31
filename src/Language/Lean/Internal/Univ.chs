@@ -152,7 +152,7 @@ metaUniv x = tryGetLeanValue $ lean_univ_mk_meta x
 -- Equality and comparison of universes.
 
 instance Eq Univ where
-  x == y = tryGetBool $ lean_univ_eq x y
+  x == y = tryGetLeanValue $ lean_univ_eq x y
 
 {#fun unsafe lean_univ_eq
   { `Univ'
@@ -162,7 +162,7 @@ instance Eq Univ where
   } -> `Bool' #}
 
 instance Ord Univ where
-  x <= y = not (tryGetBool $ y `lean_univ_quick_lt` x)
+  x <= y = not (tryGetLeanValue $ y `lean_univ_quick_lt` x)
 
 {#fun unsafe lean_univ_quick_lt
   { `Univ'
@@ -173,7 +173,7 @@ instance Ord Univ where
 
 -- | Total ordering over universes using structural equality.
 univLt :: Univ -> Univ -> Bool
-univLt x y = tryGetBool $ x `lean_univ_lt` y
+univLt x y = tryGetLeanValue $ x `lean_univ_lt` y
 
 {#fun unsafe lean_univ_lt
   { `Univ'
@@ -187,7 +187,7 @@ univLt x y = tryGetBool $ x `lean_univ_lt` y
 -- than @x@ for all possible assignments to the variables in the
 -- @x@ and @y@.
 geqUniv :: Univ -> Univ -> Bool
-geqUniv x y = tryGetBool $ lean_univ_geq x y
+geqUniv x y = tryGetLeanValue $ lean_univ_geq x y
 
 {#fun unsafe lean_univ_geq
   { `Univ'
@@ -204,11 +204,11 @@ instance Show Univ where
 
 -- | Show a universe.
 showUniv :: Univ -> String
-showUniv u = tryGetString $ lean_univ_to_string u
+showUniv u = tryGetLeanValue $ lean_univ_to_string u
 
 -- | Show a universe with the given options.
 showUnivUsing :: Univ -> Options -> String
-showUnivUsing u options = tryGetString $ lean_univ_to_string_using u options
+showUnivUsing u options = tryGetLeanValue $ lean_univ_to_string_using u options
 
 {#fun unsafe lean_univ_to_string
   { `Univ'
@@ -339,7 +339,7 @@ foreign import ccall "&lean_list_univ_del"
 -- ListUniv Eq instance
 
 instance Eq (List Univ) where
-  x == y = tryGetBool $ lean_list_univ_eq x y
+  x == y = tryGetLeanValue $ lean_list_univ_eq x y
 
 {#fun unsafe lean_list_univ_eq
    { `ListUniv'

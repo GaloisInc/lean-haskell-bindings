@@ -243,11 +243,11 @@ viewDecl x =
     LEAN_DECL_AXIOM -> DeclAxiom
     LEAN_DECL_DEF ->
       DeclDef (tryGetLeanValue $ lean_decl_get_value x)
-              (tryGetUInt $ lean_decl_get_height x)
-              (tryGetBool $ lean_decl_get_conv_opt x)
+              (tryGetLeanValue $ lean_decl_get_height x)
+              (tryGetLeanValue $ lean_decl_get_conv_opt x)
     LEAN_DECL_THM ->
       DeclThm (tryGetLeanValue $ lean_decl_get_value x)
-              (tryGetUInt $ lean_decl_get_height x)
+              (tryGetLeanValue $ lean_decl_get_height x)
 
 {#enum lean_decl_kind as DeclKind { upcaseFirstLetter }
          deriving (Eq)#}

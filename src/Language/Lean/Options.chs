@@ -154,29 +154,29 @@ simpleLensEq getter setter nm f o = fmap setFun (f oldVal)
 boolOption :: Name -> Simple Lens Options Bool
 boolOption = simpleLensEq optGet optSet
   where
-    optGet = optionsGet tryGetBool lean_options_get_bool
+    optGet = optionsGet tryGetLeanValue lean_options_get_bool
     optSet = optionsSet lean_options_set_bool
 
 intOption :: Name -> Simple Lens Options Int32
 intOption = simpleLensEq optGet optSet
   where
-    optGet = optionsGet tryGetInt lean_options_get_int
+    optGet = optionsGet tryGetLeanValue lean_options_get_int
     optSet = optionsSet lean_options_set_int
 
 uintOption :: Name -> Simple Lens Options Word32
 uintOption = simpleLensEq optGet optSet
   where
-    optGet = optionsGet tryGetUInt lean_options_get_unsigned
+    optGet = optionsGet tryGetLeanValue lean_options_get_unsigned
     optSet = optionsSet lean_options_set_unsigned
 
 doubleOption :: Name -> Simple Lens Options Double
 doubleOption = simpleLensEq optGet optSet
   where
-    optGet = optionsGet tryGetDouble lean_options_get_double
+    optGet = optionsGet tryGetLeanValue lean_options_get_double
     optSet = optionsSet lean_options_set_double
 
 stringOption :: Name -> Simple Lens Options String
 stringOption = simpleLensEq optGet optSet
   where
-    optGet = optionsGet tryGetString lean_options_get_string
+    optGet = optionsGet tryGetLeanValue lean_options_get_string
     optSet = optionsSet lean_options_set_string
