@@ -9,6 +9,7 @@ import Tests.Name (nameTests)
 import Tests.Options (optionsTests)
 import Tests.Univ (univTests)
 import Tests.Expr (exprTests)
+import Tests.Env  (envTests)
 
 main :: IO ()
 main = defaultMainWithIngredients ingrs tests
@@ -22,4 +23,5 @@ tests = testGroup "lean-bindings"
   , optionsTests
   , univTests
   , exprTests
+  , envTests
   ]

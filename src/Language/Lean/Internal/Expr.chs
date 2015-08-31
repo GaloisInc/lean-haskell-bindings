@@ -75,11 +75,15 @@ foreign import ccall "&lean_macro_def_del"
 instance Eq MacroDef where
   (==) = error "Equality comparison with macro definitions is not yet implemented."
 
+instance Show MacroDef where
+  show = error "MacroDef.show not yet implement"
+
+
 ------------------------------------------------------------------------
 -- BinderKind declaration
 {#enum lean_binder_kind as BinderKind { underscoreToCase, upcaseFirstLetter }
    with prefix = "LEAN_"
-   deriving (Eq)#}
+   deriving (Eq, Show)#}
 
 ------------------------------------------------------------------------
 -- Expr declaration
@@ -282,7 +286,7 @@ data ExprView
   | ExprLambda BinderKind Name Expr Expr
   | ExprPi     BinderKind Name Expr Expr
   | ExprMacro MacroDef (List Expr)
-  deriving (Eq)
+  deriving (Eq, Show)
 
 viewExpr :: Expr -> ExprView
 viewExpr x =

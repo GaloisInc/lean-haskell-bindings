@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE EmptyDataDecls #-}
 {-# LANGUAGE ExplicitNamespaces #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
@@ -7,6 +6,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE StandaloneDeriving #-}
 module Language.Lean.Internal.IOS
   ( IOState
   , type IOStateType(..)
@@ -145,15 +145,16 @@ data IOStateTypeRepr (tp :: IOStateType) where
   StandardRepr :: IOStateTypeRepr 'Standard
   BufferedRepr :: IOStateTypeRepr 'Buffered
 
+deriving instance Show (IOStateTypeRepr tp)
+
 -- | Return the representation of the type.
 iosTypeRepr :: IOState tp -> IOStateTypeRepr tp
 iosTypeRepr s
   | lean_ios_is_std (someIOS s) = unsafeCoerce StandardRepr
-  | otherwise         = unsafeCoerce BufferedRepr
+  | otherwise                   = unsafeCoerce BufferedRepr
 
 -- Return true if this is a IO state
-{#fun pure unsafe lean_ios_is_std
- { `SomeIOState' } -> `Bool' #}
+{#fun pure unsafe lean_ios_is_std { `SomeIOState' } -> `Bool' #}
 
 ------------------------------------------------------------------------
 -- IOState options

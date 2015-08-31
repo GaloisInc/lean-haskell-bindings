@@ -15,13 +15,14 @@ module Language.Lean.Env
   , envTrustLevel
   , envContainsProofIrrelProp
   , envIsImpredicative
-  , envContainsUniv
+  , envContainsDecl
   , envLookupDecl
+  , envContainsUniv
   , envIsDescendant
     -- * Operations
   , envForget
-  , envFoldDecls
-  , envFoldUnivs
+  , envDecls
+  , envUnivs
   ) where
 
 import Control.Exception (bracket)
@@ -133,8 +134,8 @@ envForget x = tryGetLeanValue $ lean_env_forget x
 -- foldEnvDecls
 
 -- | A fold over the declratation in the environment.
-envFoldDecls :: Fold Env Decl
-envFoldDecls = runLeanFold wrapDeclVisitFn allocDecl lean_env_for_each_decl
+envDecls :: Fold Env Decl
+envDecls = runLeanFold wrapDeclVisitFn allocDecl lean_env_for_each_decl
 
 foreign import ccall "wrapper" wrapDeclVisitFn :: WrapLeanVisitFn DeclPtr
 
@@ -148,8 +149,8 @@ foreign import ccall "wrapper" wrapDeclVisitFn :: WrapLeanVisitFn DeclPtr
 -- foldEnvUnivs
 
 -- | Fold over the global universes in the environment.
-envFoldUnivs :: Fold Env Name
-envFoldUnivs = runLeanFold wrapNameVisitFn mkLeanValue lean_env_for_each_univ
+envUnivs :: Fold Env Name
+envUnivs = runLeanFold wrapNameVisitFn mkLeanValue lean_env_for_each_univ
 
 foreign import ccall "wrapper" wrapNameVisitFn :: WrapLeanVisitFn NamePtr
 

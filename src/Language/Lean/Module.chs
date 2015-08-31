@@ -50,14 +50,14 @@ envExport e path = runLeanPartialAction $ lean_env_export e path
    } -> `Bool' #}
 
 -- | Path to lean standard library (extracted from LEAN_PATH)
-stdPath :: FilePath
+stdPath :: String
 stdPath = tryGetLeanValue $ lean_get_std_path
 
 {#fun unsafe lean_get_std_path
  { id `Ptr CString', `OutExceptionPtr' } -> `Bool' #}
 
 -- | Path to lean hott library (extrcted from HLEAN_PATH)
-hottPath :: FilePath
+hottPath :: String
 hottPath = tryGetLeanValue $ lean_get_hott_path
 
 {#fun unsafe lean_get_hott_path
