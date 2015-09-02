@@ -9,7 +9,7 @@ cache:
     - $HOME/.cabal/packages
     - deps/lean
 
-env: CABAL_VER=1.22 GHC_VER=7.10.1 ALEX_VER=3.1.4 HAPPY_VER=1.19.5 CXX=g++-4.9
+env: CABAL_VER=1.22 GHC_VER=7.10.2 ALEX_VER=3.1.4 HAPPY_VER=1.19.5 CXX=g++-4.9
 addons:
   apt:
     sources:
