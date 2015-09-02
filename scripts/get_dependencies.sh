@@ -7,7 +7,7 @@ set -ex
 echo $PWD
 ls -l
 
-if [ -d deps/lean ]; then
+if [ -d deps/lean/.git ]; then
     pushd deps/lean
     git pull
     popd # deps/lean
