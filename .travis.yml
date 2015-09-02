@@ -1,4 +1,15 @@
-language: haskell
+language: c
+
+# explicitly request container-based infrastructure
+sudo: false
+
+cache:
+  directories:
+    - $HOME/.cabsnap
+    - $HOME/.cabal/packages
+    - deps/lean
+
+env: CABAL_VER=1.22 GHC_VER=7.10.1 ALEX_VER=3.1.4 HAPPY_VER=1.19.5 CXX=g++-4.9
 addons:
   apt:
     sources:
@@ -8,13 +19,33 @@ addons:
     packages:
     - libgmp-dev
     - libmpfr-dev
+    - lua5.2
     - liblua5.2-0
     - liblua5.2-dev
-    - lua5.2
     - cmake
     - g++-4.9
     - ghc-7.10.2
+    - cabal-install-1.22
+    - alex-3.1.4
+    - happy-1.19.5
+before_install:
+- export PATH=/opt/ghc/$GHC_VER/bin:$PATH
+- export PATH=/opt/cabal/$CABAL_VER/bin:$PATH
+- export PATH=/opt/alex/$ALEX_VER/bin:$PATH
+- export PATH=/opt/happy/$HAPPY_VER/bin:$PATH
 install:
+- cabal --version
+# Unpack gziped package list if available (deleted before caching)
+- if [ -f $HOME/.cabal/packages/hackage.haskell.org/00-index.tar.gz ];
+   then
+     zcat $HOME/.cabal/packages/hackage.haskell.org/00-index.tar.gz >
+          $HOME/.cabal/packages/hackage.haskell.org/00-index.tar;
+   fi
 - ./scripts/get_dependencies.sh
 script:
 - ./scripts/travis_script.sh
+
+# Clean up files not needed for caching.
+before_cache:
+- rm -fv $HOME/.cabal/packages/hackage.haskell.org/build-reports.log
+- rm -fv $HOME/.cabal/packages/hackage.haskell.org/00-index.tar
