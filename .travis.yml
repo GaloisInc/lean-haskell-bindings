@@ -44,7 +44,7 @@ install:
    fi
 - ./scripts/get_dependencies.sh
 script:
-- cabal configure --enable-tests -extra-lib-dirs=$PWD/deps/lean/build --extra-include-dirs=$PWD/deps/lean/src/api
+- cabal configure --enable-tests --extra-lib-dirs=$PWD/deps/lean/build --extra-include-dirs=$PWD/deps/lean/src/api
 - cabal build
 - LD_LIBRARY_PATH="$PWD/deps/lean/build" LEAN_PATH="$PWD/deps/lean/library" cabal test
 
