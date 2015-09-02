@@ -4,6 +4,8 @@ set -ex
 ########################################################################
 ## Cabal packages
 
+echo $PATH
+
 wget https://www.stackage.org/lts/cabal.config -O - > cabal.config
 
 if diff -u cabal.config .cabsnap/cabal.config; then

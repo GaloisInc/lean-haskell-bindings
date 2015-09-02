@@ -33,6 +33,7 @@ before_install:
 - export PATH=/opt/cabal/$CABAL_VER/bin:$PATH
 - export PATH=/opt/alex/$ALEX_VER/bin:$PATH
 - export PATH=/opt/happy/$HAPPY_VER/bin:$PATH
+- echo $PATH
 install:
 - cabal --version
 # Unpack gziped package list if available (deleted before caching)
