@@ -14,7 +14,7 @@ if diff -u cabal.config .cabsnap/cabal.config; then
 else
     echo "Stackage config cache miss"
     rm -rf $HOME/.cabsnap;
-    travis_retry cabal update -v
+    cabal update -v
     sed -i 's/^jobs:/-- jobs:/' $HOME/.cabal/config
     cabal install c2hs
     cabal install --only-dependencies --enable-tests
