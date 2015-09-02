@@ -44,7 +44,9 @@ install:
    fi
 - ./scripts/get_dependencies.sh
 script:
-- ./scripts/travis_script.sh
+- cabal configure --enable-tests -extra-lib-dirs=$PWD/deps/lean/build --extra-include-dirs=$PWD/deps/lean/src/api
+- cabal build
+- LD_LIBRARY_PATH="$PWD/deps/lean/build" LEAN_PATH="$PWD/deps/lean/library" cabal test
 
 # Clean up files not needed for caching.
 before_cache:
