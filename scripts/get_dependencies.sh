@@ -44,7 +44,7 @@ else
     cabal install --only-dependencies --enable-tests
     echo "snapshotting configuration to build-cache";
     mkdir $HOME/.cabsnap;
-    cp -a cabal.config $HOME/.cabsnap/config
+    cp -a cabal.config $HOME/.cabsnap/
     cp -a $HOME/.ghc $HOME/.cabsnap/ghc;
     cp -a $HOME/.cabal/lib $HOME/.cabal/share $HOME/.cabal/bin $HOME/.cabal/config $HOME/.cabsnap/;
 fi
