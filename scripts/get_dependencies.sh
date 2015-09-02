@@ -30,7 +30,7 @@ echo $PATH
 
 wget https://www.stackage.org/lts/cabal.config -O - > cabal.config
 
-if diff -u cabal.config .cabsnap/cabal.config; then
+if diff -u cabal.config $HOME/.cabsnap/cabal.config; then
     echo "Stackage config cache hit"
     rm -rfv $HOME/.ghc;
     cp -a $HOME/.cabsnap/ghc $HOME/.ghc;
