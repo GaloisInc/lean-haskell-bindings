@@ -5,7 +5,7 @@ set -ex
 ## Lean
 
 echo $PWD
-ls -l
+ls -l deps/lean
 
 if [ -d deps/lean/.git ]; then
     pushd deps/lean
