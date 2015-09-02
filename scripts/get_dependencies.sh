@@ -2,6 +2,28 @@
 set -ex
 
 ########################################################################
+## Lean
+
+echo $PWD
+ls -l
+
+if [ -d deps/lean ]; then
+    pushd deps/lean
+    git pull
+    popd # deps/lean
+else
+    git clone https://github.com/leanprover/lean.git deps/lean
+fi
+
+mkdir -p deps/lean/build
+pushd deps/lean/build
+if [ ! -f Makefile ]; then
+    cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_CXX_COMPILER=$CXX ../src
+fi
+make
+popd # deps/lean/build
+
+########################################################################
 ## Cabal packages
 
 echo $PATH
@@ -26,30 +48,3 @@ else
     cp -a $HOME/.ghc $HOME/.cabsnap/ghc;
     cp -a $HOME/.cabal/lib $HOME/.cabal/share $HOME/.cabal/bin $HOME/.cabal/config $HOME/.cabsnap/;
 fi
-
-########################################################################
-## Lean
-
-if [ -d deps/lean ]; then
-    pushd deps/lean > /dev/null
-    git pull
-    popd > /dev/null # deps/lean
-else
-    git clone https://github.com/leanprover/lean.git deps/lean
-fi
-
-mkdir -p deps/lean/build
-pushd deps/lean/build > /dev/null
-if [ ! -f Makefile ]; then
-    cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_CXX_COMPILER=$CXX ../src
-fi
-make
-popd > /dev/null # deps/lean/build
-
-########################################################################
-## cabal.config
-
-cat <<EOF >> cabal.config
-extra-include-dirs: $PWD/deps/lean/src/api
-extra-lib-dirs:     $PWD/deps/lean/build
-EOF
