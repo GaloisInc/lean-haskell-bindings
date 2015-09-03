@@ -40,7 +40,7 @@ import Foreign
 instance IsLeanValue ConstraintSeq (Ptr ConstraintSeq) where
   mkLeanValue = fmap ConstraintSeq . newForeignPtr lean_cnstr_seq_del_ptr
 
-foreign import ccall "&lean_cnstr_seq_del"
+foreign import ccall unsafe "&lean_cnstr_seq_del"
   lean_cnstr_seq_del_ptr :: FunPtr (ConstraintSeqPtr -> IO ())
 
 ------------------------------------------------------------------------
@@ -55,5 +55,5 @@ foreign import ccall "&lean_cnstr_seq_del"
 instance IsLeanValue Typechecker (Ptr Typechecker) where
   mkLeanValue = fmap Typechecker . newForeignPtr lean_type_checker_del_ptr
 
-foreign import ccall "&lean_type_checker_del"
+foreign import ccall unsafe "&lean_type_checker_del"
   lean_type_checker_del_ptr :: FunPtr (TypecheckerPtr -> IO ())

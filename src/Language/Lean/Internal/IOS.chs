@@ -60,7 +60,7 @@ data IOStateType
 -- | Internal state used for bindings
 newtype SomeIOState = SomeIOState (ForeignPtr SomeIOState)
 
-foreign import ccall "&lean_ios_del"
+foreign import ccall unsafe "&lean_ios_del"
   lean_ios_del_ptr :: FunPtr (Ptr SomeIOState -> IO ())
 
 -- | The IO State

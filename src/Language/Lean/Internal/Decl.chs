@@ -10,7 +10,7 @@ module Language.Lean.Internal.Decl
   , defDecl
   , defWithDecl
   , thmDecl
---  , thmWithDecl
+  , thmWithDecl
     -- * Projections
   , declName
   , declUnivParams
@@ -61,11 +61,10 @@ import Language.Lean.List
 {#pointer *lean_env as OutEnvPtr -> EnvPtr#}
 
 instance IsLeanValue Env (Ptr Env) where
-   mkLeanValue = fmap Env . newForeignPtr lean_env_del_ptr
+   mkLeanValue = \v -> fmap Env $ newForeignPtr lean_env_del_ptr v
 
-foreign import ccall "&lean_env_del"
+foreign import ccall unsafe "&lean_env_del"
   lean_env_del_ptr :: FunPtr (EnvPtr -> IO ())
-
 
 ------------------------------------------------------------------------
 -- Decl declaration
@@ -82,7 +81,7 @@ allocDecl ptr = Decl <$> newForeignPtr lean_decl_del_ptr ptr
 instance IsLeanValue Decl (Ptr Decl) where
    mkLeanValue = fmap Decl . newForeignPtr lean_decl_del_ptr
 
-foreign import ccall "&lean_decl_del"
+foreign import ccall unsafe "&lean_decl_del"
   lean_decl_del_ptr :: FunPtr (DeclPtr -> IO ())
 
 ------------------------------------------------------------------------
@@ -96,7 +95,7 @@ foreign import ccall "&lean_decl_del"
 instance IsLeanValue CertDecl (Ptr CertDecl) where
    mkLeanValue = fmap CertDecl . newForeignPtr lean_cert_decl_del_ptr
 
-foreign import ccall "&lean_cert_decl_del"
+foreign import ccall unsafe "&lean_cert_decl_del"
   lean_cert_decl_del_ptr :: FunPtr (CertDeclPtr -> IO ())
 
 ------------------------------------------------------------------------
@@ -186,7 +185,6 @@ thmDecl nm params tp v h = tryGetLeanValue $ lean_decl_mk_thm nm params tp v h
   , `OutExceptionPtr'
   } -> `Bool' #}
 
-{-
 -- | Create a theorem with name @nm@, universe parameters names
 -- @params@, type @tp@, value @v@, definitional height @h@. Theorems
 -- and definitions are essentially the same thing in Lean, except in
@@ -206,7 +204,6 @@ thmWithDecl e nm params tp v = tryGetLeanValue $ lean_decl_mk_thm_with e nm para
   , `OutDeclPtr'
   , `OutExceptionPtr'
   } -> `Bool' #}
--}
 
 ------------------------------------------------------------------------
 -- Projections

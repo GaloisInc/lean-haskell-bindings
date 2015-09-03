@@ -28,7 +28,7 @@ import System.IO.Unsafe
 {#pointer lean_options as OptionsPtr -> Options#}
 {#pointer *lean_options as OutOptionsPtr -> OptionsPtr #}
 
-foreign import ccall "&lean_options_del"
+foreign import ccall unsafe "&lean_options_del"
   lean_options_del_ptr :: FunPtr (OptionsPtr -> IO ())
 
 instance IsLeanValue Options (Ptr Options) where

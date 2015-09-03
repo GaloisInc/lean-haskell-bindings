@@ -73,5 +73,5 @@ testImport = do
   let env = Lean.stdEnv Lean.trustHigh
   let o = Lean.emptyOptions
   ios <- Lean.mkBufferedIOState o
-  new_env <- Lean.envImport env ios ["standard"]
-  assert $ Lean.envContainsDecl new_env "nat.gcd"
+  new_env <- Lean.envImport env ios ["init.logic"]
+  assert $ Lean.envContainsDecl new_env "not"

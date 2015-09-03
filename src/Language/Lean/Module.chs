@@ -32,7 +32,7 @@ import Language.Lean.List
 envImport :: Env -> IOState tp -> List Name -> IO Env
 envImport e s names = tryAllocLeanValue $ lean_env_import e (someIOS s) names
 
-{#fun unsafe lean_env_import
+{#fun lean_env_import
    { `Env'
    , `SomeIOState'
    , `ListName'
@@ -44,7 +44,7 @@ envImport e s names = tryAllocLeanValue $ lean_env_import e (someIOS s) names
 envExport :: Env -> FilePath -> IO ()
 envExport e path = runLeanPartialAction $ lean_env_export e path
 
-{#fun unsafe lean_env_export
+{#fun lean_env_export
    { `Env'
    , withLeanStringPtr* `String'
    , `OutExceptionPtr'

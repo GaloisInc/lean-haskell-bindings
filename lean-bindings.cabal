@@ -73,6 +73,6 @@ test-suite test
   extra-libraries:
     leanshared
 
-  ghc-options: -Wall
+  ghc-options: -Wall -threaded
   hs-source-dirs: test
   main-is: Main_test.hs

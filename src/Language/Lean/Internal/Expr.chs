@@ -64,9 +64,9 @@ import Language.Lean.List
 {#pointer *lean_macro_def as OutMacroDefPtr -> MacroDefPtr#}
 
 instance IsLeanValue MacroDef (Ptr MacroDef) where
-   mkLeanValue = fmap MacroDef . newForeignPtr lean_macro_def_del_ptr
+  mkLeanValue = fmap MacroDef . newForeignPtr lean_macro_def_del_ptr
 
-foreign import ccall "&lean_macro_def_del"
+foreign import ccall unsafe "&lean_macro_def_del"
   lean_macro_def_del_ptr :: FunPtr (MacroDefPtr -> IO ())
 
 ------------------------------------------------------------------------
@@ -77,7 +77,6 @@ instance Eq MacroDef where
 
 instance Show MacroDef where
   show = error "MacroDef.show not yet implement"
-
 
 ------------------------------------------------------------------------
 -- BinderKind declaration
@@ -94,9 +93,9 @@ instance Show MacroDef where
 {#pointer *lean_expr as OutExprPtr -> ExprPtr#}
 
 instance IsLeanValue Expr (Ptr Expr) where
-   mkLeanValue = fmap Expr . newForeignPtr lean_expr_del_ptr
+  mkLeanValue = fmap Expr . newForeignPtr lean_expr_del_ptr
 
-foreign import ccall "&lean_expr_del"
+foreign import ccall unsafe "&lean_expr_del"
   lean_expr_del_ptr :: FunPtr (ExprPtr -> IO ())
 
 ------------------------------------------------------------------------
@@ -117,7 +116,7 @@ withListExpr (ListExpr p) = withForeignPtr p
 instance IsLeanValue (List Expr) (Ptr (List Expr)) where
   mkLeanValue = fmap ListExpr . newForeignPtr lean_list_expr_del_ptr
 
-foreign import ccall "&lean_list_expr_del"
+foreign import ccall unsafe "&lean_list_expr_del"
   lean_list_expr_del_ptr :: FunPtr (ListExprPtr -> IO ())
 
 ------------------------------------------------------------------------

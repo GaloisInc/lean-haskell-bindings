@@ -44,7 +44,7 @@ import Language.Lean.List
 {#pointer lean_name as NamePtr -> Name#}
 {#pointer *lean_name as OutNamePtr -> NamePtr #}
 
-foreign import ccall "&lean_name_del"
+foreign import ccall unsafe "&lean_name_del"
   lean_name_del_ptr :: FunPtr (NamePtr -> IO ())
 
 instance IsLeanValue Name (Ptr Name) where
@@ -195,7 +195,7 @@ withListName (ListName p) = withForeignPtr p
 instance IsLeanValue (List Name) (Ptr (List Name)) where
   mkLeanValue = fmap ListName . newForeignPtr lean_list_name_del_ptr
 
-foreign import ccall "&lean_list_name_del"
+foreign import ccall unsafe "&lean_list_name_del"
   lean_list_name_del_ptr :: FunPtr (ListNamePtr -> IO ())
 
 ------------------------------------------------------------------------

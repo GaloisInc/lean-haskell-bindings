@@ -68,7 +68,7 @@ import Language.Lean.List
 {#pointer lean_univ as UnivPtr -> Univ#}
 {#pointer *lean_univ as OutUnivPtr -> UnivPtr #}
 
-foreign import ccall "&lean_univ_del"
+foreign import ccall unsafe "&lean_univ_del"
   lean_univ_del_ptr :: FunPtr (UnivPtr -> IO ())
 
 instance IsLeanValue Univ (Ptr Univ) where
@@ -332,7 +332,7 @@ withListUniv (ListUniv p) = withForeignPtr p
 instance IsLeanValue (List Univ) (Ptr (List Univ)) where
   mkLeanValue = fmap ListUniv . newForeignPtr lean_list_univ_del_ptr
 
-foreign import ccall "&lean_list_univ_del"
+foreign import ccall unsafe "&lean_list_univ_del"
   lean_list_univ_del_ptr :: FunPtr (ListUnivPtr -> IO ())
 
 ------------------------------------------------------------------------
