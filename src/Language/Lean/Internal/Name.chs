@@ -1,3 +1,12 @@
+{-|
+Module      : Language.Lean.Internal.Univ
+Copyright   : (c) Galois Inc, 2015
+License     : Apache-2
+Maintainer  : jhendrix@galois.com, lcasburn@galois.com
+
+Internal declarations for Lean names
+together with typeclass instances for @Name@.
+-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -38,9 +47,18 @@ import Language.Lean.List
 #include "lean_exception.h"
 #include "lean_name.h"
 
+{#pointer  lean_name as Name foreign newtype nocode#}
+
 -- | A Lean name
-{#pointer  lean_name as Name foreign newtype#}
+newtype Name = Name (ForeignPtr Name)
+
+-- | Use internal pointer to name in IO action.
+withName :: Name -> (Ptr Name -> IO a) -> IO a
+withName (Name o) = withForeignPtr o
+
+-- | Pointer used as input parameter for a name in FFI bindings.
 {#pointer  lean_name as NamePtr -> Name#}
+-- | Pointer used as output parameter for a name in FFI bindings.
 {#pointer *lean_name as OutNamePtr -> NamePtr #}
 
 foreign import ccall unsafe "&lean_name_del"
@@ -174,7 +192,7 @@ instance Monoid Name where
 ------------------------------------------------------------------------
 -- Name Lists
 
--- | Definition for liss of universes.
+-- | A list of names (constructor not actually exported)
 newtype instance List Name = ListName (ForeignPtr (List Name))
 
 -- | A list of Lean universe levels.

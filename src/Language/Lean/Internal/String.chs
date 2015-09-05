@@ -1,15 +1,14 @@
 {-|
 Module      : Language.Lean.Internal.String
-Description : Low-level functions for working with strings
 Copyright   : (c) Galois Inc, 2015
 License     : Apache-2
 Maintainer  : jhendrix@galois.com, lcasburn@galois.com
-Stability   : experimental
-Portability : POSIX
 
-This module exports the main components of the Lean interface.
+This module exports functions for marshalling strings across
+the Lean FFI.
 -}
 {-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE Trustworthy #-}
 module Language.Lean.Internal.String
   ( mkLeanString
   , mkLeanText

@@ -1,22 +1,12 @@
 {-|
 Module      : Language.Lean.Univ
-Description : Operations on Lean Universes
 Copyright   : (c) Galois Inc, 2015
 License     : Apache-2
 Maintainer  : jhendrix@galois.com, lcasburn@galois.com
-Stability   : experimental
-Portability : POSIX
 
 This module defines operations for universe levels.
 -}
-{- LANGUAGE CPP #-}
-{- LANGUAGE DoAndIfThenElse #-}
-{- LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
-{- LANGUAGE GeneralizedNewtypeDeriving #-}
-{- LANGUAGE MultiParamTypeClasses #-}
-{- LANGUAGE StandaloneDeriving #-}
-{- LANGUAGE TypeFamilies #-}
 module Language.Lean.Univ
   ( Univ
   , zeroUniv
@@ -26,6 +16,7 @@ module Language.Lean.Univ
   , paramUniv
   , globalUniv
   , metaUniv
+  , explicitUniv
   , UnivView(..)
   , viewUniv
   , showUniv
@@ -54,6 +45,67 @@ import Language.Lean.List
 #include "lean_name.h"
 #include "lean_options.h"
 #include "lean_univ.h"
+
+------------------------------------------------------------------------
+-- Operations for constructing universes
+
+-- | The zero universe
+zeroUniv :: Univ
+zeroUniv = tryGetLeanValue $ lean_univ_mk_zero
+
+{#fun unsafe lean_univ_mk_zero
+ { `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
+
+-- | Successor of the universe
+succUniv :: Univ -> Univ
+succUniv x = tryGetLeanValue $ lean_univ_mk_succ x
+
+{#fun unsafe lean_univ_mk_succ
+ { `Univ', `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
+
+-- | The max of two universes.
+maxUniv :: Univ -> Univ -> Univ
+maxUniv x y = tryGetLeanValue $ lean_univ_mk_max x y
+
+{#fun unsafe lean_univ_mk_max
+ { `Univ', `Univ', `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
+
+-- | The imax of two universes.
+imaxUniv :: Univ -> Univ -> Univ
+imaxUniv x y = tryGetLeanValue $ lean_univ_mk_imax x y
+
+{#fun unsafe lean_univ_mk_imax
+ { `Univ', `Univ', `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
+
+-- | A universe parameter of the given name.
+paramUniv :: Name -> Univ
+paramUniv x = tryGetLeanValue $ lean_univ_mk_param x
+
+{#fun unsafe lean_univ_mk_param
+ { `Name', `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
+
+-- | A global universe with the given name.
+globalUniv :: Name -> Univ
+globalUniv x = tryGetLeanValue $ lean_univ_mk_global x
+
+{#fun unsafe lean_univ_mk_global
+ { `Name', `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
+
+-- | A universe meta-variable with the given name.
+metaUniv :: Name -> Univ
+metaUniv x = tryGetLeanValue $ lean_univ_mk_meta x
+
+{#fun unsafe lean_univ_mk_meta
+ { `Name', `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
+
+-- | Create an explicit universe level
+explicitUniv :: Integer -> Univ
+explicitUniv i0 | i0 < 0 = error "Universes cannot be negative."
+                | otherwise = go zeroUniv i0
+  where -- Make sure first argument is evaluated
+        go r _ | seq r False = error "unexpected"
+        go r 0 = r
+        go r i = go (succUniv r) (i-1)
 
 ------------------------------------------------------------------------
 -- View

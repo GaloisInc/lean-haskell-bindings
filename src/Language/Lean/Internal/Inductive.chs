@@ -15,6 +15,7 @@ module Language.Lean.Internal.Inductive
   , InductiveDeclPtr
   , OutInductiveDeclPtr
   , withInductiveDecl
+  , List(..)
   ) where
 
 import Control.Lens (toListOf)
@@ -53,7 +54,7 @@ foreign import ccall unsafe "&lean_inductive_type_del"
 ------------------------------------------------------------------------
 -- List InductiveType declarations
 
--- | Definition for liss of universes.
+-- | A list of inductive types (constructor not actually exported)
 newtype instance List InductiveType = ListInductiveType (ForeignPtr (List InductiveType))
 
 -- | A list of Lean universe levels.

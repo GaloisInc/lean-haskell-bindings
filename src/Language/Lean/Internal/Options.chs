@@ -1,3 +1,12 @@
+{-|
+Module      : Language.Lean.Internal.Options
+Copyright   : (c) Galois Inc, 2015
+License     : Apache-2
+Maintainer  : jhendrix@galois.com, lcasburn@galois.com
+
+Internal declarations for Lean options and typeclass instances
+for @Options@ type.
+-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -23,9 +32,19 @@ import System.IO.Unsafe
 #include "lean_name.h"
 #include "lean_options.h"
 
+-- Use nocode and manually generate for haddock.
+{#pointer lean_options as Options foreign newtype nocode#}
+
 -- | A set of Lean configuration options
-{#pointer lean_options as Options foreign newtype#}
+newtype Options = Options (ForeignPtr Options)
+
+-- | Get access to @lean_options@ within IO action.
+withOptions :: Options -> (Ptr Options -> IO a) -> IO a
+withOptions (Options o) = withForeignPtr o
+
+-- | Pointer as input parameter for options in FFI bindings.
 {#pointer lean_options as OptionsPtr -> Options#}
+-- | Pointer used as output parameter for options in FFI bindings.
 {#pointer *lean_options as OutOptionsPtr -> OptionsPtr #}
 
 foreign import ccall unsafe "&lean_options_del"

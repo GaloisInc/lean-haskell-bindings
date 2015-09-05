@@ -1,3 +1,14 @@
+{-|
+Module      : Language.Lean.List
+Copyright   : (c) Galois Inc, 2015
+License     : Apache-2
+Maintainer  : jhendrix@galois.com, lcasburn@galois.com
+
+Declares a data family @List@ for associating a list type
+to different Lean values, and provides a typeclass
+along with associated operations for constructing and
+viewing Lean lists.
+-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}

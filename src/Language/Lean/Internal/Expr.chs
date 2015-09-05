@@ -101,7 +101,7 @@ foreign import ccall unsafe "&lean_expr_del"
 ------------------------------------------------------------------------
 -- ListExpr declaration
 
--- | Definition for list of expressions
+-- | A list of expressions (constructor not actually exported)
 newtype instance List Expr = ListExpr (ForeignPtr (List Expr))
 -- Synonym for List Expr
 type ListExpr = List Expr

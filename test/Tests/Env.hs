@@ -15,6 +15,12 @@ envTests = testGroup "Env"
   , testCase "import"   testImport
   ]
 
+u0 :: Lean.Univ
+u0 = Lean.explicitUniv 0
+
+u1 :: Lean.Univ
+u1 = Lean.explicitUniv 1
+
 testAddUniv :: IO ()
 testAddUniv = do
   let env = Lean.stdEnv Lean.trustHigh
@@ -51,18 +57,15 @@ testId = do
 
   assert $ length decls == 1
 
-  assert $ 0 `Lean.univLt` 1
-  assert $ not (1 `Lean.univLt` 0)
+  let prop = Lean.sortExpr u0
 
-  let prop = Lean.sortExpr 0
-
-  let id1 = Lean.constExpr "id" [1]
+  let id1 = Lean.constExpr "id" [u1]
   let id1T1 = id1 `Lean.appExpr` prop
-  let id1T1T0 = id1T1 `Lean.appExpr` Lean.sortExpr 1
+  let id1T1T0 = id1T1 `Lean.appExpr` Lean.sortExpr u1
 
   let tc = Lean.typechecker new_env
   let (n1, _s1) = Lean.whnf tc id1T1T0
-  assert $ n1 == Lean.sortExpr 1
+  assert $ n1 == Lean.sortExpr u1
 
   let (n2, _s2) = Lean.inferType tc id1T1
   let (r,_cs) = Lean.isDefEq tc n2 (Lean.piExpr Lean.BinderDefault "a" prop prop)

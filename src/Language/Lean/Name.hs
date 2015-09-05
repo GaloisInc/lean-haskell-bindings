@@ -1,13 +1,12 @@
 {-|
 Module      : Language.Lean.Lean
-Description : Lean Names
 Copyright   : (c) Galois Inc, 2015
 License     : Apache-2
 Maintainer  : jhendrix@galois.com, lcasburn@galois.com
 Stability   : experimental
 Portability : POSIX
 
-This provides an interface to the <http://leanprover.github.io/ Lean thereom prover>.
+This module provides operations for working with Lean names.
 -}
 {-# LANGUAGE DoAndIfThenElse #-}
 {-# LANGUAGE ForeignFunctionInterface #-}

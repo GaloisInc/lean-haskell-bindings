@@ -1,3 +1,11 @@
+{-|
+Module      : Language.Lean.Internal.Typechecker
+Copyright   : (c) Galois Inc, 2015
+License     : Apache-2
+Maintainer  : jhendrix@galois.com, lcasburn@galois.com
+
+Internal declarations for ConstraintSeq and Typechecker.
+-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -31,10 +39,18 @@ import Foreign
 ------------------------------------------------------------------------
 -- Constraint Sequence
 
--- | A constraint Sequence
-{#pointer lean_cnstr_seq as ConstraintSeq foreign newtype#}
+{#pointer lean_cnstr_seq as ConstraintSeq foreign newtype nocode#}
 
+-- | A sequence of constraints
+newtype ConstraintSeq = ConstraintSeq (ForeignPtr ConstraintSeq)
+
+-- | Get access to @lean_cnstr_seq@ within IO action.
+withConstraintSeq :: ConstraintSeq -> (Ptr ConstraintSeq -> IO a) -> IO a
+withConstraintSeq (ConstraintSeq o) = withForeignPtr o
+
+-- | Pointer to @lean_cnstr_seq@ for inputs to Lean functions.
 {#pointer lean_cnstr_seq as ConstraintSeqPtr -> ConstraintSeq#}
+-- | Pointer to @lean_cnstr_seq@ for outputs from Lean functions.
 {#pointer *lean_cnstr_seq as OutConstraintSeqPtr -> ConstraintSeqPtr #}
 
 instance IsLeanValue ConstraintSeq (Ptr ConstraintSeq) where

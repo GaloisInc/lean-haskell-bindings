@@ -1,11 +1,19 @@
+{-|
+Module      : Language.Lean.Internal.Exception
+Copyright   : (c) Galois Inc, 2015
+License     : Apache-2
+Maintainer  : jhendrix@galois.com, lcasburn@galois.com
+
+Internal operations for working with Lean exceptions.
+-}
 {-# LANGUAGE DoAndIfThenElse #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE Trustworthy #-}
 module Language.Lean.Internal.Exception
   ( LeanException(..)
   , LeanExceptionKind(..)
@@ -62,10 +70,10 @@ instance Exception LeanException
 ------------------------------------------------------------------------
 -- FFI Declarations
 
-{#pointer lean_exception as ExceptionPtr newtype#}
+-- | Pointer used as input parameter for exceptions in FFI bindings
+{#pointer lean_exception as ExceptionPtr -> LeanException#}
+-- | Pointer used as output parameter for exceptions in FFI bindings
 {#pointer *lean_exception as OutExceptionPtr -> ExceptionPtr #}
-
-deriving instance Storable ExceptionPtr
 
 {#fun unsafe lean_exception_del
   { `ExceptionPtr' } -> `()' #}
@@ -91,9 +99,11 @@ leanExceptionFromPtr ptr = do
   LeanException (getLeanExceptionKind ptr)
                 (lean_exception_get_message ptr)
 
+-- | Create a Lean kernel exception from the given messasge.
 leanKernelException :: String -> LeanException
 leanKernelException = LeanException LeanKernelException
 
+-- | Create a Lean other exception from the given messasge.
 leanOtherException :: String -> LeanException
 leanOtherException = LeanException LeanOtherException
 
@@ -119,6 +129,7 @@ getLeanExceptionKind ptr = do
 -- | A lean partial function is an action that may fail
 type LeanPartialAction = (Ptr ExceptionPtr -> IO Bool)
 
+-- | Run a lean partial action, throwing an exception if it fails.
 runLeanPartialAction :: LeanPartialAction
                      -> IO ()
 runLeanPartialAction action =
@@ -156,7 +167,10 @@ tryPureLeanPartialFn = \next alloc_fn -> unsafePerformIO $ do
   runLeanPartialFn alloc_fn >>= next
 {-# INLINE tryPureLeanPartialFn #-}
 
+-- | Typeclass that associates Haskell types with their type in
+-- the FFI layer.
 class Storable p => IsLeanValue v p | v -> p where
+  -- | Create a Haskell value from a FFI value.
   mkLeanValue :: p -> IO v
 
 instance IsLeanValue Bool CInt where

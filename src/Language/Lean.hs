@@ -1,11 +1,8 @@
 {-|
 Module      : Language.Lean
-Description : Top-level module for Lean interface.
 Copyright   : (c) Galois Inc, 2015
 License     : Apache-2
 Maintainer  : jhendrix@galois.com, lcasburn@galois.com
-Stability   : experimental
-Portability : POSIX
 
 This module exports the main components of the Lean interface.
 -}

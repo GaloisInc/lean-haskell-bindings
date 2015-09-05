@@ -1,13 +1,11 @@
 {-|
 Module      : Language.Lean.Internal.Univ
-Description : Internal declarations for Lean Universes
 Copyright   : (c) Galois Inc, 2015
 License     : Apache-2
 Maintainer  : jhendrix@galois.com, lcasburn@galois.com
-Stability   : experimental
-Portability : POSIX
 
-This module defines internal functions for universe levels.
+Internal declarations for Lean universe values
+together with typeclass instances for @Univ@.
 -}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
@@ -15,13 +13,6 @@ This module defines internal functions for universe levels.
 {-# LANGUAGE TypeFamilies #-}
 module Language.Lean.Internal.Univ
   ( Univ
-  , zeroUniv
-  , succUniv
-  , maxUniv
-  , imaxUniv
-  , paramUniv
-  , globalUniv
-  , metaUniv
   , showUniv
   , showUnivUsing
   , univLt
@@ -43,7 +34,6 @@ import System.IO.Unsafe
 
 import Language.Lean.List
 {#import Language.Lean.Internal.Exception #}
-{#import Language.Lean.Internal.Name #}
 {#import Language.Lean.Internal.Options #}
 
 #include "lean_macros.h"
@@ -126,82 +116,9 @@ showUnivUsing u options = tryGetLeanValue $ lean_univ_to_string_using u options
   } -> `Bool' #}
 
 ------------------------------------------------------------------------
--- Operations for constructing universes
-
--- | The zero universe
-zeroUniv :: Univ
-zeroUniv = tryGetLeanValue $ lean_univ_mk_zero
-
-{#fun unsafe lean_univ_mk_zero
- { `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
-
--- | Successor of the universe
-succUniv :: Univ -> Univ
-succUniv x = tryGetLeanValue $ lean_univ_mk_succ x
-
-{#fun unsafe lean_univ_mk_succ
- { `Univ', `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
-
--- | The max of two universes.
-maxUniv :: Univ -> Univ -> Univ
-maxUniv x y = tryGetLeanValue $ lean_univ_mk_max x y
-
-{#fun unsafe lean_univ_mk_max
- { `Univ', `Univ', `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
-
--- | The imax of two universes.
-imaxUniv :: Univ -> Univ -> Univ
-imaxUniv x y = tryGetLeanValue $ lean_univ_mk_imax x y
-
-{#fun unsafe lean_univ_mk_imax
- { `Univ', `Univ', `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
-
--- | A universe parameter of the given name.
-paramUniv :: Name -> Univ
-paramUniv x = tryGetLeanValue $ lean_univ_mk_param x
-
-{#fun unsafe lean_univ_mk_param
- { `Name', `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
-
--- | A global universe with the given name.
-globalUniv :: Name -> Univ
-globalUniv x = tryGetLeanValue $ lean_univ_mk_global x
-
-{#fun unsafe lean_univ_mk_global
- { `Name', `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
-
--- | A universe meta-variable with the given name.
-metaUniv :: Name -> Univ
-metaUniv x = tryGetLeanValue $ lean_univ_mk_meta x
-
-{#fun unsafe lean_univ_mk_meta
- { `Name', `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
-
-------------------------------------------------------------------------
--- Univ Num instance
-
--- This instance is only so that we can describe explicit
--- universe levels using integer literals.  All other methods will throw an
--- error if called.
-instance Num Univ where
-  (+) = error "(+) is undefined on Lean universe levels"
-  (-) = error "(-) is undefined on Lean universe levels"
-  (*) = error "(*) is undefined on Lean universe levels"
-  abs x = x
-  signum = error "signum is undefined on Lean universe levels"
-  negate = error "Lean universe levels cannot be negated."
-
-  fromInteger i0 | i0 < 0 = error "Universes cannot be negative."
-                 | otherwise = go zeroUniv i0
-    where -- Make sure first argument is evaluated
-          go r _ | seq r False = error "unexpected"
-          go r 0 = r
-          go r i = go (succUniv r) (i-1)
-
-------------------------------------------------------------------------
 -- Univ Lists
 
--- | Definition for liss of universes.
+-- | A list of universes (constructor not actually exported)
 newtype instance List Univ = ListUniv (ForeignPtr (List Univ))
 
 -- | A list of Lean universe levels.
@@ -279,8 +196,10 @@ instance IsListIso (List Univ) Univ where
 ------------------------------------------------------------------------
 -- ListUniv IsList instance
 
+-- | Allow @(List Univ)@ to use @OverloadedLists@ extensions.
 instance IsList (List Univ) where
-  type Item ListUniv = Univ
+  -- | List Univ type family instance needed by @IsList (List Univ)@
+  type Item (List Univ) = Univ
   fromList = fromListDefault
   toList = toListOf traverseList
 

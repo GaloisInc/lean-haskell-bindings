@@ -13,6 +13,9 @@ exprTests = testGroup "Expr"
   , testCase "const"    testConst
   ]
 
+u0 :: Lean.Univ
+u0 = Lean.explicitUniv 0
+
 testVar :: IO ()
 testVar = do
   let e1 = Lean.varExpr 0
@@ -25,11 +28,11 @@ testVar = do
 
 testConst :: IO ()
 testConst = do
-  let e1 = Lean.constExpr "id"   [0]
-  let e2 = Lean.constExpr "id"   [0,0]
-  let e3 = Lean.constExpr "func" [0,0]
-  assert (e1 == e1)
-  assert (not (e1 == e2))
-  assert (Lean.viewExpr e2 == Lean.ExprConst "id" [0, 0])
-  assert (Lean.viewExpr e3 == Lean.ExprConst "func" [0, 0])
-  assert (show e3 == "func.{0 0}")
+  let e1 = Lean.constExpr "id"   [u0]
+  let e2 = Lean.constExpr "id"   [u0, u0]
+  let e3 = Lean.constExpr "func" [u0, u0]
+  assert $ e1 == e1
+  assert $ not (e1 == e2)
+  assert $ Lean.viewExpr e2 == Lean.ExprConst "id" [u0, u0]
+  assert $ Lean.viewExpr e3 == Lean.ExprConst "func" [u0, u0]
+  assert $ show e3 == "func.{0 0}"

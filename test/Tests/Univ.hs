@@ -17,41 +17,42 @@ univTests = testGroup "Univ"
   , testCase "max"       testMax
   , testCase "imax"      testIMax
   , testCase "normalize" testNormalize
+  , testCase "lt"        testUnivLt
   , testCase "instantiate" testInstantiate
   , testCase "showUniv"    testShowUnivUsing
   , testCase "geq"         testGeq
   ]
 
 testZero :: Assertion
-testZero = assert $ Lean.viewUniv 0 == Lean.UnivZero
+testZero = assert $ Lean.viewUniv u0 == Lean.UnivZero
 
 testOne :: Assertion
-testOne = assert $ Lean.viewUniv 1 == Lean.UnivSucc 0
+testOne = assert $ Lean.viewUniv u1 == Lean.UnivSucc u0
 
 testGlobal :: Assertion
 testGlobal = assert $ Lean.viewUniv (Lean.globalUniv "U") == Lean.UnivGlobal "U"
 
-p1, u :: Lean.Univ
-
--- p1 is "l_1"
-p1 = Lean.paramUniv "l_1"
--- u is succ (max l_1 1)
-u = Lean.succUniv (Lean.maxUniv (Lean.paramUniv "l_1") 1)
-
 testMax :: Assertion
-testMax = assert $ Lean.viewUniv (Lean.maxUniv p1 1) == Lean.UnivMax p1 1
+testMax = assert $ Lean.viewUniv max_p1_1 == Lean.UnivMax p1 u1
+  where max_p1_1 = Lean.maxUniv p1 (Lean.explicitUniv 1)
 
 testIMax :: Assertion
-testIMax = assert $ Lean.viewUniv (Lean.imaxUniv 1 p1) == Lean.UnivIMax 1 p1
+testIMax = assert $ Lean.viewUniv (Lean.imaxUniv u1 p1) == Lean.UnivIMax u1 p1
+
+testUnivLt :: Assertion
+testUnivLt = do
+  assert $ u0 `Lean.univLt` u1
+  assert $ not (u1 `Lean.univLt` u0)
 
 testNormalize :: Assertion
 testNormalize = assert $ Lean.viewUniv x == y
   where x  = Lean.normalizeUniv u
-        y  = Lean.UnivMax 2 (Lean.succUniv p1)
+        y  = Lean.UnivMax u2 (Lean.succUniv p1)
+
 
 testInstantiate :: Assertion
-testInstantiate = assert $ i == 2
-  where i = Lean.instantiateUniv u [("l_1", 1)]
+testInstantiate = assert $ i == u2
+  where i = Lean.instantiateUniv u [("l_1", u1)]
 
 no_pp_unicode :: Lean.Options
 no_pp_unicode = Lean.emptyOptions
@@ -63,4 +64,23 @@ testShowUnivUsing = assert $ out == expected
         expected = "(max l_1 1)+1"
 
 testGeq :: Assertion
-testGeq = assert $ 1 `Lean.univGeq` 0
+testGeq = assert $ u1 `Lean.univGeq` u0
+
+------------------------------------------------------------------------
+-- Universe expressions used in test cases
+
+p1, u :: Lean.Univ
+
+-- p1 is "l_1"
+p1 = Lean.paramUniv "l_1"
+-- u is succ (max l_1 1)
+u = Lean.succUniv (Lean.maxUniv (Lean.paramUniv "l_1") u1)
+
+u0 :: Lean.Univ
+u0 = Lean.explicitUniv 0
+
+u1 :: Lean.Univ
+u1 = Lean.explicitUniv 1
+
+u2 :: Lean.Univ
+u2 = Lean.explicitUniv 2
