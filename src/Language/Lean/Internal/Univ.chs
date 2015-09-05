@@ -1,20 +1,17 @@
 {-|
-Module      : Language.Lean.Univ
-Description : Operations on Lean Universes
+Module      : Language.Lean.Internal.Univ
+Description : Internal declarations for Lean Universes
 Copyright   : (c) Galois Inc, 2015
 License     : Apache-2
 Maintainer  : jhendrix@galois.com, lcasburn@galois.com
 Stability   : experimental
 Portability : POSIX
 
-This module defines functions for constructing and deconstructing lean universes.
+This module defines internal functions for universe levels.
 -}
-{- LANGUAGE DoAndIfThenElse #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
-{- LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{- LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
 module Language.Lean.Internal.Univ
   ( Univ
@@ -25,15 +22,8 @@ module Language.Lean.Internal.Univ
   , paramUniv
   , globalUniv
   , metaUniv
-  , UnivView(..)
-  , viewUniv
-  , geqUniv
   , showUniv
   , showUnivUsing
-    -- * Operations on universe levels
-  , normalizeUniv
-  , instantiateUniv
-  , instantiateUniv2
   , univLt
     -- * Internal Operations
   , UnivPtr
@@ -75,80 +65,6 @@ instance IsLeanValue Univ (Ptr Univ) where
   mkLeanValue = fmap Univ . newForeignPtr lean_univ_del_ptr
 
 ------------------------------------------------------------------------
--- Options for constructing universes
-
--- | The zero universe
-zeroUniv :: Univ
-zeroUniv = tryGetLeanValue $ lean_univ_mk_zero
-
-{#fun unsafe lean_univ_mk_zero
-  { `OutUnivPtr'
-  , `OutExceptionPtr'
-  } -> `Bool' #}
-
--- | Successor of the universe
-succUniv :: Univ -> Univ
-succUniv x = tryGetLeanValue $ lean_univ_mk_succ x
-
-{#fun unsafe lean_univ_mk_succ
-  { `Univ'
-  , `OutUnivPtr'
-  , `OutExceptionPtr'
-  } -> `Bool' #}
-
--- | The max of two universes.
-maxUniv :: Univ -> Univ -> Univ
-maxUniv x y = tryGetLeanValue $ lean_univ_mk_max x y
-
-{#fun unsafe lean_univ_mk_max
-  { `Univ'
-  , `Univ'
-  , `OutUnivPtr'
-  , `OutExceptionPtr'
-  } -> `Bool' #}
-
--- | The imax of two universes.
-imaxUniv :: Univ -> Univ -> Univ
-imaxUniv x y = tryGetLeanValue $ lean_univ_mk_imax x y
-
-{#fun unsafe lean_univ_mk_imax
-  { `Univ'
-  , `Univ'
-  , `OutUnivPtr'
-  , `OutExceptionPtr'
-  } -> `Bool' #}
-
--- | A universe parameter of the given name.
-paramUniv :: Name -> Univ
-paramUniv x = tryGetLeanValue $ lean_univ_mk_param x
-
-{#fun unsafe lean_univ_mk_param
-  { `Name'
-  , `OutUnivPtr'
-  , `OutExceptionPtr'
-  } -> `Bool' #}
-
--- | A global universe with the given name.
-globalUniv :: Name -> Univ
-globalUniv x = tryGetLeanValue $ lean_univ_mk_global x
-
-{#fun unsafe lean_univ_mk_global
-  { `Name'
-  , `OutUnivPtr'
-  , `OutExceptionPtr'
-  } -> `Bool' #}
-
--- | A universe meta-variable with the given name.
-metaUniv :: Name -> Univ
-metaUniv x = tryGetLeanValue $ lean_univ_mk_meta x
-
-{#fun unsafe lean_univ_mk_meta
-  { `Name'
-  , `OutUnivPtr'
-  , `OutExceptionPtr'
-  } -> `Bool' #}
-
-------------------------------------------------------------------------
 -- Equality and comparison of universes.
 
 instance Eq Univ where
@@ -176,20 +92,6 @@ univLt :: Univ -> Univ -> Bool
 univLt x y = tryGetLeanValue $ x `lean_univ_lt` y
 
 {#fun unsafe lean_univ_lt
-  { `Univ'
-  , `Univ'
-  , id `Ptr CInt'
-  , `OutExceptionPtr'
-  } -> `Bool' #}
-
-
--- | @geqUniv x y@ returns @true@ if @y@ is a larger universe level
--- than @x@ for all possible assignments to the variables in the
--- @x@ and @y@.
-geqUniv :: Univ -> Univ -> Bool
-geqUniv x y = tryGetLeanValue $ lean_univ_geq x y
-
-{#fun unsafe lean_univ_geq
   { `Univ'
   , `Univ'
   , id `Ptr CInt'
@@ -224,6 +126,58 @@ showUnivUsing u options = tryGetLeanValue $ lean_univ_to_string_using u options
   } -> `Bool' #}
 
 ------------------------------------------------------------------------
+-- Operations for constructing universes
+
+-- | The zero universe
+zeroUniv :: Univ
+zeroUniv = tryGetLeanValue $ lean_univ_mk_zero
+
+{#fun unsafe lean_univ_mk_zero
+ { `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
+
+-- | Successor of the universe
+succUniv :: Univ -> Univ
+succUniv x = tryGetLeanValue $ lean_univ_mk_succ x
+
+{#fun unsafe lean_univ_mk_succ
+ { `Univ', `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
+
+-- | The max of two universes.
+maxUniv :: Univ -> Univ -> Univ
+maxUniv x y = tryGetLeanValue $ lean_univ_mk_max x y
+
+{#fun unsafe lean_univ_mk_max
+ { `Univ', `Univ', `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
+
+-- | The imax of two universes.
+imaxUniv :: Univ -> Univ -> Univ
+imaxUniv x y = tryGetLeanValue $ lean_univ_mk_imax x y
+
+{#fun unsafe lean_univ_mk_imax
+ { `Univ', `Univ', `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
+
+-- | A universe parameter of the given name.
+paramUniv :: Name -> Univ
+paramUniv x = tryGetLeanValue $ lean_univ_mk_param x
+
+{#fun unsafe lean_univ_mk_param
+ { `Name', `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
+
+-- | A global universe with the given name.
+globalUniv :: Name -> Univ
+globalUniv x = tryGetLeanValue $ lean_univ_mk_global x
+
+{#fun unsafe lean_univ_mk_global
+ { `Name', `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
+
+-- | A universe meta-variable with the given name.
+metaUniv :: Name -> Univ
+metaUniv x = tryGetLeanValue $ lean_univ_mk_meta x
+
+{#fun unsafe lean_univ_mk_meta
+ { `Name', `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
+
+------------------------------------------------------------------------
 -- Univ Num instance
 
 -- This instance is only so that we can describe explicit
@@ -243,74 +197,6 @@ instance Num Univ where
           go r _ | seq r False = error "unexpected"
           go r 0 = r
           go r i = go (succUniv r) (i-1)
-
-------------------------------------------------------------------------
--- View
-
--- | A view of a universe.
-data UnivView
-   = UnivZero
-     -- ^ The zero universe.
-   | UnivSucc !Univ
-     -- ^ Successor of the previous universe.
-   | UnivMax !Univ !Univ
-     -- ^ Maximum of two universes.
-   | UnivIMax !Univ !Univ
-     -- ^ @UnivIMax x y@ denotes @y@ if @y@ is universe zero, otherwise @UnivMax x y@
-   | UnivParam !Name
-     -- ^ Universe parameter with the given name.
-   | UnivGlobal !Name
-     -- ^ Reference to a global universe.
-   | UnivMeta !Name
-     -- ^ Meta variable with the given name.
-  deriving (Eq, Ord, Show)
-
--- | Create a view of the universe.
-viewUniv :: Univ -> UnivView
-viewUniv x =
-  case lean_univ_get_kind x of
-   LEAN_UNIV_ZERO -> UnivZero
-   LEAN_UNIV_SUCC -> UnivSucc (tryGetLeanValue $ lean_univ_get_pred x)
-   LEAN_UNIV_MAX ->
-     UnivMax (tryGetLeanValue $ lean_univ_get_max_lhs x)
-             (tryGetLeanValue $ lean_univ_get_max_rhs x)
-   LEAN_UNIV_IMAX ->
-     UnivIMax (tryGetLeanValue $ lean_univ_get_max_lhs x)
-              (tryGetLeanValue $ lean_univ_get_max_rhs x)
-   LEAN_UNIV_PARAM  -> UnivParam  (tryGetLeanValue $ lean_univ_get_name x)
-   LEAN_UNIV_GLOBAL -> UnivGlobal (tryGetLeanValue $ lean_univ_get_name x)
-   LEAN_UNIV_META   -> UnivMeta   (tryGetLeanValue $ lean_univ_get_name x)
-
-{#enum lean_univ_kind as UnivKind { upcaseFirstLetter }
-         deriving (Eq)#}
-
-{#fun pure unsafe lean_univ_get_kind
-  { `Univ'
-  } -> `UnivKind' #}
-
-{#fun unsafe lean_univ_get_pred
-  { `Univ'
-  , `OutUnivPtr'
-  , `OutExceptionPtr'
-  } -> `Bool' #}
-
-{#fun unsafe lean_univ_get_max_lhs
-  { `Univ'
-  , `OutUnivPtr'
-  , `OutExceptionPtr'
-  } -> `Bool' #}
-
-{#fun unsafe lean_univ_get_max_rhs
-  { `Univ'
-  , `OutUnivPtr'
-  , `OutExceptionPtr'
-  } -> `Bool' #}
-
-{#fun unsafe lean_univ_get_name
-  { `Univ'
-  , `OutNamePtr'
-  , `OutExceptionPtr'
-  } -> `Bool' #}
 
 ------------------------------------------------------------------------
 -- Univ Lists
@@ -403,39 +289,3 @@ instance IsList (List Univ) where
 
 instance Show (List Univ) where
   showsPrec _ l = showList (toList l)
-
-------------------------------------------------------------------------
--- Normalize
-
-{#fun unsafe lean_univ_normalize
-  { `Univ'
-  , `OutUnivPtr'
-  , `OutExceptionPtr'
-  } -> `Bool' #}
-
--- | Return the normal form for a universe.
-normalizeUniv :: Univ -> Univ
-normalizeUniv x = tryGetLeanValue $ lean_univ_normalize x
-
-------------------------------------------------------------------------
--- Instantiate
-
--- | Instantiate the parameters with universes
-instantiateUniv :: Univ -> [(Name,Univ)] -> Univ
-instantiateUniv u bindings =
-  instantiateUniv2 u (fromList (fst <$> bindings)) (fromList (snd <$> bindings))
-
--- | Instantiate the parameters with universes using separate lists for names and levels.
-instantiateUniv2 :: Univ
-                 -> List Name
-                 -> List Univ
-                 -> Univ
-instantiateUniv2 u nms args = tryGetLeanValue $ lean_univ_instantiate u nms args
-
-{#fun unsafe lean_univ_instantiate
-  { `Univ'
-  , `ListName'
-  , `ListUniv'
-  , `OutUnivPtr'
-  , `OutExceptionPtr'
-  } -> `Bool' #}

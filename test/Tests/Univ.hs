@@ -63,4 +63,4 @@ testShowUnivUsing = assert $ out == expected
         expected = "(max l_1 1)+1"
 
 testGeq :: Assertion
-testGeq = assert $ 1 `Lean.geqUniv` 0
+testGeq = assert $ 1 `Lean.univGeq` 0
