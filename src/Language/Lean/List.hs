@@ -7,6 +7,7 @@ module Language.Lean.List
   , IsListIso(..)
   , ListView(..)
   , fromListDefault
+  , concatList
   , mapList
   , traverseList
   ) where
@@ -36,6 +37,13 @@ fromListDefault :: IsListIso l a => [a] -> l
 fromListDefault [] = nil
 fromListDefault (h:r) = h <| fromListDefault r
 {-# INLINABLE fromListDefault #-}
+
+-- | Concatenate two lists
+concatList :: IsListIso l a => l -> l -> l
+concatList x y =
+  case viewList x of
+    Nil -> y
+    a :< r -> a <| concatList r y
 
 -- | Apply a function to map one list to another.
 mapList :: (IsListIso s a, IsListIso t b)

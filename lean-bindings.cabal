@@ -50,10 +50,12 @@ library
     Language.Lean.Internal.Env
     Language.Lean.Internal.IOS
     Language.Lean.Internal.Typechecker
+    Language.Lean.Internal.Inductive
     Language.Lean.Decl
     Language.Lean.Env
     Language.Lean.Exception
     Language.Lean.Expr
+    Language.Lean.Inductive
     Language.Lean.List
     Language.Lean.Module
     Language.Lean.Name

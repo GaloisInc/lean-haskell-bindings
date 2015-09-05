@@ -82,8 +82,8 @@ hottEnv lvl = tryGetLeanValue $ lean_env_mk_hott lvl
   } -> `Bool' #}
 
 -- | Add a new global universe with the given name.
-envAddUniv :: Env -> Name -> Env
-envAddUniv e u = tryGetLeanValue $ lean_env_add_univ e u
+envAddUniv :: Name -> Env -> Env
+envAddUniv u e = tryGetLeanValue $ lean_env_add_univ e u
 
 {#fun unsafe lean_env_add_univ
   { `Env'
@@ -92,10 +92,9 @@ envAddUniv e u = tryGetLeanValue $ lean_env_add_univ e u
   , `OutExceptionPtr'
   } -> `Bool' #}
 
--- | Create a new environment by adding the given certified declaration to the
--- environment.
-envAddDecl :: Env -> CertDecl -> Env
-envAddDecl e d = tryGetLeanValue $ lean_env_add e d
+-- | Adding the given certified declaration to the environment.
+envAddDecl :: CertDecl -> Env -> Env
+envAddDecl d e = tryGetLeanValue $ lean_env_add e d
 
 {#fun unsafe lean_env_add
   { `Env'
@@ -104,15 +103,14 @@ envAddDecl e d = tryGetLeanValue $ lean_env_add e d
   , `OutExceptionPtr'
   } -> `Bool' #}
 
-
 -- |  Replace the axiom that has the name of the given certified declaration with the
 -- certified declaration.
 --
 -- This procedure throws an exception if:
 --  * The theorem was certified in an environment which is not an ancestor of the environment.
 --  * The environment does not contain an axiom with the given name.
-envReplaceAxiom :: Env -> CertDecl -> Env
-envReplaceAxiom e d = tryGetLeanValue $ lean_env_replace e d
+envReplaceAxiom :: CertDecl -> Env -> Env
+envReplaceAxiom d e = tryGetLeanValue $ lean_env_replace e d
 
 {#fun unsafe lean_env_replace
   { `Env'

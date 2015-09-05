@@ -39,9 +39,8 @@ import Language.Lean.List
 #include "lean_name.h"
 
 -- | A Lean name
-{#pointer lean_name as Name foreign newtype#}
-
-{#pointer lean_name as NamePtr -> Name#}
+{#pointer  lean_name as Name foreign newtype#}
+{#pointer  lean_name as NamePtr -> Name#}
 {#pointer *lean_name as OutNamePtr -> NamePtr #}
 
 foreign import ccall unsafe "&lean_name_del"
@@ -64,10 +63,7 @@ instance Show Name where
   show nm = tryGetLeanValue $ lean_name_to_string nm
 
 {#fun unsafe lean_name_to_string
-  { `Name'
-  , id `Ptr CString'
-  , `OutExceptionPtr'
-  } -> `Bool' #}
+ { `Name', id `Ptr CString', `OutExceptionPtr' } -> `Bool' #}
 
 ------------------------------------------------------------------------
 -- Constructing Names
