@@ -18,7 +18,7 @@ envTests = testGroup "Env"
 testAddUniv :: IO ()
 testAddUniv = do
   let env = Lean.stdEnv Lean.trustHigh
-  let new_env = env `Lean.envAddUniv` "u"
+  let new_env = env & Lean.envAddUniv "u"
   assert (new_env      `Lean.envContainsUniv` "u")
   assert (not (new_env `Lean.envContainsUniv` "v"))
   assert (new_env^..Lean.envUnivs == ["u"])
@@ -42,7 +42,7 @@ testId = do
   assert $ show id_val  ==  "fun (A : Type.{l}) (a : A), a"
 
   let id_cert_def = Lean.check env id_def
-  let new_env = env `Lean.envAddDecl` id_cert_def
+  let new_env = env & Lean.envAddDecl id_cert_def
 
   assert $ env `Lean.envContainsDecl` "id" == False
   assert $ new_env `Lean.envContainsDecl` "id"
@@ -75,3 +75,39 @@ testImport = do
   ios <- Lean.mkBufferedIOState o
   new_env <- Lean.envImport env ios ["init.logic"]
   assert $ Lean.envContainsDecl new_env "not"
+
+{-
+testImportPar :: IO ()
+testImportPar = do
+  v0 <- newEmptyMVar
+  v1 <- newEmptyMVar
+  v2 <- newEmptyMVar
+  v3 <- newEmptyMVar
+  v4 <- newEmptyMVar
+  v5 <- newEmptyMVar
+  v6 <- newEmptyMVar
+  v7 <- newEmptyMVar
+  v8 <- newEmptyMVar
+  v9 <- newEmptyMVar
+  _ <- forkOS $ testImport >> putMVar v0 True
+  _ <- forkOS $ testImport >> putMVar v1 True
+  _ <- forkOS $ testImport >> putMVar v2 True
+  _ <- forkOS $ testImport >> putMVar v3 True
+  _ <- forkOS $ testImport >> putMVar v4 True
+  _ <- forkOS $ testImport >> putMVar v5 True
+  _ <- forkOS $ testImport >> putMVar v6 True
+  _ <- forkOS $ testImport >> putMVar v7 True
+  _ <- forkOS $ testImport >> putMVar v8 True
+  _ <- forkOS $ testImport >> putMVar v9 True
+  True <- takeMVar v0
+  True <- takeMVar v1
+  True <- takeMVar v2
+  True <- takeMVar v3
+  True <- takeMVar v4
+  True <- takeMVar v5
+  True <- takeMVar v6
+  True <- takeMVar v7
+  True <- takeMVar v8
+  True <- takeMVar v9
+  return ()
+-}
