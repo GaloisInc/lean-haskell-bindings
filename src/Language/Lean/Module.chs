@@ -37,8 +37,8 @@ import Language.Lean.List
 #include "lean_module.h"
 
 -- | Import the given module names into the lean environment
-envImport :: IOState tp -> List Name -> Env -> IO Env
-envImport s names e = tryAllocLeanValue $ lean_env_import e (someIOS s) names
+envImport :: IOState tp -> Env -> List Name -> IO Env
+envImport s e names = tryAllocLeanValue $ lean_env_import e (someIOS s) names
 
 {#fun lean_env_import
    { `Env'
