@@ -89,6 +89,12 @@ test-suite test
     tasty-hunit
   extra-libraries:
     leanshared
+  other-modules:
+    Tests.Env
+    Tests.Expr
+    Tests.Name
+    Tests.Options
+    Tests.Univ
 
   ghc-options: -Wall -threaded
   hs-source-dirs: test
