@@ -52,13 +52,13 @@ import Language.Lean.List
 -- | A Lean name
 newtype Name = Name (ForeignPtr Name)
 
--- | Use internal pointer to name in IO action.
+-- | Function @c2hs@ uses to pass @Name@ values to Lean
 withName :: Name -> (Ptr Name -> IO a) -> IO a
 withName (Name o) = withForeignPtr o
 
--- | Pointer used as input parameter for a name in FFI bindings.
+-- | Haskell type for @lean_name@ FFI parameters.
 {#pointer  lean_name as NamePtr -> Name#}
--- | Pointer used as output parameter for a name in FFI bindings.
+-- | Haskell type for @lean_name*@ FFI parameters.
 {#pointer *lean_name as OutNamePtr -> NamePtr #}
 
 foreign import ccall unsafe "&lean_name_del"
@@ -197,13 +197,16 @@ newtype instance List Name = ListName (ForeignPtr (List Name))
 
 -- | A list of Lean universe levels.
 {#pointer lean_list_name as ListName foreign newtype nocode#}
+-- | Haskell type for @lean_list_name@ FFI parameters.
 {#pointer lean_list_name as ListNamePtr -> ListName #}
+-- | Haskell type for @lean_list_name*@ FFI parameters.
 {#pointer *lean_list_name as OutListNamePtr -> ListNamePtr #}
 
--- Synonym for List Name
+-- | Synonym for @List Expr@ that can be used in @c2hs@ bindings.
 type ListName = List Name
 
-withListName :: List Name -> (Ptr (List Name) -> IO a) -> IO a
+-- | Function @c2hs@ uses to pass @ListName@ values to Lean
+withListName :: ListName -> (Ptr ListName -> IO a) -> IO a
 withListName (ListName p) = withForeignPtr p
 
 instance IsLeanValue (List Name) (Ptr (List Name)) where

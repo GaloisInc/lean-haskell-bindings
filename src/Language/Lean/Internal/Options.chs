@@ -38,13 +38,13 @@ import System.IO.Unsafe
 -- | A set of Lean configuration options
 newtype Options = Options (ForeignPtr Options)
 
--- | Get access to @lean_options@ within IO action.
+-- | Function @c2hs@ uses to pass @Options@ values to Lean
 withOptions :: Options -> (Ptr Options -> IO a) -> IO a
 withOptions (Options o) = withForeignPtr o
 
--- | Pointer as input parameter for options in FFI bindings.
+-- | Haskell type for @lean_options@ FFI parameters.
 {#pointer lean_options as OptionsPtr -> Options#}
--- | Pointer used as output parameter for options in FFI bindings.
+-- | Haskell type for @lean_options*@ FFI parameters.
 {#pointer *lean_options as OutOptionsPtr -> OptionsPtr #}
 
 foreign import ccall unsafe "&lean_options_del"

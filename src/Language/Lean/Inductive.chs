@@ -1,3 +1,11 @@
+{-|
+Module      : Language.Lean.Inductive
+Copyright   : (c) Galois Inc, 2015
+License     : Apache-2
+Maintainer  : jhendrix@galois.com, lcasburn@galois.com
+
+Operations for creating inductive types and declarations.
+-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 module Language.Lean.Inductive
   ( -- * Inductive type
@@ -28,7 +36,7 @@ import Foreign
 import Foreign.C
 import Language.Lean.List
 
-{#import Language.Lean.Internal.Env#}
+{#import Language.Lean.Internal.Decl#}
 {#import Language.Lean.Internal.Exception#}
 {#import Language.Lean.Internal.Expr#}
 {#import Language.Lean.Internal.Inductive#}

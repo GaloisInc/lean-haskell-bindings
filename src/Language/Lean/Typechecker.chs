@@ -1,3 +1,11 @@
+{-|
+Module      : Language.Lean.Typechecker
+Copyright   : (c) Galois Inc, 2015
+License     : Apache-2
+Maintainer  : jhendrix@galois.com, lcasburn@galois.com
+
+Interface to Lean typechecker
+-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 module Language.Lean.Typechecker
   ( Typechecker
@@ -13,7 +21,7 @@ import Foreign
 import Foreign.C
 import System.IO.Unsafe
 
-{#import Language.Lean.Internal.Env#}
+{#import Language.Lean.Internal.Decl#}
 {#import Language.Lean.Internal.Exception#}
 {#import Language.Lean.Internal.Expr#}
 {#import Language.Lean.Internal.Typechecker#}
@@ -32,7 +40,7 @@ import System.IO.Unsafe
 ------------------------------------------------------------------------
 -- Typechecker constructor
 
--- Create a type checker object for the given environment.
+-- | Create a type checker object for the given environment.
 typechecker :: Env -> Typechecker
 typechecker e = tryGetLeanValue $ lean_type_checker_mk e
 
@@ -45,7 +53,6 @@ typechecker e = tryGetLeanValue $ lean_type_checker_mk e
 -- | A lean partial function is a function that returns a value of type @a@, but
 -- may fail.
 type LeanPartialFn2 a b = (Ptr a -> Ptr b -> LeanPartialAction)
-
 
 -- | @inferType t e@ infers the type of @e@ using @t@.
 -- This returns the type and any constraints generated.

@@ -1,3 +1,11 @@
+{-|
+Module      : Language.Lean.Inductive
+Copyright   : (c) Galois Inc, 2015
+License     : Apache-2
+Maintainer  : jhendrix@galois.com, lcasburn@galois.com
+
+Internal declarations for inductive types and declarations.
+-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -15,7 +23,6 @@ module Language.Lean.Internal.Inductive
   , InductiveDeclPtr
   , OutInductiveDeclPtr
   , withInductiveDecl
-  , List(..)
   ) where
 
 import Control.Lens (toListOf)
@@ -40,9 +47,18 @@ import System.IO.Unsafe
 ------------------------------------------------------------------------
 -- InductiveType declarations
 
--- | An Inductive type
-{#pointer  lean_inductive_type as InductiveType foreign newtype#}
+{#pointer  lean_inductive_type as InductiveType foreign newtype nocode#}
+
+-- | An inductive type
+newtype InductiveType = InductiveType (ForeignPtr InductiveType)
+
+-- | Access raw @lean_inductive_type@ within IO action.
+withInductiveType :: InductiveType -> (Ptr InductiveType -> IO a) -> IO a
+withInductiveType (InductiveType o) = withForeignPtr o
+
+-- | Haskell type for @lean_inductive_type@ FFI parameters.
 {#pointer  lean_inductive_type as InductiveTypePtr -> InductiveType#}
+-- | Haskell type for @lean_inductive_type*@ FFI parameters.
 {#pointer *lean_inductive_type as OutInductiveTypePtr -> InductiveTypePtr #}
 
 instance IsLeanValue InductiveType (Ptr InductiveType) where
@@ -57,14 +73,17 @@ foreign import ccall unsafe "&lean_inductive_type_del"
 -- | A list of inductive types (constructor not actually exported)
 newtype instance List InductiveType = ListInductiveType (ForeignPtr (List InductiveType))
 
--- | A list of Lean universe levels.
 {#pointer lean_list_inductive_type as ListInductiveType foreign newtype nocode#}
+
+-- | Haskell type for @lean_list_inductive_type@ FFI parameters.
 {#pointer lean_list_inductive_type as ListInductiveTypePtr -> ListInductiveType #}
+-- | Haskell type for @lean_list_inductive_type*@ FFI parameters.
 {#pointer *lean_list_inductive_type as OutListInductiveTypePtr -> ListInductiveTypePtr #}
 
--- Synonym for List InductiveType
+-- | Synonym for @List InductiveType@
 type ListInductiveType = List InductiveType
 
+-- | Access raw @lean_list_inductive_type@ within IO action.
 withListInductiveType :: List InductiveType -> (Ptr (List InductiveType) -> IO a) -> IO a
 withListInductiveType (ListInductiveType p) = withForeignPtr p
 
@@ -135,20 +154,23 @@ instance IsList (List InductiveType) where
   fromList = fromListDefault
   toList = toListOf traverseList
 
-{-
-------------------------------------------------------------------------
--- List InductiveType Show instance
-
-instance Show (List InductiveType) where
-  showsPrec _ l = showList (toList l)
--}
-
 ------------------------------------------------------------------------
 -- InductiveDecl declarations
 
--- | An Inductive type
-{#pointer  lean_inductive_decl as InductiveDecl foreign newtype#}
-{#pointer  lean_inductive_decl as InductiveDeclPtr -> InductiveDecl#}
+-- | An Inductive
+{#pointer  lean_inductive_decl as InductiveDecl foreign newtype nocode#}
+
+
+-- | An inductive declaration
+newtype InductiveDecl = InductiveDecl (ForeignPtr InductiveDecl)
+
+-- | Access raw @lean_inductive_decl@ within IO action.
+withInductiveDecl :: InductiveDecl -> (Ptr InductiveDecl -> IO a) -> IO a
+withInductiveDecl (InductiveDecl o) = withForeignPtr o
+
+-- | Haskell type for @lean_inductive_decl@ FFI parameters.
+{#pointer lean_inductive_decl as InductiveDeclPtr -> InductiveDecl #}
+-- | Haskell type for @lean_inductive_decl*@ FFI parameters.
 {#pointer *lean_inductive_decl as OutInductiveDeclPtr -> InductiveDeclPtr #}
 
 instance IsLeanValue InductiveDecl (Ptr InductiveDecl) where

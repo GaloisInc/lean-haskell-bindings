@@ -1,3 +1,11 @@
+{-|
+Module      : Language.Lean.Module
+Copyright   : (c) Galois Inc, 2015
+License     : Apache-2
+Maintainer  : jhendrix@galois.com, lcasburn@galois.com
+
+Declarations for importing and exporting modules and accessing Lean paths
+-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 module Language.Lean.Module
   ( envImport
@@ -11,7 +19,7 @@ import Foreign.C
 
 import Language.Lean.List
 
-{#import Language.Lean.Internal.Env#}
+{#import Language.Lean.Internal.Decl#}
 {#import Language.Lean.Internal.Exception#}
 {#import Language.Lean.Internal.Name#}
 {#import Language.Lean.Internal.IOS#}
@@ -28,9 +36,9 @@ import Language.Lean.List
 #include "lean_ios.h"
 #include "lean_module.h"
 
--- Import the given modules (i.e., pre-compiled .olean files.
-envImport :: Env -> IOState tp -> List Name -> IO Env
-envImport e s names = tryAllocLeanValue $ lean_env_import e (someIOS s) names
+-- | Import the given module names into the lean environment
+envImport :: IOState tp -> List Name -> Env -> IO Env
+envImport s names e = tryAllocLeanValue $ lean_env_import e (someIOS s) names
 
 {#fun lean_env_import
    { `Env'
@@ -40,7 +48,7 @@ envImport e s names = tryAllocLeanValue $ lean_env_import e (someIOS s) names
    , `OutExceptionPtr'
    } -> `Bool' #}
 
--- Import the given modules (i.e., pre-compiled .olean files.
+-- | Export the lean environment to a path.
 envExport :: Env -> FilePath -> IO ()
 envExport e path = runLeanPartialAction $ lean_env_export e path
 

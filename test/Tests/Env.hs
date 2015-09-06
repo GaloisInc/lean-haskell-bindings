@@ -39,7 +39,7 @@ testId = do
               $ Lean.piExpr Lean.BinderDefault "a" v0 v1
   let f      = Lean.lambdaExpr Lean.BinderDefault "a" v0 v0
   let id_val = Lean.lambdaExpr Lean.BinderDefault "A" tp f
-  let id_def = Lean.defDecl "id" ["l"] id_type id_val 0 True
+  let id_def = Lean.definition "id" ["l"] id_type id_val 0 True
   assert $ f `Lean.exprLt` id_val
   assert $ id_val `Lean.exprLt` f == False
 

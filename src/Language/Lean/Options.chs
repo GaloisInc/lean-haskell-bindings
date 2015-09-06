@@ -1,3 +1,11 @@
+{-|
+Module      : Language.Lean.Options
+Copyright   : (c) Galois Inc, 2015
+License     : Apache-2
+Maintainer  : jhendrix@galois.com, lcasburn@galois.com
+
+Operations for Lean options
+-}
 {-# LANGUAGE DoAndIfThenElse #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -75,6 +83,7 @@ import System.IO.Unsafe
   , `OutExceptionPtr'
   } -> `Bool' #}
 
+-- | Returns true if options are empty.
 {#fun pure unsafe lean_options_empty as nullOptions
   { `Options'
   } -> `Bool' #}
@@ -151,30 +160,35 @@ simpleLensEq getter setter nm f o = fmap setFun (f oldVal)
      | Just v <- maybeVal, v == newVal = o
      | otherwise = setter o nm newVal
 
+-- | Access the lean option with the given name as a Boolean.
 boolOption :: Name -> Simple Lens Options Bool
 boolOption = simpleLensEq optGet optSet
   where
     optGet = optionsGet tryGetLeanValue lean_options_get_bool
     optSet = optionsSet lean_options_set_bool
 
+-- | Access the lean option with the given name as a signed integer.
 intOption :: Name -> Simple Lens Options Int32
 intOption = simpleLensEq optGet optSet
   where
     optGet = optionsGet tryGetLeanValue lean_options_get_int
     optSet = optionsSet lean_options_set_int
 
+-- | Access the lean option with the given name as an unsigned integer.
 uintOption :: Name -> Simple Lens Options Word32
 uintOption = simpleLensEq optGet optSet
   where
     optGet = optionsGet tryGetLeanValue lean_options_get_unsigned
     optSet = optionsSet lean_options_set_unsigned
 
+-- | Access the lean option with the given name as a floating point value.
 doubleOption :: Name -> Simple Lens Options Double
 doubleOption = simpleLensEq optGet optSet
   where
     optGet = optionsGet tryGetLeanValue lean_options_get_double
     optSet = optionsSet lean_options_set_double
 
+-- | Access the lean option with the given name as a string.
 stringOption :: Name -> Simple Lens Options String
 stringOption = simpleLensEq optGet optSet
   where

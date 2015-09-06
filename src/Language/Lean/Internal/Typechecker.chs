@@ -63,9 +63,17 @@ foreign import ccall unsafe "&lean_cnstr_seq_del"
 -- Typechecker
 
 -- | A Lean typechecker
-{#pointer lean_type_checker as Typechecker foreign newtype#}
+newtype Typechecker = Typechecker (ForeignPtr Typechecker)
 
+-- | Function @c2hs@ uses to pass @Typechecker@ values to Lean
+withTypechecker :: Typechecker -> (Ptr Typechecker -> IO a) -> IO a
+withTypechecker (Typechecker o) = withForeignPtr o
+
+{#pointer lean_type_checker as Typechecker foreign newtype nocode#}
+
+-- | Haskell type for @lean_type_checker@ FFI parameters.
 {#pointer lean_type_checker as TypecheckerPtr -> Typechecker#}
+-- | Haskell type for @lean_type_checker*@ FFI parameters.
 {#pointer *lean_type_checker as OutTypecheckerPtr -> TypecheckerPtr #}
 
 instance IsLeanValue Typechecker (Ptr Typechecker) where

@@ -4,7 +4,7 @@ Copyright   : (c) Galois Inc, 2015
 License     : Apache-2
 Maintainer  : jhendrix@galois.com, lcasburn@galois.com
 
-This module defines operations for universe levels.
+Operations for universe levels.
 -}
 {-# LANGUAGE ForeignFunctionInterface #-}
 module Language.Lean.Univ

@@ -1,5 +1,14 @@
+{-|
+Module      : Language.Lean.Env
+Copyright   : (c) Galois Inc, 2015
+License     : Apache-2
+Maintainer  : jhendrix@galois.com, lcasburn@galois.com
+
+Operations for working with Lean environments.
+-}
 {-# LANGUAGE DoAndIfThenElse #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes #-}
 module Language.Lean.Env
   ( Env
@@ -33,7 +42,6 @@ import Foreign.C
 import System.IO.Unsafe
 
 {#import Language.Lean.Internal.Decl#}
-{#import Language.Lean.Internal.Env#}
 {#import Language.Lean.Internal.Exception#}
 {#import Language.Lean.Internal.Name#}
 
@@ -75,12 +83,98 @@ runLeanFold wrapFn allocFn foldFn h e = unsafePerformIO $ do
         throwLeanException =<< peek ex_ptr
 {-# INLINABLE runLeanFold #-}
 
+------------------------------------------------------------------------
+-- Trust level
+
+-- | The level of trust associated with an environment.
+newtype TrustLevel = TrustLevel { _trustValue :: Word32 }
+  deriving (Eq, Ord, Num, Show)
+
+-- | Create a trust level from a unsigned C integer.
+trustFromUInt :: CUInt -> TrustLevel
+trustFromUInt = TrustLevel . fromIntegral
+
+-- | Get the trust level as a unsigned C integer.
+trustUInt :: TrustLevel -> CUInt
+trustUInt (TrustLevel u) = fromIntegral u
+
+-- | Trust level for all macros implemented in LEan.
+trustHigh :: TrustLevel
+trustHigh = TrustLevel {#const LEAN_TRUST_HIGH#}
+
+------------------------------------------------------------------------
+-- Env constructors
+
+-- | Create an axiom with name @nm@, universe parameters names
+-- @params@, and type @tp@. Note that declartions are universe
+-- polymorphic in Lean.
+stdEnv :: TrustLevel -> Env
+stdEnv lvl = tryGetLeanValue $ lean_env_mk_std lvl
+
+{#fun unsafe lean_env_mk_std
+  { trustUInt `TrustLevel'
+  , `OutEnvPtr'
+  , `OutExceptionPtr'
+  } -> `Bool' #}
+
+-- | Create an axiom with name @nm@, universe parameters names
+-- @params@, and type @tp@. Note that declartions are universe
+-- polymorphic in Lean.
+hottEnv :: TrustLevel -> Env
+hottEnv lvl = tryGetLeanValue $ lean_env_mk_hott lvl
+
+{#fun unsafe lean_env_mk_hott
+  { trustUInt `TrustLevel'
+  , `OutEnvPtr'
+  , `OutExceptionPtr'
+  } -> `Bool' #}
+
+-- | Add a new global universe with the given name.
+envAddUniv :: Name -> Env -> Env
+envAddUniv u e = tryGetLeanValue $ lean_env_add_univ e u
+
+{#fun unsafe lean_env_add_univ
+  { `Env'
+  , `Name'
+  , `OutEnvPtr'
+  , `OutExceptionPtr'
+  } -> `Bool' #}
+
+-- | Adding the given certified declaration to the environment.
+envAddDecl :: CertDecl -> Env -> Env
+envAddDecl d e = tryGetLeanValue $ lean_env_add e d
+
+{#fun unsafe lean_env_add
+  { `Env'
+  , `CertDecl'
+  , `OutEnvPtr'
+  , `OutExceptionPtr'
+  } -> `Bool' #}
+
+-- |  Replace the axiom that has the name of the given certified declaration with the
+-- certified declaration.
+--
+-- This procedure throws an exception if:
+--  * The theorem was certified in an environment which is not an ancestor of the environment.
+--  * The environment does not contain an axiom with the given name.
+envReplaceAxiom :: CertDecl -> Env -> Env
+envReplaceAxiom d e = tryGetLeanValue $ lean_env_replace e d
+
+{#fun unsafe lean_env_replace
+  { `Env'
+  , `CertDecl'
+  , `OutEnvPtr'
+  , `OutExceptionPtr'
+  } -> `Bool' #}
 
 ------------------------------------------------------------------------
 -- Env Projections
 
---  | Return the trust level of the given environment.
-{#fun pure unsafe lean_env_trust_level as envTrustLevel
+-- | The trust level of the given environment.
+envTrustLevel :: Env -> TrustLevel
+envTrustLevel = lean_env_trust_level
+
+{#fun pure unsafe lean_env_trust_level
   { `Env' } -> `TrustLevel' trustFromUInt #}
 
 -- | Return @true@ if the given environment has a proof irrelevant Prop such as
@@ -110,12 +204,15 @@ envLookupDecl nm e =
 
 -- |  Return the declaration with the given name in the environment if any.
 {#fun unsafe lean_env_get_decl
-     { `Env', `Name', `OutDeclPtr', `OutExceptionPtr' } -> `Bool' #}
+ { `Env', `Name', `OutDeclPtr', `OutExceptionPtr' } -> `Bool' #}
 
--- @x `envIsDescendant` y@ return true @x@ is a descendant of @y@, that is, @x@
+-- | @x `envIsDescendant` y@ return true @x@ is a descendant of @y@, that is, @x@
 -- was created by adding declarations to @y@.
-{#fun pure unsafe lean_env_is_descendant as envIsDescendant
-    { `Env', `Env' } -> `Bool' #}
+envIsDescendant :: Env -> Env -> Bool
+envIsDescendant = lean_env_is_descendant
+
+{#fun pure unsafe lean_env_is_descendant
+ { `Env', `Env' } -> `Bool' #}
 
 ------------------------------------------------------------------------
 -- envForget

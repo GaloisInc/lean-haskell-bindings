@@ -6,7 +6,7 @@ Maintainer  : jhendrix@galois.com, lcasburn@galois.com
 Stability   : experimental
 Portability : POSIX
 
-This module provides operations for working with Lean names.
+Operations for working with Lean names.
 -}
 {-# LANGUAGE DoAndIfThenElse #-}
 {-# LANGUAGE ForeignFunctionInterface #-}

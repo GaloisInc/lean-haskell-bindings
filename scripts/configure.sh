@@ -7,4 +7,4 @@
 # * "deps/lean" points to the lean source.
 # * "deps/lean/build/debug" contains a successful build of lean.
 
-cabal configure --extra-lib-dirs=$PWD/deps/lean/build/debug --extra-include-dirs=$PWD/deps/lean/src/api
+cabal configure --extra-lib-dirs=$PWD/deps/lean/build --extra-include-dirs=$PWD/deps/lean/src/api

@@ -4,8 +4,8 @@ Copyright   : (c) Galois Inc, 2015
 License     : Apache-2
 Maintainer  : jhendrix@galois.com, lcasburn@galois.com
 
-Internal declarations for Lean universe values
-together with typeclass instances for @Univ@.
+Internal declarations for Lean universe values together with typeclass instances
+for @Univ@.
 -}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
@@ -43,9 +43,19 @@ import Language.Lean.List
 #include "lean_options.h"
 #include "lean_univ.h"
 
+{#pointer lean_univ as Univ foreign newtype nocode#}
+
 -- | A Lean universe level
-{#pointer lean_univ as Univ foreign newtype#}
+newtype Univ = Univ (ForeignPtr Univ)
+
+-- | Function @c2hs@ uses to pass @Univ@ values to Lean
+withUniv :: Univ -> (Ptr Univ -> IO a) -> IO a
+withUniv (Univ o) = withForeignPtr o
+
+-- | Haskell type for @lean_univ@ FFI parameters.
 {#pointer lean_univ as UnivPtr -> Univ#}
+
+-- | Haskell type for @lean_univ*@ FFI parameters.
 {#pointer *lean_univ as OutUnivPtr -> UnivPtr #}
 
 foreign import ccall unsafe "&lean_univ_del"
@@ -121,15 +131,18 @@ showUnivUsing u options = tryGetLeanValue $ lean_univ_to_string_using u options
 -- | A list of universes (constructor not actually exported)
 newtype instance List Univ = ListUniv (ForeignPtr (List Univ))
 
--- | A list of Lean universe levels.
 {#pointer lean_list_univ as ListUniv foreign newtype nocode#}
+
+-- | Haskell type for @lean_list_univ@ FFI parameters.
 {#pointer lean_list_univ as ListUnivPtr -> ListUniv #}
+-- | Haskell type for @lean_list_univ*@ FFI parameters.
 {#pointer *lean_list_univ as OutListUnivPtr -> ListUnivPtr #}
 
--- Code for List Univ
+-- | Synonym for @List Expr@ that can be used in @c2hs@ bindings
 type ListUniv = List Univ
 
-withListUniv :: List Univ -> (Ptr (List Univ) -> IO a) -> IO a
+-- | Function @c2hs@ uses to pass @ListUniv@ values to Lean
+withListUniv :: ListUniv -> (Ptr ListUniv -> IO a) -> IO a
 withListUniv (ListUniv p) = withForeignPtr p
 
 instance IsLeanValue (List Univ) (Ptr (List Univ)) where
