@@ -140,6 +140,7 @@ foreign import ccall unsafe "&lean_list_expr_del"
 ------------------------------------------------------------------------
 -- Expression Show instance
 
+-- | Return the string representation of an expression.
 exprToString :: Expr -> String
 exprToString x = tryGetLeanValue $ lean_expr_to_string x
 
