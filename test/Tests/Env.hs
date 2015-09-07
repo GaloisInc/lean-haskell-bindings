@@ -43,9 +43,8 @@ testId = do
   assert $ f `Lean.exprLt` id_val
   assert $ id_val `Lean.exprLt` f == False
 
-
-  assert $ show id_type ==  "Pi (A : Type.{l}) (a : A), A"
-  assert $ show id_val  ==  "fun (A : Type.{l}) (a : A), a"
+  assert $ Lean.exprToString id_type ==  "Pi (A : Type.{l}) (a : A), A"
+  assert $ Lean.exprToString id_val  ==  "fun (A : Type.{l}) (a : A), a"
 
   let id_cert_def = Lean.check env id_def
   let new_env = env & Lean.envAddDecl id_cert_def

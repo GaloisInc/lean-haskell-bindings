@@ -29,7 +29,7 @@ stringTest = do
     Lean.StringName "foo" "bla" -> return ()
     _ -> fail "Expected string name"
 
-  when (show ("foo.bla" :: Lean.Name) /= "foo.bla") $ do
+  when (Lean.nameToString ("foo.bla" :: Lean.Name) /= "foo.bla") $ do
     fail "Name did not match expected."
 
 idxTest :: IO ()

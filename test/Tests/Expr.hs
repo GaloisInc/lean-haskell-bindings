@@ -35,4 +35,4 @@ testConst = do
   assert $ not (e1 == e2)
   assert $ Lean.exprView e2 == Lean.ExprConst "id" [u0, u0]
   assert $ Lean.exprView e3 == Lean.ExprConst "func" [u0, u0]
-  assert $ show e3 == "func.{0 0}"
+  assert $ Lean.exprToString e3 == "func.{0 0}"
