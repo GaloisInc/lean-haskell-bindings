@@ -15,7 +15,7 @@ module Language.Lean.Env
   , TrustLevel
   , trustHigh
     -- * Constructing and manipulating environments.
-  , stdEnv
+  , standardEnv
   , hottEnv
   , envAddUniv
   , envAddDecl
@@ -31,11 +31,14 @@ module Language.Lean.Env
     -- * Operations
   , envForget
   , envDecls
+  , forEnvDecl_
   , envUnivs
+  , forEnvUniv_
   ) where
 
 import Control.Exception (bracket)
 import Control.Lens
+import Control.Monad
 import Data.IORef
 import Foreign
 import Foreign.C
@@ -61,17 +64,21 @@ type WrapLeanVisitFn p = (p -> IO ()) -> IO (FunPtr (p -> IO ()))
 -- | Prototype for function that
 type LeanFoldFn s p = s -> FunPtr (p -> IO ()) -> OutExceptionPtr -> IO Bool
 
-runLeanFold :: WrapLeanVisitFn p
-            -> (p -> IO a)
+runLeanFold :: IsLeanValue a p
+            => WrapLeanVisitFn p
             -> LeanFoldFn s p
-            ->  Fold s a
-runLeanFold wrapFn allocFn foldFn h e = unsafePerformIO $ do
+            -> Fold s a
+runLeanFold wrapFn foldFn h e = unsafePerformIO $ do
   -- Create reference for storing result, the initial value is pure.
-  ref <- newIORef $ coerce $ pure ()
+  ref <- newIORef $! (coerce $! pure ())
 
   let g d_ptr = do
-        d <- allocFn d_ptr
-        modifyIORef' ref $ (<* h d)
+        d <- mkLeanValue d_ptr
+        cur_val <- readIORef ref
+        let hd = h d
+        let chd = coerce hd
+        seq hd $ seq chd $ do
+        writeIORef ref $! cur_val *> chd
 
   -- Create function pointer for callback.
   bracket (wrapFn g) freeHaskellFunPtr $ \g_ptr -> do
@@ -82,6 +89,22 @@ runLeanFold wrapFn allocFn foldFn h e = unsafePerformIO $ do
       else
         throwLeanException =<< peek ex_ptr
 {-# INLINABLE runLeanFold #-}
+
+safeRunLeanFold :: IsLeanValue a p
+                => WrapLeanVisitFn p
+                -> LeanFoldFn s p
+                -> (a -> IO ())
+                -> (s -> IO ())
+safeRunLeanFold wrapFn foldFn f s = do
+  let g v = mkLeanValue v >>= f
+
+  -- Create function pointer for callback.
+  bracket (wrapFn g) freeHaskellFunPtr $ \g_ptr -> do
+    alloca $ \ex_ptr -> do
+      success <- foldFn s g_ptr ex_ptr
+      unless success $ do
+        throwLeanException =<< peek ex_ptr
+{-# INLINABLE safeRunLeanFold #-}
 
 ------------------------------------------------------------------------
 -- Trust level
@@ -98,18 +121,16 @@ trustFromUInt = TrustLevel . fromIntegral
 trustUInt :: TrustLevel -> CUInt
 trustUInt (TrustLevel u) = fromIntegral u
 
--- | Trust level for all macros implemented in LEan.
+-- | Trust level for all macros implemented in Lean.
 trustHigh :: TrustLevel
 trustHigh = TrustLevel {#const LEAN_TRUST_HIGH#}
 
 ------------------------------------------------------------------------
 -- Env constructors
 
--- | Create an axiom with name @nm@, universe parameters names
--- @params@, and type @tp@. Note that declartions are universe
--- polymorphic in Lean.
-stdEnv :: TrustLevel -> Env
-stdEnv lvl = tryGetLeanValue $ lean_env_mk_std lvl
+-- | Create an empty standard environment with the given trust level.
+standardEnv :: TrustLevel -> Env
+standardEnv lvl = tryGetLeanValue $ lean_env_mk_std lvl
 
 {#fun unsafe lean_env_mk_std
   { trustUInt `TrustLevel'
@@ -117,9 +138,7 @@ stdEnv lvl = tryGetLeanValue $ lean_env_mk_std lvl
   , `OutExceptionPtr'
   } -> `Bool' #}
 
--- | Create an axiom with name @nm@, universe parameters names
--- @params@, and type @tp@. Note that declartions are universe
--- polymorphic in Lean.
+-- | Create an empty hott environment with the given trust level.
 hottEnv :: TrustLevel -> Env
 hottEnv lvl = tryGetLeanValue $ lean_env_mk_hott lvl
 
@@ -230,9 +249,13 @@ envForget x = tryGetLeanValue $ lean_env_forget x
 ------------------------------------------------------------------------
 -- foldEnvDecls
 
--- | A fold over the declratation in the environment.
+-- | A fold over the declaration in the environment.
 envDecls :: Fold Env Decl
-envDecls = runLeanFold wrapDeclVisitFn allocDecl lean_env_for_each_decl
+envDecls = runLeanFold wrapDeclVisitFn lean_env_for_each_decl
+
+-- | Run an IO action on each declaration in the environment.
+forEnvDecl_ :: Env -> (Decl -> IO ()) -> IO ()
+forEnvDecl_ e f = safeRunLeanFold wrapDeclVisitFn lean_env_for_each_decl f e
 
 foreign import ccall "wrapper" wrapDeclVisitFn :: WrapLeanVisitFn DeclPtr
 
@@ -247,7 +270,12 @@ foreign import ccall "wrapper" wrapDeclVisitFn :: WrapLeanVisitFn DeclPtr
 
 -- | Fold over the global universes in the environment.
 envUnivs :: Fold Env Name
-envUnivs = runLeanFold wrapNameVisitFn mkLeanValue lean_env_for_each_univ
+envUnivs = runLeanFold wrapNameVisitFn lean_env_for_each_univ
+
+-- | Run an IO action on each universe in the environment.
+forEnvUniv_ :: Env -> (Name -> IO ()) -> IO ()
+forEnvUniv_ e f = safeRunLeanFold wrapNameVisitFn lean_env_for_each_univ f e
+
 
 foreign import ccall "wrapper" wrapNameVisitFn :: WrapLeanVisitFn NamePtr
 

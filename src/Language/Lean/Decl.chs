@@ -22,7 +22,7 @@ module Language.Lean.Decl
   , declUnivParams
   , declType
   , DeclView(..)
-  , viewDecl
+  , declView
     -- * Certified declarations
   , CertDecl
   , check
@@ -186,15 +186,16 @@ data DeclView
   = Constant
     -- | An axiom
   | Axiom
-    -- | A definition
+    -- | A definition with the associated value, definitional height, and
+    -- whether to lazy unfold it.
   | Definition Expr Word32 Bool
     -- | A theorem
   | Theorem Expr Word32
  deriving (Eq, Show)
 
 -- | Return information about a declaration.
-viewDecl :: Decl -> DeclView
-viewDecl x =
+declView :: Decl -> DeclView
+declView x =
   case lean_decl_get_kind x of
     LEAN_DECL_CONST -> Constant
     LEAN_DECL_AXIOM -> Axiom

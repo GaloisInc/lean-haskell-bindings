@@ -171,7 +171,7 @@ instance IsListIso (List Univ) Univ where
   nil = tryGetLeanValue $ lean_list_univ_mk_nil
   h <| r = tryGetLeanValue $ lean_list_univ_mk_cons h r
 
-  viewList l =
+  listView l =
     if lean_list_univ_is_cons l then
       tryGetLeanValue (lean_list_univ_head l)
         :< tryGetLeanValue (lean_list_univ_tail l)

@@ -22,6 +22,7 @@ module Language.Lean.Internal.Expr
   , OutExprPtr
   , withExpr
   , exprLt
+  , exprToString
   , BinderKind(..)
     -- * List of expressions
   , ListExpr
@@ -139,14 +140,14 @@ foreign import ccall unsafe "&lean_list_expr_del"
 ------------------------------------------------------------------------
 -- Expression Show instance
 
+exprToString :: Expr -> String
+exprToString x = tryGetLeanValue $ lean_expr_to_string x
+
 instance Show Expr where
-  show x = tryGetLeanValue $ lean_expr_to_string x
+  show = show . exprToString
 
 {#fun unsafe lean_expr_to_string
-  { `Expr'
-  , id `Ptr CString'
-  , `OutExceptionPtr'
-  } -> `Bool' #}
+ { `Expr' , id `Ptr CString', `OutExceptionPtr' } -> `Bool' #}
 
 ------------------------------------------------------------------------
 -- Expression Comparison
@@ -177,9 +178,7 @@ instance Eq (List Expr) where
   (==) = lean_list_expr_eq
 
 {#fun pure unsafe lean_list_expr_eq
-   { `ListExpr'
-   , `ListExpr'
-   } -> `Bool' #}
+ { `ListExpr', `ListExpr' } -> `Bool' #}
 
 ------------------------------------------------------------------------
 -- ListExpr IsListIso instance
@@ -188,7 +187,7 @@ instance IsListIso (List Expr) Expr where
   nil = tryGetLeanValue $ lean_list_expr_mk_nil
   h <| r = tryGetLeanValue $ lean_list_expr_mk_cons h r
 
-  viewList l =
+  listView l =
     if lean_list_expr_is_cons l then
       tryGetLeanValue (lean_list_expr_head l)
         :< tryGetLeanValue (lean_list_expr_tail l)

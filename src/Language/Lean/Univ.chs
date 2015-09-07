@@ -18,7 +18,7 @@ module Language.Lean.Univ
   , metaUniv
   , explicitUniv
   , UnivView(..)
-  , viewUniv
+  , univView
   , showUniv
   , showUnivUsing
     -- * Operations on universe levels
@@ -129,8 +129,8 @@ data UnivView
   deriving (Eq, Ord, Show)
 
 -- | Create a view of the universe.
-viewUniv :: Univ -> UnivView
-viewUniv x =
+univView :: Univ -> UnivView
+univView x =
   case lean_univ_get_kind x of
    LEAN_UNIV_ZERO -> UnivZero
    LEAN_UNIV_SUCC -> UnivSucc (tryGetLeanValue $ lean_univ_get_pred x)

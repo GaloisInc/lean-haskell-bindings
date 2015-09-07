@@ -20,7 +20,6 @@ module Language.Lean.Internal.Decl
   , Decl
   , DeclPtr
   , OutDeclPtr
-  , allocDecl
   , withDecl
     -- * Certified declaration
   , CertDecl
@@ -83,10 +82,6 @@ withDecl (Decl o) = withForeignPtr o
 
 -- | Haskell type for @lean_decl*@ FFI parameters.
 {#pointer *lean_decl as OutDeclPtr -> DeclPtr#}
-
--- | Create a declaration from a declaration pointer.
-allocDecl :: DeclPtr -> IO Decl
-allocDecl ptr = Decl <$> newForeignPtr lean_decl_del_ptr ptr
 
 instance IsLeanValue Decl (Ptr Decl) where
    mkLeanValue = fmap Decl . newForeignPtr lean_decl_del_ptr

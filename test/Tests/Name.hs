@@ -19,13 +19,13 @@ nameTests = testGroup "Name"
 
 anonymousTest :: IO ()
 anonymousTest = do
-  case Lean.viewName Lean.anonymousName of
+  case Lean.nameView Lean.anonymousName of
     Lean.AnonymousName -> return ()
     _ -> fail "Expected anonymous name."
 
 stringTest :: IO ()
 stringTest = do
-  case Lean.viewName "foo.bla" of
+  case Lean.nameView "foo.bla" of
     Lean.StringName "foo" "bla" -> return ()
     _ -> fail "Expected string name"
 
@@ -34,7 +34,7 @@ stringTest = do
 
 idxTest :: IO ()
 idxTest = do
-  case Lean.viewName "foo.bla.1" of
+  case Lean.nameView "foo.bla.1" of
     Lean.IndexName "foo.bla" 1 -> do
       return ()
     _ -> fail $ "Expected index name"

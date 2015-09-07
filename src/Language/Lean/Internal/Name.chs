@@ -14,10 +14,11 @@ together with typeclass instances for @Name@.
 module Language.Lean.Internal.Name
   ( Name
   , anonymousName
-  , strName
-  , idxName
+  , nameAppend
+  , nameAppendIndex
   , NameView(..)
-  , viewName
+  , nameView
+  , nameToString
     -- * Internal declarations
   , NamePtr
   , OutNamePtr
@@ -54,7 +55,8 @@ newtype Name = Name (ForeignPtr Name)
 
 -- | Function @c2hs@ uses to pass @Name@ values to Lean
 withName :: Name -> (Ptr Name -> IO a) -> IO a
-withName (Name o) = withForeignPtr o
+withName (Name fo) = withForeignPtr fo
+{-# INLINE withName #-}
 
 -- | Haskell type for @lean_name@ FFI parameters.
 {#pointer  lean_name as NamePtr -> Name#}
@@ -65,7 +67,7 @@ foreign import ccall unsafe "&lean_name_del"
   lean_name_del_ptr :: FunPtr (NamePtr -> IO ())
 
 instance IsLeanValue Name (Ptr Name) where
-  mkLeanValue = fmap Name . newForeignPtr lean_name_del_ptr
+  mkLeanValue v = Name <$> newForeignPtr lean_name_del_ptr v
 
 instance Eq Name where
   (==) = lean_name_eq
@@ -77,8 +79,12 @@ instance Ord Name where
 
 {#fun pure unsafe lean_name_quick_lt { `Name' , `Name' } -> `Bool' #}
 
+-- | Return a name as a string with subnames separated by periods.
+nameToString :: Name -> String
+nameToString nm = tryGetLeanValue $ lean_name_to_string nm
+
 instance Show Name where
-  show nm = tryGetLeanValue $ lean_name_to_string nm
+  show = show . nameToString
 
 {#fun unsafe lean_name_to_string
  { `Name', id `Ptr CString', `OutExceptionPtr' } -> `Bool' #}
@@ -91,13 +97,13 @@ anonymousName :: Name
 anonymousName = tryGetLeanValue lean_name_mk_anonymous
 
 -- | Append a string to a name.
-strName :: Name -> String -> Name
-strName pre r = tryGetLeanValue (lean_name_mk_str pre r)
+nameAppend :: Name -> String -> Name
+nameAppend pre r = tryGetLeanValue (lean_name_mk_str pre r)
 
 -- | Append a numeric index to a name.
 -- The name
-idxName :: Name -> Word32 -> Name
-idxName pre i = tryGetLeanValue (lean_name_mk_idx pre i)
+nameAppendIndex :: Name -> Word32 -> Name
+nameAppendIndex pre i = tryGetLeanValue (lean_name_mk_idx pre i)
 
 {#fun unsafe lean_name_mk_anonymous
   { `OutNamePtr'
@@ -132,8 +138,8 @@ data NameView
   deriving (Show)
 
 -- | View the head of a Lean name.
-viewName :: Name -> NameView
-viewName nm =
+nameView :: Name -> NameView
+nameView nm =
   if lean_name_is_anonymous nm then
     AnonymousName
   else if lean_name_is_str nm then do
@@ -169,12 +175,12 @@ instance IsString Name where
           (h,r)     -> assert (null r) (go' nm h)
       go' nm s@(c:_) | isDigit c =
         case reads s of
-          [(i,"")] -> idxName nm i
+          [(i,"")] -> nameAppendIndex nm i
           _        -> throw $ leanKernelException msg
             where
               msg = "Identifiers cannot begin with a digit."
       go' _ "" = throw $ leanKernelException "Identifiers cannot be empty"
-      go' nm s = strName nm s
+      go' nm s = nameAppend nm s
 
 ------------------------------------------------------------------------
 -- Name Monoid instance
@@ -184,10 +190,10 @@ instance IsString Name where
 instance Monoid Name where
   mempty  = anonymousName
   mappend x y =
-    case viewName y of
+    case nameView y of
       AnonymousName   -> x
-      StringName yn s -> strName (mappend x yn) s
-      IndexName  yn i -> idxName (mappend x yn) i
+      StringName yn s -> mappend x yn `nameAppend` s
+      IndexName  yn i -> mappend x yn `nameAppendIndex` i
 
 ------------------------------------------------------------------------
 -- Name Lists
@@ -233,7 +239,7 @@ instance IsListIso (List Name) Name where
   nil = tryGetLeanValue $ lean_list_name_mk_nil
   h <| r = tryGetLeanValue $ lean_list_name_mk_cons h r
 
-  viewList l =
+  listView l =
     if lean_list_name_is_cons l then
       tryGetLeanValue (lean_list_name_head l)
         :< tryGetLeanValue (lean_list_name_tail l)

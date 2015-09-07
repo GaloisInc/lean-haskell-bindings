@@ -23,8 +23,8 @@ testVar = do
   let e3 = Lean.varExpr 0
   assert (e1 == e3)
   assert (not (e1 == e2))
-  assert (Lean.viewExpr e1 == Lean.ExprVar 0)
-  assert (Lean.viewExpr e2 == Lean.ExprVar 1)
+  assert (Lean.exprView e1 == Lean.ExprVar 0)
+  assert (Lean.exprView e2 == Lean.ExprVar 1)
 
 testConst :: IO ()
 testConst = do
@@ -33,6 +33,6 @@ testConst = do
   let e3 = Lean.constExpr "func" [u0, u0]
   assert $ e1 == e1
   assert $ not (e1 == e2)
-  assert $ Lean.viewExpr e2 == Lean.ExprConst "id" [u0, u0]
-  assert $ Lean.viewExpr e3 == Lean.ExprConst "func" [u0, u0]
+  assert $ Lean.exprView e2 == Lean.ExprConst "id" [u0, u0]
+  assert $ Lean.exprView e3 == Lean.ExprConst "func" [u0, u0]
   assert $ show e3 == "func.{0 0}"

@@ -24,20 +24,20 @@ univTests = testGroup "Univ"
   ]
 
 testZero :: Assertion
-testZero = assert $ Lean.viewUniv u0 == Lean.UnivZero
+testZero = assert $ Lean.univView u0 == Lean.UnivZero
 
 testOne :: Assertion
-testOne = assert $ Lean.viewUniv u1 == Lean.UnivSucc u0
+testOne = assert $ Lean.univView u1 == Lean.UnivSucc u0
 
 testGlobal :: Assertion
-testGlobal = assert $ Lean.viewUniv (Lean.globalUniv "U") == Lean.UnivGlobal "U"
+testGlobal = assert $ Lean.univView (Lean.globalUniv "U") == Lean.UnivGlobal "U"
 
 testMax :: Assertion
-testMax = assert $ Lean.viewUniv max_p1_1 == Lean.UnivMax p1 u1
+testMax = assert $ Lean.univView max_p1_1 == Lean.UnivMax p1 u1
   where max_p1_1 = Lean.maxUniv p1 (Lean.explicitUniv 1)
 
 testIMax :: Assertion
-testIMax = assert $ Lean.viewUniv (Lean.imaxUniv u1 p1) == Lean.UnivIMax u1 p1
+testIMax = assert $ Lean.univView (Lean.imaxUniv u1 p1) == Lean.UnivIMax u1 p1
 
 testUnivLt :: Assertion
 testUnivLt = do
@@ -45,7 +45,7 @@ testUnivLt = do
   assert $ not (u1 `Lean.univLt` u0)
 
 testNormalize :: Assertion
-testNormalize = assert $ Lean.viewUniv x == y
+testNormalize = assert $ Lean.univView x == y
   where x  = Lean.normalizeUniv u
         y  = Lean.UnivMax u2 (Lean.succUniv p1)
 

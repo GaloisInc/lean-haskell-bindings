@@ -23,7 +23,7 @@ u1 = Lean.explicitUniv 1
 
 testAddUniv :: IO ()
 testAddUniv = do
-  let env = Lean.stdEnv Lean.trustHigh
+  let env = Lean.standardEnv Lean.trustHigh
   let new_env = env & Lean.envAddUniv "u"
   assert (new_env      `Lean.envContainsUniv` "u")
   assert (not (new_env `Lean.envContainsUniv` "v"))
@@ -31,7 +31,7 @@ testAddUniv = do
 
 testId :: IO ()
 testId = do
-  let env = Lean.stdEnv Lean.trustHigh
+  let env = Lean.standardEnv Lean.trustHigh
   let v0 = Lean.varExpr 0
   let v1 = Lean.varExpr 1
   let tp = Lean.sortExpr (Lean.paramUniv "l")
@@ -53,7 +53,7 @@ testId = do
   assert $ env `Lean.envContainsDecl` "id" == False
   assert $ new_env `Lean.envContainsDecl` "id"
 
-  let decls = fmap Lean.viewDecl $ new_env^..Lean.envDecls
+  let decls = fmap Lean.declView $ new_env^..Lean.envDecls
 
   assert $ length decls == 1
 
@@ -73,9 +73,8 @@ testId = do
 
 testImport :: IO ()
 testImport = do
-  let env = Lean.stdEnv Lean.trustHigh
-  let o = Lean.emptyOptions
-  ios <- Lean.mkBufferedIOState o
+  let env = Lean.standardEnv Lean.trustHigh
+  ios <- Lean.mkBufferedIOState
   new_env <- Lean.envImport ios env ["init.logic"]
   assert $ Lean.envContainsDecl new_env "not"
 

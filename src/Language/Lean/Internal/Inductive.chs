@@ -111,7 +111,7 @@ instance IsListIso (List InductiveType) InductiveType where
   nil = tryGetLeanValue $ lean_list_inductive_type_mk_nil
   h <| r = tryGetLeanValue $ lean_list_inductive_type_mk_cons h r
 
-  viewList l =
+  listView l =
     if lean_list_inductive_type_is_cons l then
       tryGetLeanValue (lean_list_inductive_type_head l)
         :< tryGetLeanValue (lean_list_inductive_type_tail l)

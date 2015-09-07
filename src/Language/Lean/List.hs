@@ -41,7 +41,7 @@ class IsListIso l a | l -> a where
   -- | Cons an element to the front of a list.
   (<|) :: a -> l -> l
   -- | View the front of a list.
-  viewList :: l -> ListView l a
+  listView :: l -> ListView l a
 
 -- | Convert a ordinary Haskell list to an opague list
 fromListDefault :: IsListIso l a => [a] -> l
@@ -52,7 +52,7 @@ fromListDefault (h:r) = h <| fromListDefault r
 -- | Concatenate two lists
 concatList :: IsListIso l a => l -> l -> l
 concatList x y =
-  case viewList x of
+  case listView x of
     Nil -> y
     a :< r -> a <| concatList r y
 
@@ -68,7 +68,7 @@ mapList = over traverseList
 traverseList :: (IsListIso s a, IsListIso t b)
              => Traversal s t a b
 traverseList f l =
-  case viewList l of
+  case listView l of
    Nil -> pure nil
    h :< r -> (<|) <$> f h <*> traverseList f r
 {-# INLINABLE traverseList #-}

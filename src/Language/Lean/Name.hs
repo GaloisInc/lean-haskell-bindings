@@ -15,10 +15,11 @@ Operations for working with Lean names.
 module Language.Lean.Name
   ( Name
   , anonymousName
-  , strName
-  , idxName
+  , nameAppend
+  , nameAppendIndex
   , NameView(..)
-  , viewName
+  , nameView
+  , nameToString
   ) where
 
 import Language.Lean.Internal.Name

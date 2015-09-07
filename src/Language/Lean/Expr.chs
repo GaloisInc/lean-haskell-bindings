@@ -24,9 +24,10 @@ module Language.Lean.Expr
   , metavarExpr
     -- * View
   , ExprView(..)
-  , viewExpr
+  , exprView
     -- * Operations
   , exprLt
+  , exprToString
   ) where
 
 import Foreign
@@ -183,8 +184,8 @@ data ExprView
   deriving (Eq, Show)
 
 -- | View information about the structure of an expression.
-viewExpr :: Expr -> ExprView
-viewExpr x =
+exprView :: Expr -> ExprView
+exprView x =
   case lean_expr_get_kind x of
     LEAN_EXPR_VAR ->
       ExprVar (tryGetLeanValue $ lean_expr_get_var_idx x)
