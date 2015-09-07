@@ -7,6 +7,7 @@ Maintainer  : jhendrix@galois.com, lcasburn@galois.com
 Operations for creating inductive types and declarations.
 -}
 {-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE Trustworthy #-}
 module Language.Lean.Inductive
   ( -- * Inductive type
     InductiveType
@@ -38,6 +39,7 @@ import Language.Lean.List
 
 {#import Language.Lean.Internal.Decl#}
 {#import Language.Lean.Internal.Exception#}
+import Language.Lean.Internal.Exception.Unsafe
 {#import Language.Lean.Internal.Expr#}
 {#import Language.Lean.Internal.Inductive#}
 {#import Language.Lean.Internal.Name#}
@@ -119,7 +121,6 @@ recursorName n = tryGetLeanValue $ lean_get_recursor_name n
 
 ------------------------------------------------------------------------
 -- Constructing InductiveDecls
-
 
 -- | A inductive datatype declaration
 --

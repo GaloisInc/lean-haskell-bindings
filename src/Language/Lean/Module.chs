@@ -7,6 +7,7 @@ Maintainer  : jhendrix@galois.com, lcasburn@galois.com
 Declarations for importing and exporting modules and accessing Lean paths
 -}
 {-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE Trustworthy #-}
 module Language.Lean.Module
   ( envImport
   , envExport
@@ -21,6 +22,7 @@ import Language.Lean.List
 
 {#import Language.Lean.Internal.Decl#}
 {#import Language.Lean.Internal.Exception#}
+import Language.Lean.Internal.Exception.Unsafe
 {#import Language.Lean.Internal.Name#}
 {#import Language.Lean.Internal.IOS#}
 {#import Language.Lean.Internal.String#}

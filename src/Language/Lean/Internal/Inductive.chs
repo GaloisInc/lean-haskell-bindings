@@ -10,6 +10,8 @@ Internal declarations for inductive types and declarations.
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE Trustworthy #-}
+{-# OPTIONS_HADDOCK not-home #-}
 module Language.Lean.Internal.Inductive
   ( InductiveType
   , InductiveTypePtr
@@ -28,11 +30,11 @@ module Language.Lean.Internal.Inductive
 import Control.Lens (toListOf)
 import Foreign
 import Foreign.C
-import GHC.Exts (IsList(..))
 import Language.Lean.List
 import System.IO.Unsafe
 
 {#import Language.Lean.Internal.Exception#}
+import Language.Lean.Internal.Exception.Unsafe
 
 #include "lean_macros.h"
 #include "lean_bool.h"
@@ -107,7 +109,7 @@ instance Eq (List InductiveType) where
 ------------------------------------------------------------------------
 -- List InductiveType IsListIso instance
 
-instance IsListIso (List InductiveType) InductiveType where
+instance IsListIso (List InductiveType) where
   nil = tryGetLeanValue $ lean_list_inductive_type_mk_nil
   h <| r = tryGetLeanValue $ lean_list_inductive_type_mk_cons h r
 
@@ -150,7 +152,7 @@ instance IsListIso (List InductiveType) InductiveType where
 -- List InductiveType IsList instance
 
 instance IsList (List InductiveType) where
-  type Item ListInductiveType = InductiveType
+  type Item (List InductiveType) = InductiveType
   fromList = fromListDefault
   toList = toListOf traverseList
 

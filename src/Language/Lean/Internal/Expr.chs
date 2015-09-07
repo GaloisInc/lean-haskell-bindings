@@ -10,6 +10,8 @@ Internal declarations for Lean expressions and typeclass instances for @Expr@.
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE Trustworthy #-}
+{-# OPTIONS_HADDOCK not-home #-}
 module Language.Lean.Internal.Expr
   ( -- * Macro definitions
     MacroDef
@@ -34,11 +36,11 @@ module Language.Lean.Internal.Expr
 import Control.Lens (toListOf)
 import Foreign
 import Foreign.C
-import GHC.Exts (IsList(..))
 import System.IO.Unsafe
 
 import Language.Lean.List
 {#import Language.Lean.Internal.Exception#}
+import Language.Lean.Internal.Exception.Unsafe
 
 #include "lean_macros.h"
 #include "lean_bool.h"
@@ -184,7 +186,7 @@ instance Eq (List Expr) where
 ------------------------------------------------------------------------
 -- ListExpr IsListIso instance
 
-instance IsListIso (List Expr) Expr where
+instance IsListIso (List Expr) where
   nil = tryGetLeanValue $ lean_list_expr_mk_nil
   h <| r = tryGetLeanValue $ lean_list_expr_mk_cons h r
 

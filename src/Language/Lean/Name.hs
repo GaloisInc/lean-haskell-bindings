@@ -8,10 +8,7 @@ Portability : POSIX
 
 Operations for working with Lean names.
 -}
-{-# LANGUAGE DoAndIfThenElse #-}
-{-# LANGUAGE ForeignFunctionInterface #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE Safe #-}
 module Language.Lean.Name
   ( Name
   , anonymousName

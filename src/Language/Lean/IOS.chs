@@ -14,6 +14,7 @@ for controlling how Lean sends console output to the user.
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE Trustworthy #-}
 module Language.Lean.IOS
   ( IOState
   , type IOStateType(..)

@@ -11,6 +11,8 @@ together with typeclass instances for @Name@.
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE Trustworthy #-}
+{-# OPTIONS_HADDOCK not-home #-}
 module Language.Lean.Internal.Name
   ( Name
   , anonymousName
@@ -35,12 +37,12 @@ import Data.Char (isDigit)
 import Data.String
 import Foreign
 import Foreign.C
-import GHC.Exts (IsList(..))
 import System.IO.Unsafe
 
 import Language.Lean.List
 
 {#import Language.Lean.Internal.Exception #}
+import Language.Lean.Internal.Exception.Unsafe
 {#import Language.Lean.Internal.String #}
 
 #include "lean_macros.h"
@@ -234,7 +236,7 @@ instance Eq (List Name) where
 ------------------------------------------------------------------------
 -- ListName IsListIso instance
 
-instance IsListIso (List Name) Name where
+instance IsListIso (List Name) where
   nil = tryGetLeanValue $ lean_list_name_mk_nil
   h <| r = tryGetLeanValue $ lean_list_name_mk_cons h r
 

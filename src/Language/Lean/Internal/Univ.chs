@@ -11,6 +11,7 @@ for @Univ@.
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE Trustworthy #-}
 module Language.Lean.Internal.Univ
   ( Univ
   , showUniv
@@ -29,11 +30,11 @@ module Language.Lean.Internal.Univ
 import Control.Lens (toListOf)
 import Foreign
 import Foreign.C
-import GHC.Exts
 import System.IO.Unsafe
 
 import Language.Lean.List
 {#import Language.Lean.Internal.Exception #}
+import Language.Lean.Internal.Exception.Unsafe
 {#import Language.Lean.Internal.Options #}
 
 #include "lean_macros.h"
@@ -165,9 +166,19 @@ instance Eq (List Univ) where
    } -> `Bool' #}
 
 ------------------------------------------------------------------------
+-- ListUniv IsList instance
+
+-- | Allow @(List Univ)@ to use @OverloadedLists@ extensions.
+instance IsList (List Univ) where
+  -- | List Univ type family instance needed by @IsList (List Univ)@
+  type Item (List Univ) = Univ
+  fromList = fromListDefault
+  toList = toListOf traverseList
+
+------------------------------------------------------------------------
 -- ListUniv IsListIso instance
 
-instance IsListIso (List Univ) Univ where
+instance IsListIso (List Univ) where
   nil = tryGetLeanValue $ lean_list_univ_mk_nil
   h <| r = tryGetLeanValue $ lean_list_univ_mk_cons h r
 
@@ -205,16 +216,6 @@ instance IsListIso (List Univ) Univ where
    , `OutListUnivPtr'
    , `OutExceptionPtr'
    } -> `Bool' #}
-
-------------------------------------------------------------------------
--- ListUniv IsList instance
-
--- | Allow @(List Univ)@ to use @OverloadedLists@ extensions.
-instance IsList (List Univ) where
-  -- | List Univ type family instance needed by @IsList (List Univ)@
-  type Item (List Univ) = Univ
-  fromList = fromListDefault
-  toList = toListOf traverseList
 
 ------------------------------------------------------------------------
 -- ListUniv Show instance

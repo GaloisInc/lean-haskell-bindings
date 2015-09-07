@@ -10,6 +10,8 @@ for @Options@ type.
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE Trustworthy #-}
+{-# OPTIONS_HADDOCK not-home #-}
 module Language.Lean.Internal.Options
   ( Options
   , emptyOptions
@@ -25,6 +27,7 @@ import Foreign.C
 import System.IO.Unsafe
 
 {#import Language.Lean.Internal.Exception #}
+import Language.Lean.Internal.Exception.Unsafe
 
 #include "lean_macros.h"
 #include "lean_bool.h"

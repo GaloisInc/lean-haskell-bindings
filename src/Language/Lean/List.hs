@@ -13,6 +13,7 @@ viewing Lean lists.
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE Trustworthy #-}
 module Language.Lean.List
   ( List
   , IsListIso(..)
@@ -21,9 +22,12 @@ module Language.Lean.List
   , concatList
   , mapList
   , traverseList
+    -- * Re-exports
+  , GHC.Exts.IsList(..)
   ) where
 
 import Control.Lens (Traversal, over)
+import GHC.Exts (IsList(..))
 
 -- | A type family for mapping a Lean value to the internal list
 -- representation.
@@ -35,38 +39,42 @@ data ListView l a
    | a :< l
 
 -- | A typeclass for types that are isomorphic to lists.
-class IsListIso l a | l -> a where
+--
+-- This is used to provide functions for manipulating
+-- Lean's internal lists without the overhead of converting
+-- to and from Haskell lists.
+class IsList l => IsListIso l where
   -- | The empty list
   nil :: l
   -- | Cons an element to the front of a list.
-  (<|) :: a -> l -> l
+  (<|) :: Item l -> l -> l
   -- | View the front of a list.
-  listView :: l -> ListView l a
+  listView :: l -> ListView l (Item l)
 
 -- | Convert a ordinary Haskell list to an opague list
-fromListDefault :: IsListIso l a => [a] -> l
+fromListDefault :: IsListIso l => [Item l] -> l
 fromListDefault [] = nil
 fromListDefault (h:r) = h <| fromListDefault r
 {-# INLINABLE fromListDefault #-}
 
 -- | Concatenate two lists
-concatList :: IsListIso l a => l -> l -> l
+concatList :: IsListIso l => l -> l -> l
 concatList x y =
   case listView x of
     Nil -> y
     a :< r -> a <| concatList r y
 
 -- | Apply a function to map one list to another.
-mapList :: (IsListIso s a, IsListIso t b)
-        => (a -> b)
+mapList :: (IsListIso s, IsListIso t)
+        => (Item s -> Item t)
         -> s
         -> t
 mapList = over traverseList
 {-# INLINABLE mapList #-}
 
 -- | A traversal of the elements in a list.
-traverseList :: (IsListIso s a, IsListIso t b)
-             => Traversal s t a b
+traverseList :: (IsListIso s, IsListIso t)
+             => Traversal s t (Item s) (Item t)
 traverseList f l =
   case listView l of
    Nil -> pure nil

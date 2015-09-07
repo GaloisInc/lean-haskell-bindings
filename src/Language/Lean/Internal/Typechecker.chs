@@ -9,6 +9,8 @@ Internal declarations for ConstraintSeq and Typechecker.
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE Safe #-}
+{-# OPTIONS_HADDOCK not-home #-}
 module Language.Lean.Internal.Typechecker
   ( Typechecker
   , ConstraintSeq

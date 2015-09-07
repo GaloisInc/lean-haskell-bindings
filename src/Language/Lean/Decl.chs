@@ -7,6 +7,7 @@ Maintainer  : jhendrix@galois.com, lcasburn@galois.com
 Operations for working with Lean declarations.
 -}
 {-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE Trustworthy #-}
 module Language.Lean.Decl
   ( Env(..)
   , Decl
@@ -36,6 +37,7 @@ import Language.Lean.List
 
 {#import Language.Lean.Internal.Decl#}
 {#import Language.Lean.Internal.Exception#}
+import Language.Lean.Internal.Exception.Unsafe
 {#import Language.Lean.Internal.Expr#}
 {#import Language.Lean.Internal.Name#}
 

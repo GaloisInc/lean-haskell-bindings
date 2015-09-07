@@ -7,6 +7,7 @@ Maintainer  : jhendrix@galois.com, lcasburn@galois.com
 Interface to Lean typechecker
 -}
 {-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE Trustworthy #-}
 module Language.Lean.Typechecker
   ( Typechecker
   , ConstraintSeq
@@ -23,6 +24,7 @@ import System.IO.Unsafe
 
 {#import Language.Lean.Internal.Decl#}
 {#import Language.Lean.Internal.Exception#}
+import Language.Lean.Internal.Exception.Unsafe
 {#import Language.Lean.Internal.Expr#}
 {#import Language.Lean.Internal.Typechecker#}
 

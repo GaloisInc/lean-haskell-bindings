@@ -57,6 +57,7 @@ library
     Language.Lean
     Language.Lean.Internal.String
     Language.Lean.Internal.Exception
+    Language.Lean.Internal.Exception.Unsafe
     Language.Lean.Internal.Name
     Language.Lean.Internal.Options
     Language.Lean.Internal.Univ

@@ -9,6 +9,7 @@ the Lean FFI.
 -}
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE Trustworthy #-}
+{-# OPTIONS_HADDOCK not-home #-}
 module Language.Lean.Internal.String
   ( mkLeanString
   , mkLeanText

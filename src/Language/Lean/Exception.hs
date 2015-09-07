@@ -6,6 +6,7 @@ Maintainer  : jhendrix@galois.com, lcasburn@galois.com
 
 Exceptions thrown by Lean.
 -}
+{-# LANGUAGE Safe #-}
 module Language.Lean.Exception
   ( LeanException(..)
   , LeanExceptionKind(..)

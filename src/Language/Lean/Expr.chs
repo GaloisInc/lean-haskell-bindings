@@ -7,6 +7,7 @@ Maintainer  : jhendrix@galois.com, lcasburn@galois.com
 Operations for Lean expressions.
 -}
 {-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE Trustworthy #-}
 module Language.Lean.Expr
   ( MacroDef
   , Expr
@@ -36,6 +37,7 @@ import System.IO.Unsafe
 
 import Language.Lean.List
 {#import Language.Lean.Internal.Exception#}
+import Language.Lean.Internal.Exception.Unsafe
 {#import Language.Lean.Internal.Expr#}
 {#import Language.Lean.Internal.Name#}
 {#import Language.Lean.Internal.Univ#}

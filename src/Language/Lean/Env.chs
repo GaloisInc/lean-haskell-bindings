@@ -10,6 +10,7 @@ Operations for working with Lean environments.
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE Trustworthy #-}
 module Language.Lean.Env
   ( Env
   , TrustLevel
@@ -46,6 +47,7 @@ import System.IO.Unsafe
 
 {#import Language.Lean.Internal.Decl#}
 {#import Language.Lean.Internal.Exception#}
+import Language.Lean.Internal.Exception.Unsafe
 {#import Language.Lean.Internal.Name#}
 
 #include "lean_macros.h"

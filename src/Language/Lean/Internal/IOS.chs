@@ -15,6 +15,7 @@ Internal declarations for IOState.
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# OPTIONS_HADDOCK not-home #-}
 module Language.Lean.Internal.IOS
   ( IOState
   , withIOState

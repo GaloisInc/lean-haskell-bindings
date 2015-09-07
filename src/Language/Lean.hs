@@ -6,6 +6,7 @@ Maintainer  : jhendrix@galois.com, lcasburn@galois.com
 
 This module exports the main components of the Lean interface.
 -}
+{-# LANGUAGE Safe #-}
 module Language.Lean
   ( module Language.Lean.Decl
   , module Language.Lean.Env

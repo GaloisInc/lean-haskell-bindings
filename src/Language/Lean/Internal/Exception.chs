@@ -13,7 +13,8 @@ Internal operations for working with Lean exceptions.
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE Safe #-}
+{-# OPTIONS_HADDOCK not-home #-}
 module Language.Lean.Internal.Exception
   ( LeanException(..)
   , LeanExceptionKind(..)
@@ -27,22 +28,18 @@ module Language.Lean.Internal.Exception
   , LeanPartialAction
   , runLeanPartialAction
   , LeanPartialFn
+  , runLeanPartialFn
+  , runLeanMaybeFn
   , IsLeanValue(..)
     -- * Functions that return a result in IO
   , tryAllocLeanValue
-    -- * Functions that are pure.
-  , tryGetEnum
-  , tryGetLeanValue
-  , tryGetLeanMaybeValue
   ) where
 
 import Control.Exception
 import Control.Monad (when)
-import Data.Coerce (coerce)
 import Data.Typeable
 import Foreign
 import Foreign.C
-import System.IO.Unsafe (unsafePerformIO)
 
 import Language.Lean.Internal.String
 
@@ -180,13 +177,13 @@ instance IsLeanValue Bool CInt where
   mkLeanValue = return . toEnum . fromIntegral
 
 instance IsLeanValue Word32 CUInt where
-  mkLeanValue = return . coerce
+  mkLeanValue (CUInt x) = return x
 
 instance IsLeanValue Int32 CInt where
-  mkLeanValue = return . coerce
+  mkLeanValue (CInt x) = return x
 
 instance IsLeanValue Double CDouble where
-  mkLeanValue = return . coerce
+  mkLeanValue (CDouble d) = return d
 
 instance IsLeanValue String CString where
   mkLeanValue = getLeanString
@@ -198,33 +195,3 @@ tryAllocLeanValue :: IsLeanValue a p
                   -> IO a
 tryAllocLeanValue = \alloc_fn -> mkLeanValue =<< runLeanPartialFn alloc_fn
 {-# INLINE tryAllocLeanValue #-}
-
--- | Try to run a Lean partial function that returns a Lean value
--- that will need to be freed.
---
--- Other than allocating a new value or exception, the function
--- should be be pure.
-tryGetLeanValue :: IsLeanValue a p
-                => LeanPartialFn p
-                -> a
-tryGetLeanValue alloc_fn = unsafePerformIO $ do
-  mkLeanValue =<< runLeanPartialFn alloc_fn
-{-# INLINE tryGetLeanValue #-}
-
--- | Try to run a Lean function that may return a Lean value
--- that will need to be freed.
---
--- Other than allocating a new value or throwing an exception,
--- the function should be pure.
-tryGetLeanMaybeValue :: IsLeanValue a p
-                     => LeanPartialFn p
-                     -> Maybe a
-tryGetLeanMaybeValue alloc_fn = unsafePerformIO $ do
-  traverse mkLeanValue =<< runLeanMaybeFn alloc_fn
-
-{-# INLINE tryGetLeanMaybeValue #-}
-
--- | Try to run a Lean partial function that returns an enum type
-tryGetEnum :: (Enum a) => LeanPartialFn CInt -> a
-tryGetEnum alloc_fn =
-  toEnum $ fromIntegral $ unsafePerformIO $ runLeanPartialFn alloc_fn

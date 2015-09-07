@@ -12,6 +12,7 @@ Operations for Lean options
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE Trustworthy #-}
 module Language.Lean.Options
   ( Options
   , emptyOptions
@@ -33,6 +34,7 @@ import Foreign.C
 import System.IO.Unsafe
 
 {#import Language.Lean.Internal.Exception #}
+import Language.Lean.Internal.Exception.Unsafe
 {#import Language.Lean.Internal.Name #}
 {#import Language.Lean.Internal.Options #}
 {#import Language.Lean.Internal.String #}
