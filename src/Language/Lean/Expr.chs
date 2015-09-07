@@ -61,7 +61,7 @@ varExpr i = tryGetLeanValue $ lean_expr_mk_var i
   , `OutExceptionPtr'
   } -> `Bool' #}
 
--- | @sortExpr u@ denotes lean @type u@
+-- | Creates a type for the given universe
 sortExpr :: Univ -> Expr
 sortExpr u = tryGetLeanValue $ lean_expr_mk_sort u
 
@@ -130,7 +130,7 @@ macroExpr m args = tryGetLeanValue $ lean_expr_mk_macro m args
   , `OutExceptionPtr'
   } -> `Bool' #}
 
--- | Create a local constant with name @nm@ and type @tp@
+-- | Create a local constant with the given name and type.
 localExpr :: Name -> Expr -> Expr
 localExpr nm tp = tryGetLeanValue $ lean_expr_mk_local nm tp
 
@@ -141,10 +141,12 @@ localExpr nm tp = tryGetLeanValue $ lean_expr_mk_local nm tp
   , `OutExceptionPtr'
   } -> `Bool' #}
 
--- | @localExtExpr nm ppnm tp k@ returns a local constant with name
--- @nm@, pretty print name @ppnm@, type @tp@, and binder annotation
--- @k@.
-localExtExpr :: BinderKind -> Name -> Name -> Expr -> Expr
+-- | Create a local constant with additional parameters
+localExtExpr :: BinderKind -- ^ The binder kind for expression
+             -> Name -- ^ The name of expression
+             -> Name -- ^ The pretty print name
+             -> Expr -- ^ The type of the expression
+             -> Expr
 localExtExpr k nm ppnm tp = tryGetLeanValue $ lean_expr_mk_local_ext nm ppnm tp k
 
 {#fun unsafe lean_expr_mk_local_ext

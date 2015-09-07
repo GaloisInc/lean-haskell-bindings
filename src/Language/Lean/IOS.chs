@@ -4,30 +4,9 @@ Copyright   : (c) Galois Inc, 2015
 License     : Apache-2
 Maintainer  : jhendrix@galois.com, lcasburn@galois.com
 
-Operations for creating and manipulating an @IOState@, an object
-for controlling how Lean sends console output to the user.  Lean
-uses two channels for sending output to the user:
+Operations for creating and manipulating an 'IOState', an object
+for controlling how Lean sends console output to the user.
 
- * A /regular/ output channel, which consists of messages normally
-   printed to @stdout@.
- * A /diagnostic/ output channel, which consists of debugging
-   messages that are normally printed to @stderr@.
-
-This module currently provides two different @IOState@ types:
-
- * A /standard/ IO state that sends regular output to @stdout@ and
-   diagnostic output to @stderr@.
- * A /buffered/ IO state type that stores output internally, and
-   provides methods for getting output as strings.
-
-To prevent users from accidentally using the wrong type of output,
-the @IOState@ object has an extra type-level parameter used to
-indicate the type of channel.  Most Lean operations support both
-types of channels and either can be used.  Operations specific
-to a particular channel can use this type parameter to ensure
-users do not call the function on the wrong type of channel.  In
-addition, we provide a function @stateTypeRepr@ to allow users
-to determine the type of channel.
 -}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ExplicitNamespaces #-}
@@ -142,8 +121,8 @@ resetDiagnosticOutput s = runLeanPartialAction $ lean_ios_reset_diagnostic s
 
 -- | Flag indicating the type of state.
 --
--- This is implemented as a GADT to allow the IOState type to be specialized to
--- the appropriate type of channel.
+-- This is implemented as a GADT to allow client code to specialize an
+-- @IOState@ to the appropriate subtype.
 data IOStateTypeRepr (tp :: IOStateType) where
   StandardRepr :: IOStateTypeRepr 'Standard
   BufferedRepr :: IOStateTypeRepr 'Buffered

@@ -157,9 +157,7 @@ instance IsList (List InductiveType) where
 ------------------------------------------------------------------------
 -- InductiveDecl declarations
 
--- | An Inductive
 {#pointer  lean_inductive_decl as InductiveDecl foreign newtype nocode#}
-
 
 -- | An inductive declaration
 newtype InductiveDecl = InductiveDecl (ForeignPtr InductiveDecl)

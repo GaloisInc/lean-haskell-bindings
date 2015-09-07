@@ -173,7 +173,8 @@ envAddDecl d e = tryGetLeanValue $ lean_env_add e d
 -- |  Replace the axiom that has the name of the given certified declaration with the
 -- certified declaration.
 --
--- This procedure throws an exception if:
+-- This procedure throws an exception if
+--
 --  * The theorem was certified in an environment which is not an ancestor of the environment.
 --  * The environment does not contain an axiom with the given name.
 envReplaceAxiom :: CertDecl -> Env -> Env
@@ -225,7 +226,7 @@ envLookupDecl nm e =
 {#fun unsafe lean_env_get_decl
  { `Env', `Name', `OutDeclPtr', `OutExceptionPtr' } -> `Bool' #}
 
--- | @x `envIsDescendant` y@ return true @x@ is a descendant of @y@, that is, @x@
+-- | @x `'envIsDescendant'` y@ return true @x@ is a descendant of @y@, that is, @x@
 -- was created by adding declarations to @y@.
 envIsDescendant :: Env -> Env -> Bool
 envIsDescendant = lean_env_is_descendant
@@ -237,7 +238,7 @@ envIsDescendant = lean_env_is_descendant
 -- envForget
 
 -- | Return a new environment, where its "history" has been truncated/forgotten.
--- That is, @envForget x `envIsDescendant y@ will return false for any environment
+-- That is, @envForget x `envIsDescendant` y@ will return false for any environment
 -- @y@ that is not pointer equal to the result @envForget x@.
 envForget :: Env -> Env
 envForget x = tryGetLeanValue $ lean_env_forget x

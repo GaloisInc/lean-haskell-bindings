@@ -51,8 +51,11 @@ import Language.Lean.List
 ------------------------------------------------------------------------
 -- Constructors
 
--- | Create an axiom with the given name, universe parameters, and type.
-axiom :: Name -> List Name -> Expr -> Decl
+-- | Create an axiom.
+axiom :: Name -- ^ Name of axiom
+      -> List Name -- ^ Universe parameters
+      -> Expr -- ^ Type of axiom
+      -> Decl
 axiom nm params tp = tryGetLeanValue $ lean_decl_mk_axiom nm params tp
 
 {#fun unsafe lean_decl_mk_axiom
@@ -63,11 +66,13 @@ axiom nm params tp = tryGetLeanValue $ lean_decl_mk_axiom nm params tp
   , `OutExceptionPtr'
   } -> `Bool' #}
 
--- | Create a constant with the given name, universe parameters,
--- and type @tp@.
+-- | Create a constant.
 --
 -- Constants and axioms in Lean are essentially the same thing.
-constant :: Name -> List Name -> Expr -> Decl
+constant :: Name -- ^ Name of constant
+         -> List Name -- ^ Universe parameters
+         -> Expr -- ^ Type of constant
+         -> Decl
 constant nm params tp = tryGetLeanValue $ lean_decl_mk_const nm params tp
 
 {#fun unsafe lean_decl_mk_const
@@ -78,10 +83,14 @@ constant nm params tp = tryGetLeanValue $ lean_decl_mk_const nm params tp
   , `OutExceptionPtr'
   } -> `Bool' #}
 
--- | @definition nm params tp v h o@ create a definition with name @nm@,
--- universe parameters @params@, type @tp@, value @v@, definitional height @h@
--- and flag @o@ indicating whether normalization will lazily unfold it or not.
-definition :: Name -> List Name -> Expr -> Expr -> Word32 -> Bool -> Decl
+-- | Create a definition with an explicit definitional height
+definition :: Name -- ^ Name of the definition
+           -> List Name -- ^ Universe parameters for defintion
+           -> Expr -- ^ Type of definition
+           -> Expr -- ^ Value of definition
+           -> Word32 -- ^ Definitional height
+           -> Bool -- ^ Flag that indicates if definition should be lazily unfolded
+           -> Decl
 definition nm params tp v h o = tryGetLeanValue $ lean_decl_mk_def nm params tp v h o
 
 {#fun unsafe lean_decl_mk_def
@@ -95,11 +104,17 @@ definition nm params tp v h o = tryGetLeanValue $ lean_decl_mk_def nm params tp 
   , `OutExceptionPtr'
   } -> `Bool' #}
 
--- | Create a definition with name @nm@, universe parameters names
--- @params@, type @tp@, value @v@, and flag @o@ indicating whether
--- normalization will lazily unfold it or not. The definitional height
--- is computed using information from the environment.
-definitionWith :: Env -> Name -> List Name -> Expr -> Expr -> Bool -> Decl
+-- | Create a definition with a definitional height
+-- computed from the environment.
+--
+-- The definitional height is computed using information from the environment.
+definitionWith :: Env  -- ^ The environment
+               -> Name -- ^ Name of the definition
+               -> List Name -- ^ Universe parameters for defintion
+               -> Expr -- ^ Type of definition
+               -> Expr -- ^ Value of definition
+               -> Bool -- ^ Flag that indicates if definition should be lazily unfolded
+               -> Decl
 definitionWith e nm params tp v o =
   tryGetLeanValue $ lean_decl_mk_def_with e nm params tp v o
 
@@ -114,14 +129,18 @@ definitionWith e nm params tp v o =
   , `OutExceptionPtr'
   } -> `Bool' #}
 
--- | @theorem nm params tp v h@ creates a theorem with name @nm@, universe parameters
--- @params@, type @tp@, value @v@, and definitional height @h@.
+-- | Creates a theorem with an explicit definitional height.
 --
 -- Theorems and definitions are essentially the same thing in Lean, except in
 -- the way the normalizer treats them. The normalizer will only unfold theroem
 -- if there is nothing else to be done when checking whether two terms are
 -- definitionally equal or not.
-theorem :: Name -> List Name -> Expr -> Expr -> Word32 -> Decl
+theorem :: Name      -- ^ Name of the theorem
+        -> List Name -- ^ Universe parameters for theorem
+        -> Expr      -- ^ Type of the theorem
+        -> Expr      -- ^ Proof of the theorem
+        -> Word32    -- ^ Definitional height
+        -> Decl
 theorem nm params tp v h = tryGetLeanValue $ lean_decl_mk_thm nm params tp v h
 
 {#fun unsafe lean_decl_mk_thm
@@ -134,8 +153,7 @@ theorem nm params tp v h = tryGetLeanValue $ lean_decl_mk_thm nm params tp v h
   , `OutExceptionPtr'
   } -> `Bool' #}
 
--- | @theoremWith e nm params tp v@ creates a theorem relative to environment @e@
--- with name @nm@, universe @params@, type @tp@, and value @v@.
+-- | 'theoremWith' creates a theorem that is relative to an environment.
 --
 -- Theorems and definitions are essentially the same thing in Lean, except in
 -- the way the normalizer treats them. The normalizer will only unfold theroem
@@ -143,7 +161,12 @@ theorem nm params tp v h = tryGetLeanValue $ lean_decl_mk_thm nm params tp v h
 -- definitionally equal or not.
 --
 -- The definitional height is computed from environment.
-theoremWith :: Env -> Name -> List Name -> Expr -> Expr -> Decl
+theoremWith :: Env       -- ^ The environment
+            -> Name      -- ^ The name of the theorem
+            -> List Name -- ^ Universe parameters for theorem
+            -> Expr      -- ^ Type of the theorem
+            -> Expr      -- ^ Proof of the theorem
+            -> Decl
 theoremWith e nm params tp v = tryGetLeanValue $ lean_decl_mk_thm_with e nm params tp v
 
 {#fun unsafe lean_decl_mk_thm_with
@@ -189,7 +212,7 @@ data DeclView
     -- | A definition with the associated value, definitional height, and
     -- whether to lazy unfold it.
   | Definition Expr Word32 Bool
-    -- | A theorem
+    -- | A theorem with the associated value and definitional height.
   | Theorem Expr Word32
  deriving (Eq, Show)
 

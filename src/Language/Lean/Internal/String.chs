@@ -18,13 +18,13 @@ module Language.Lean.Internal.String
   , withLeanTextPtr
   ) where
 
-import Control.Exception (bracket, finally)
+import Control.Exception (bracket, finally, throwIO)
 import qualified Data.ByteString as BS
 import Data.ByteString.Unsafe (unsafePackCString, unsafeUseAsCString)
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as Text
-import Data.Text.Encoding (decodeUtf8, encodeUtf8)
+import Data.Text.Encoding (decodeUtf8', encodeUtf8)
 import Foreign.Ptr
 import Foreign.C (CChar, CString)
 
@@ -39,7 +39,9 @@ decodeLeanText cstr = do
   -- Get cstring as a bytestring
   bs <- unsafePackCString cstr
   -- Decode the CString (this will throw an exception is the string is not UTF8).
-  return $! decodeUtf8 bs
+  case decodeUtf8' bs of
+    Left e -> throwIO e
+    Right v -> return v
 
 -- | This decodes a CString as Lean text
 decodeLeanString :: CString -> IO String

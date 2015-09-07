@@ -29,13 +29,10 @@ module Language.Lean.Internal.IOS
   ) where
 
 import Foreign
+import System.IO (stderr, stdout)
+
 
 {#import Language.Lean.Internal.Exception#}
-
--- | This describes the type of the @IOState@.
-data IOStateType
-   = Standard
-   | Buffered
 
 #include "lean_macros.h"
 #include "lean_bool.h"
@@ -48,13 +45,45 @@ data IOStateType
 #include "lean_env.h"
 #include "lean_ios.h"
 
+_unused :: a
+_unused = undefined stderr stdout
+
 -- | Internal state used for bindings
 newtype SomeIOState = SomeIOState (ForeignPtr SomeIOState)
 
 foreign import ccall unsafe "&lean_ios_del"
   lean_ios_del_ptr :: FunPtr (Ptr SomeIOState -> IO ())
 
--- | The IO State
+
+-- | This describes the type of the @IOState@.
+data IOStateType
+   = Standard -- ^ A standard 'IOState'
+   | Buffered -- ^ A buffered 'IOState'
+
+-- | The IO State object
+--
+-- Lean uses two channels for sending output to the user:
+--
+--  * A /regular/ output channel, which consists of messages normally
+--    printed to 'stdout'.
+--  * A /diagnostic/ output channel, which consists of debugging
+--    messages that are normally printed to 'stderr'.
+--
+-- This module currently provides two different 'IOState' types:
+--
+--  * A /standard/ IO state that sends regular output to 'stdout' and
+--    diagnostic output to 'stderr'.
+--  * A /buffered/ IO state type that stores output internally, and
+--    provides methods for getting output as strings.
+--
+-- To prevent users from accidentally using the wrong type of output,
+-- the 'IOState' has an extra type-level parameter used to
+-- indicate the type of channel.  Most Lean operations support both
+-- types of channels and either can be used.  Operations specific
+-- to a particular channel can use this type parameter to ensure
+-- users do not call the function on the wrong type of channel.  In
+-- addition, we provide a function @stateTypeRepr@ to allow users
+-- to determine the type of channel.
 newtype IOState (tp :: IOStateType) = IOState (ForeignPtr SomeIOState)
 
 -- | Lift an arbitray IOState to SomeIOState
@@ -72,13 +101,13 @@ withIOState (IOState ptr) f = seq ptr $ withForeignPtr ptr (f . castPtr)
 -- expected buffered IO state.
 type BufferedIOState = IOState 'Buffered
 
--- | Function @c2hs@ uses to pass @BufferedIOState@ values to Lean
+-- | Function @c2hs@ uses to pass 'BufferedIOState' values to Lean
 withBufferedIOState :: IOState 'Buffered -> (Ptr SomeIOState -> IO a) -> IO a
 withBufferedIOState = withIOState
 
 {#pointer lean_ios as BufferedIOState foreign newtype nocode#}
 
--- | Function @c2hs@ uses to pass @SomeIOState@ values to Lean
+-- | Function @c2hs@ uses to pass 'SomeIOState' values to Lean
 withSomeIOState :: SomeIOState -> (Ptr SomeIOState -> IO a) -> IO a
 withSomeIOState (SomeIOState p) f = seq p $ withForeignPtr p (f . castPtr)
 

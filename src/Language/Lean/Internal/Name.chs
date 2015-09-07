@@ -101,7 +101,6 @@ nameAppend :: Name -> String -> Name
 nameAppend pre r = tryGetLeanValue (lean_name_mk_str pre r)
 
 -- | Append a numeric index to a name.
--- The name
 nameAppendIndex :: Name -> Word32 -> Name
 nameAppendIndex pre i = tryGetLeanValue (lean_name_mk_idx pre i)
 

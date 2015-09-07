@@ -33,6 +33,7 @@ module Language.Lean.Internal.Exception
     -- * Functions that are pure.
   , tryGetEnum
   , tryGetLeanValue
+  , tryGetLeanMaybeValue
   ) where
 
 import Control.Exception
@@ -78,26 +79,27 @@ instance Exception LeanException
 {#fun unsafe lean_exception_del
   { `ExceptionPtr' } -> `()' #}
 
-{#fun pure unsafe lean_exception_get_message
+{#fun unsafe lean_exception_get_message
   { `ExceptionPtr' } -> `String' getLeanString* #}
 
 {#enum lean_exception_kind as ExceptionKind { upcaseFirstLetter }
          deriving (Eq)#}
 
-{#fun pure unsafe lean_exception_get_kind
+{#fun unsafe lean_exception_get_kind
   { `ExceptionPtr' } -> `ExceptionKind' #}
 
 -- | Convert the ExceptionPtr to a Lean exception and throw
 -- it while releasing the ExceptionPtr
 throwLeanException :: ExceptionPtr -> IO a
 throwLeanException ptr = do
-  (throwIO $! leanExceptionFromPtr ptr)
+  (throwIO =<< leanExceptionFromPtr ptr)
     `finally` lean_exception_del ptr
 
-leanExceptionFromPtr :: ExceptionPtr -> LeanException
+leanExceptionFromPtr :: ExceptionPtr -> IO LeanException
 leanExceptionFromPtr ptr = do
-  LeanException (getLeanExceptionKind ptr)
-                (lean_exception_get_message ptr)
+  k <- lean_exception_get_kind ptr
+  msg <- lean_exception_get_message ptr
+  return $! LeanException (getLeanExceptionKind k) msg
 
 -- | Create a Lean kernel exception from the given messasge.
 leanKernelException :: String -> LeanException
@@ -107,21 +109,15 @@ leanKernelException = LeanException LeanKernelException
 leanOtherException :: String -> LeanException
 leanOtherException = LeanException LeanOtherException
 
-getLeanExceptionKind :: ExceptionPtr -> LeanExceptionKind
-getLeanExceptionKind ptr = do
-  case lean_exception_get_kind ptr of
-    LEAN_NULL_EXCEPTION -> do
-      error "getLeanException not given an exception"
-    LEAN_SYSTEM_EXCEPTION -> do
-      LeanSystemException
-    LEAN_OUT_OF_MEMORY -> do
-      LeanOutOfMemory
-    LEAN_INTERRUPTED -> do
-      LeanOutOfMemory
-    LEAN_KERNEL_EXCEPTION -> do
-      LeanKernelException
-    LEAN_OTHER_EXCEPTION -> do
-      LeanOtherException
+getLeanExceptionKind :: ExceptionKind -> LeanExceptionKind
+getLeanExceptionKind k = do
+  case k of
+    LEAN_NULL_EXCEPTION   -> error "getLeanException not given an exception"
+    LEAN_SYSTEM_EXCEPTION -> LeanSystemException
+    LEAN_OUT_OF_MEMORY    -> LeanOutOfMemory
+    LEAN_INTERRUPTED      -> LeanOutOfMemory
+    LEAN_KERNEL_EXCEPTION -> LeanKernelException
+    LEAN_OTHER_EXCEPTION  -> LeanOtherException
 
 ------------------------------------------------------------------------
 -- Partial functions
@@ -143,6 +139,7 @@ runLeanPartialAction action =
 -- may fail.
 type LeanPartialFn a = (Ptr a -> LeanPartialAction)
 
+-- | Run a lean partial function
 runLeanPartialFn :: Storable a
                  => LeanPartialFn a
                  -> IO a
@@ -152,20 +149,26 @@ runLeanPartialFn alloc_fn =
     peek ret_ptr
 {-# INLINE runLeanPartialFn #-}
 
-tryLeanPartialFn :: Storable a
-                     => (a -> IO r)
-                     -> LeanPartialFn a
-                     -> IO r
-tryLeanPartialFn = \next alloc_fn -> runLeanPartialFn alloc_fn >>= next
-{-# INLINE tryLeanPartialFn #-}
-
-tryPureLeanPartialFn :: Storable a
-                 => (a -> IO r)
-                 -> LeanPartialFn a
-                 -> r
-tryPureLeanPartialFn = \next alloc_fn -> unsafePerformIO $ do
-  runLeanPartialFn alloc_fn >>= next
-{-# INLINE tryPureLeanPartialFn #-}
+-- | Run a lean partial function where false does not automatically imply
+-- an exception was thrown.
+runLeanMaybeFn :: Storable p
+               => LeanPartialFn p
+               -> IO (Maybe p)
+runLeanMaybeFn alloc_fn =
+  alloca $ \ret_ptr -> do
+    alloca $ \ex_ptr -> do
+      poke ex_ptr nullPtr
+      success <- alloc_fn ret_ptr ex_ptr
+      if success then do
+        r <- peek ret_ptr
+        return $! Just r
+      else do
+        ptr <- peek ex_ptr
+        if ptr == nullPtr then
+          return $! Nothing
+        else
+          throwLeanException ptr
+{-# INLINE runLeanMaybeFn #-}
 
 -- | Typeclass that associates Haskell types with their type in
 -- the FFI layer.
@@ -193,20 +196,35 @@ instance IsLeanValue String CString where
 tryAllocLeanValue :: IsLeanValue a p
                   => LeanPartialFn p
                   -> IO a
-tryAllocLeanValue = tryLeanPartialFn mkLeanValue
+tryAllocLeanValue = \alloc_fn -> mkLeanValue =<< runLeanPartialFn alloc_fn
 {-# INLINE tryAllocLeanValue #-}
 
 -- | Try to run a Lean partial function that returns a Lean value
 -- that will need to be freed.
 --
 -- Other than allocating a new value or exception, the function
--- must be pure
+-- should be be pure.
 tryGetLeanValue :: IsLeanValue a p
                 => LeanPartialFn p
                 -> a
-tryGetLeanValue = tryPureLeanPartialFn mkLeanValue
+tryGetLeanValue alloc_fn = unsafePerformIO $ do
+  mkLeanValue =<< runLeanPartialFn alloc_fn
 {-# INLINE tryGetLeanValue #-}
+
+-- | Try to run a Lean function that may return a Lean value
+-- that will need to be freed.
+--
+-- Other than allocating a new value or throwing an exception,
+-- the function should be pure.
+tryGetLeanMaybeValue :: IsLeanValue a p
+                     => LeanPartialFn p
+                     -> Maybe a
+tryGetLeanMaybeValue alloc_fn = unsafePerformIO $ do
+  traverse mkLeanValue =<< runLeanMaybeFn alloc_fn
+
+{-# INLINE tryGetLeanMaybeValue #-}
 
 -- | Try to run a Lean partial function that returns an enum type
 tryGetEnum :: (Enum a) => LeanPartialFn CInt -> a
-tryGetEnum = tryPureLeanPartialFn $ return . toEnum . fromIntegral
+tryGetEnum alloc_fn =
+  toEnum $ fromIntegral $ unsafePerformIO $ runLeanPartialFn alloc_fn

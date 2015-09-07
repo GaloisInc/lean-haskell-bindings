@@ -44,10 +44,9 @@ import Foreign
 ------------------------------------------------------------------------
 -- Env declaration
 
--- | A Lean environment
 {#pointer lean_env as Env foreign newtype nocode#}
 
--- | A set of Lean configuration options
+-- | A Lean environment
 newtype Env = Env (ForeignPtr Env)
 
 -- | Function @c2hs@ uses to pass @Env@ values to Lean

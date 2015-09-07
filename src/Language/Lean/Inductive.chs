@@ -22,8 +22,8 @@ module Language.Lean.Inductive
   , inductiveDeclNumParams
   , inductiveDeclTypes
     -- * Environment operations
-  , envAddInductiveDecl
-  , envIsInductiveType
+  , addInductiveDecl
+  , lookupInductiveDecl
   , envIsConstructor
   , envIsRecursor
   , envInductiveTypeNumIndices
@@ -55,11 +55,10 @@ import Language.Lean.List
 ------------------------------------------------------------------------
 -- Constructing InductiveType
 
--- | @inductiveType n t cs@ creates an inductive type with name @n@, type @t@, and
--- constructors @cs@ (which must be a list of local constants).
-inductiveType :: Name -- ^ Name
+-- | Creates an inductive type
+inductiveType :: Name -- ^ Name of the inductive type
               -> Expr -- ^ Type of the inductive type
-              -> List Expr -- ^ Declarations
+              -> List Expr -- ^ Constructors (must be a list of local constants)
               -> InductiveType
 inductiveType n t cs = tryGetLeanValue $ lean_inductive_type_mk n t cs
 
@@ -122,14 +121,12 @@ recursorName n = tryGetLeanValue $ lean_get_recursor_name n
 -- Constructing InductiveDecls
 
 
--- | @inductiveDecl ps n types@ creates a mutually recursive inductive
--- datatype declaration with universe parameters @ps@, @n@ parameters,
--- and the inductive types.
+-- | A inductive datatype declaration
 --
 -- The remaining inductive datatype arguments are treated as indices.
-inductiveDecl :: List Name
-              -> Word32
-              -> List InductiveType
+inductiveDecl :: List Name -- ^ Universe parameters
+              -> Word32 -- ^ Number of parameters
+              -> List InductiveType -- ^ List of inductive types
               -> InductiveDecl
 inductiveDecl ps n types = tryGetLeanValue $ lean_inductive_decl_mk ps n types
 
@@ -169,16 +166,16 @@ inductiveDeclTypes d = tryGetLeanValue $ lean_inductive_decl_get_types d
 -- InductiveDecl operations
 
 -- | Add the inductive declaration to the given environment.
-envAddInductiveDecl :: InductiveDecl -> Env -> Env
-envAddInductiveDecl d e = tryGetLeanValue $ lean_env_add_inductive e d
+addInductiveDecl :: InductiveDecl -> Env -> Env
+addInductiveDecl d e = tryGetLeanValue $ lean_env_add_inductive e d
 
 {#fun lean_env_add_inductive
  { `Env', `InductiveDecl', `OutEnvPtr', `OutExceptionPtr' } -> `Bool' #}
 
 -- | Return the inductive declaration associated with the name in the
--- environment or throw an exception if one is not defined.
-envIsInductiveType :: Env -> Name -> InductiveDecl
-envIsInductiveType e nm = tryGetLeanValue $ lean_env_is_inductive_type e nm
+-- environment if one is defined.
+lookupInductiveDecl :: Env -> Name -> Maybe InductiveDecl
+lookupInductiveDecl e nm = tryGetLeanMaybeValue $ lean_env_is_inductive_type e nm
 
 {#fun lean_env_is_inductive_type
  { `Env', `Name', `OutInductiveDeclPtr', `OutExceptionPtr' } -> `Bool' #}
