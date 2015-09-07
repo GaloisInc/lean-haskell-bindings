@@ -55,7 +55,7 @@ newtype Name = Name (ForeignPtr Name)
 
 -- | Function @c2hs@ uses to pass @Name@ values to Lean
 withName :: Name -> (Ptr Name -> IO a) -> IO a
-withName (Name fo) = withForeignPtr fo
+withName (Name fo) = withForeignPtr $! fo
 {-# INLINE withName #-}
 
 -- | Haskell type for @lean_name@ FFI parameters.
@@ -213,7 +213,7 @@ type ListName = List Name
 
 -- | Function @c2hs@ uses to pass @ListName@ values to Lean
 withListName :: ListName -> (Ptr ListName -> IO a) -> IO a
-withListName (ListName p) = withForeignPtr p
+withListName (ListName p) = withForeignPtr $! p
 
 instance IsLeanValue (List Name) (Ptr (List Name)) where
   mkLeanValue = fmap ListName . newForeignPtr lean_list_name_del_ptr

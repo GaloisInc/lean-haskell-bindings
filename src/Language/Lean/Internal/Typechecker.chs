@@ -46,7 +46,7 @@ newtype ConstraintSeq = ConstraintSeq (ForeignPtr ConstraintSeq)
 
 -- | Get access to @lean_cnstr_seq@ within IO action.
 withConstraintSeq :: ConstraintSeq -> (Ptr ConstraintSeq -> IO a) -> IO a
-withConstraintSeq (ConstraintSeq o) = withForeignPtr o
+withConstraintSeq (ConstraintSeq o) = withForeignPtr $! o
 
 -- | Pointer to @lean_cnstr_seq@ for inputs to Lean functions.
 {#pointer lean_cnstr_seq as ConstraintSeqPtr -> ConstraintSeq#}
@@ -67,7 +67,7 @@ newtype Typechecker = Typechecker (ForeignPtr Typechecker)
 
 -- | Function @c2hs@ uses to pass @Typechecker@ values to Lean
 withTypechecker :: Typechecker -> (Ptr Typechecker -> IO a) -> IO a
-withTypechecker (Typechecker o) = withForeignPtr o
+withTypechecker (Typechecker o) = withForeignPtr $! o
 
 {#pointer lean_type_checker as Typechecker foreign newtype nocode#}
 

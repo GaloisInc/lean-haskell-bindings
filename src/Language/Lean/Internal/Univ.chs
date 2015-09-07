@@ -50,7 +50,7 @@ newtype Univ = Univ (ForeignPtr Univ)
 
 -- | Function @c2hs@ uses to pass @Univ@ values to Lean
 withUniv :: Univ -> (Ptr Univ -> IO a) -> IO a
-withUniv (Univ o) = withForeignPtr o
+withUniv (Univ o) = withForeignPtr $! o
 
 -- | Haskell type for @lean_univ@ FFI parameters.
 {#pointer lean_univ as UnivPtr -> Univ#}
@@ -143,7 +143,7 @@ type ListUniv = List Univ
 
 -- | Function @c2hs@ uses to pass @ListUniv@ values to Lean
 withListUniv :: ListUniv -> (Ptr ListUniv -> IO a) -> IO a
-withListUniv (ListUniv p) = withForeignPtr p
+withListUniv (ListUniv p) = withForeignPtr $! p
 
 instance IsLeanValue (List Univ) (Ptr (List Univ)) where
   mkLeanValue = fmap ListUniv . newForeignPtr lean_list_univ_del_ptr

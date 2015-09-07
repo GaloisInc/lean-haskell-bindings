@@ -40,7 +40,7 @@ newtype Options = Options (ForeignPtr Options)
 
 -- | Function @c2hs@ uses to pass @Options@ values to Lean
 withOptions :: Options -> (Ptr Options -> IO a) -> IO a
-withOptions (Options o) = withForeignPtr o
+withOptions (Options o) = withForeignPtr $! o
 
 -- | Haskell type for @lean_options@ FFI parameters.
 {#pointer lean_options as OptionsPtr -> Options#}

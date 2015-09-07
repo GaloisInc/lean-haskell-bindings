@@ -66,7 +66,7 @@ instance IsLeanValue (IOState tp) (Ptr SomeIOState) where
 
 -- | Run a computation with an io state.
 withIOState :: IOState tp -> (Ptr SomeIOState -> IO a) -> IO a
-withIOState (IOState ptr) f = withForeignPtr ptr (f . castPtr)
+withIOState (IOState ptr) f = seq ptr $ withForeignPtr ptr (f . castPtr)
 
 -- | Type synonym for @c2hs@ to use specifically for functions that
 -- expected buffered IO state.
@@ -80,7 +80,7 @@ withBufferedIOState = withIOState
 
 -- | Function @c2hs@ uses to pass @SomeIOState@ values to Lean
 withSomeIOState :: SomeIOState -> (Ptr SomeIOState -> IO a) -> IO a
-withSomeIOState (SomeIOState p) f = withForeignPtr p (f . castPtr)
+withSomeIOState (SomeIOState p) f = seq p $ withForeignPtr p (f . castPtr)
 
 {#pointer lean_ios as SomeIOState foreign newtype nocode#}
 

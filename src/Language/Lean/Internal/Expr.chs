@@ -58,7 +58,7 @@ newtype MacroDef = MacroDef (ForeignPtr MacroDef)
 
 -- | Function @c2hs@ uses to pass @MacroDef@ values to Lean
 withMacroDef :: MacroDef -> (Ptr MacroDef -> IO a) -> IO a
-withMacroDef (MacroDef o) = withForeignPtr o
+withMacroDef (MacroDef o) = withForeignPtr $! o
 
 -- | Haskell type for @lean_macro_def@ FFI parameters.
 {#pointer lean_macro_def as MacroDefPtr -> MacroDef#}
@@ -98,7 +98,7 @@ newtype Expr = Expr (ForeignPtr Expr)
 
 -- | Get access to @lean_expr@ within IO action.
 withExpr :: Expr -> (Ptr Expr -> IO a) -> IO a
-withExpr (Expr o) = withForeignPtr o
+withExpr (Expr o) = withForeignPtr $! o
 
 -- | Haskell type for @lean_expr@ FFI parameters.
 {#pointer lean_expr as ExprPtr -> Expr#}
@@ -122,7 +122,7 @@ type ListExpr = List Expr
 
 -- | Function @c2hs@ uses to pass @ListExpr@ values to Lean
 withListExpr :: List Expr -> (Ptr (List Expr) -> IO a) -> IO a
-withListExpr (ListExpr p) = withForeignPtr p
+withListExpr (ListExpr p) = withForeignPtr $! p
 
 {#pointer lean_list_expr as ListExpr foreign newtype nocode#}
 

@@ -52,7 +52,7 @@ newtype Env = Env (ForeignPtr Env)
 
 -- | Function @c2hs@ uses to pass @Env@ values to Lean
 withEnv :: Env -> (Ptr Env -> IO a) -> IO a
-withEnv (Env o) = withForeignPtr o
+withEnv (Env o) = withForeignPtr $! o
 
 -- | Haskell type for @lean_env@ FFI parameters.
 {#pointer lean_env as EnvPtr -> Env#}
@@ -75,7 +75,7 @@ newtype Decl = Decl (ForeignPtr Decl)
 
 -- | Function @c2hs@ uses to pass @Decl@ values to Lean
 withDecl :: Decl -> (Ptr Decl -> IO a) -> IO a
-withDecl (Decl o) = withForeignPtr o
+withDecl (Decl o) = withForeignPtr $! o
 
 -- | Haskell type for @lean_decl@ FFI parameters.
 {#pointer lean_decl as DeclPtr -> Decl#}
@@ -99,7 +99,7 @@ newtype CertDecl = CertDecl (ForeignPtr CertDecl)
 
 -- | Function @c2hs@ uses to pass @CertDecl@ values to Lean
 withCertDecl :: CertDecl -> (Ptr CertDecl -> IO a) -> IO a
-withCertDecl (CertDecl o) = withForeignPtr o
+withCertDecl (CertDecl o) = withForeignPtr $! o
 
 -- | Haskell type for @lean_cert_decl@ FFI parameters.
 {#pointer lean_cert_decl as CertDeclPtr -> CertDecl#}

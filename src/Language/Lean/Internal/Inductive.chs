@@ -54,7 +54,7 @@ newtype InductiveType = InductiveType (ForeignPtr InductiveType)
 
 -- | Access raw @lean_inductive_type@ within IO action.
 withInductiveType :: InductiveType -> (Ptr InductiveType -> IO a) -> IO a
-withInductiveType (InductiveType o) = withForeignPtr o
+withInductiveType (InductiveType o) = withForeignPtr $! o
 
 -- | Haskell type for @lean_inductive_type@ FFI parameters.
 {#pointer  lean_inductive_type as InductiveTypePtr -> InductiveType#}
@@ -85,7 +85,7 @@ type ListInductiveType = List InductiveType
 
 -- | Access raw @lean_list_inductive_type@ within IO action.
 withListInductiveType :: List InductiveType -> (Ptr (List InductiveType) -> IO a) -> IO a
-withListInductiveType (ListInductiveType p) = withForeignPtr p
+withListInductiveType (ListInductiveType p) = withForeignPtr $! p
 
 instance IsLeanValue (List InductiveType) (Ptr (List InductiveType)) where
   mkLeanValue = fmap ListInductiveType . newForeignPtr lean_list_inductive_type_del_ptr
@@ -166,7 +166,7 @@ newtype InductiveDecl = InductiveDecl (ForeignPtr InductiveDecl)
 
 -- | Access raw @lean_inductive_decl@ within IO action.
 withInductiveDecl :: InductiveDecl -> (Ptr InductiveDecl -> IO a) -> IO a
-withInductiveDecl (InductiveDecl o) = withForeignPtr o
+withInductiveDecl (InductiveDecl o) = withForeignPtr $! o
 
 -- | Haskell type for @lean_inductive_decl@ FFI parameters.
 {#pointer lean_inductive_decl as InductiveDeclPtr -> InductiveDecl #}
