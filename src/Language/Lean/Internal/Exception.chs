@@ -127,6 +127,7 @@ runLeanPartialAction :: LeanPartialAction
                      -> IO ()
 runLeanPartialAction action =
   alloca $ \ex_ptr -> do
+    poke ex_ptr nullPtr
     success <- action ex_ptr
     when (not success) $ do
       throwLeanException =<< peek ex_ptr
