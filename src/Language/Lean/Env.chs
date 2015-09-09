@@ -98,7 +98,7 @@ safeRunLeanFold :: IsLeanValue a p
                 -> (a -> IO ())
                 -> (s -> IO ())
 safeRunLeanFold wrapFn foldFn f s = do
-  let g v = mkLeanValue v >>= f
+  let g = mkLeanValue >=> f
 
   -- Create function pointer for callback.
   bracket (wrapFn g) freeHaskellFunPtr $ \g_ptr -> do

@@ -149,7 +149,8 @@ inductiveDeclUnivParams d = tryGetLeanValue $ lean_inductive_decl_get_univ_param
 {#fun lean_inductive_decl_get_univ_params
  { `InductiveDecl', `OutListNamePtr', `OutExceptionPtr' } -> `Bool' #}
 
--- | Get the number of parameters for the given inductive declaration.
+-- | Get the number of parameters shared by the inductive types in the
+-- declaration.
 inductiveDeclNumParams :: InductiveDecl -> Word32
 inductiveDeclNumParams d = tryGetLeanValue $ lean_inductive_decl_get_num_params d
 
