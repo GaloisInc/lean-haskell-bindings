@@ -174,13 +174,14 @@ instance IsString Name where
         case break (== '.') s of
           (h,'.':r) -> go (go' nm h) r
           (h,r)     -> assert (null r) (go' nm h)
+
       go' nm s@(c:_) | isDigit c =
         case reads s of
           [(i,"")] -> nameAppendIndex nm i
-          _        -> throw $ leanKernelException msg
+          _        -> throw $ leanException LeanKernelException msg
             where
               msg = "Identifiers cannot begin with a digit."
-      go' _ "" = throw $ leanKernelException "Identifiers cannot be empty"
+      go' _ "" = throw $ leanException LeanKernelException "Identifiers cannot be empty"
       go' nm s = nameAppend nm s
 
 ------------------------------------------------------------------------

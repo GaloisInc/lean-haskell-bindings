@@ -27,13 +27,17 @@ module Language.Lean.Internal.IOS
   , withSomeIOState
   , BufferedIOState
   , withBufferedIOState
+    -- * IOState Options
+  , getStateOptions
+  , setStateOptions
   ) where
 
 import Foreign
+import Foreign.C (CInt(..))
 import System.IO (stderr, stdout)
 
-
 {#import Language.Lean.Internal.Exception#}
+{#import Language.Lean.Internal.Options#}
 
 #include "lean_macros.h"
 #include "lean_bool.h"
@@ -119,3 +123,20 @@ type SomeIOStatePtr = Ptr SomeIOState
 
 -- | Haskell type for @lean_ios*@ FFI parameters.
 {#pointer *lean_ios as OutSomeIOStatePtr -> SomeIOStatePtr #}
+
+------------------------------------------------------------------------
+-- IOState options
+
+-- | Get the options associated with the state.
+getStateOptions :: IOState tp -> IO Options
+getStateOptions ios = tryAllocLeanValue $ lean_ios_get_options (someIOS ios)
+
+{#fun unsafe lean_ios_get_options
+ { `SomeIOState', `OutOptionsPtr', `OutExceptionPtr' } -> `Bool' #}
+
+-- | Set the options associated with the state.
+setStateOptions :: IOState tp -> Options -> IO ()
+setStateOptions ios ops = runLeanPartialAction $ lean_ios_set_options (someIOS ios) ops
+
+{#fun unsafe lean_ios_set_options
+ { `SomeIOState', `Options', `OutExceptionPtr' } -> `Bool' #}

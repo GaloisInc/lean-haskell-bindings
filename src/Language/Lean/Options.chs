@@ -11,6 +11,7 @@ Operations for Lean options
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE Trustworthy #-}
 module Language.Lean.Options
@@ -28,7 +29,6 @@ module Language.Lean.Options
 
 import Control.Exception (throw)
 import Control.Lens
-import Data.Maybe (fromMaybe)
 import Foreign
 import Foreign.C
 import System.IO.Unsafe
@@ -131,68 +131,42 @@ import Language.Lean.Internal.Exception.Unsafe
   , `OutExceptionPtr'
   } -> `Bool' #}
 
--- | Retrieves a value for a Lean option
-optionsGet :: (LeanPartialFn a -> b)
-           -> (Options -> Name -> LeanPartialFn a)
-           -> Options
-           -> Name
-           -> Maybe b
-optionsGet tryGetVal leanGetter o nm
-  | o `containsOption` nm = Just (tryGetVal $ leanGetter o nm)
-  | otherwise = Nothing
-
--- | Sets a Lean option with a new value
-optionsSet :: (Options -> Name -> a -> LeanPartialFn OptionsPtr)
-           -> Options
-           -> Name
-           -> a
-           -> Options
-optionsSet leanSetter o nm v = tryGetLeanValue $ leanSetter o nm v
-
 -- | Lens for getting and setting boolean options without
 --   rewriting equivalent values
-simpleLensEq :: (Eq a) => (s -> Name -> Maybe a) -> (s -> Name -> a -> s) -> Name -> Simple Lens s a
-simpleLensEq getter setter nm f o = fmap setFun (f oldVal)
+simpleLensEq :: forall a p
+              . (IsLeanValue a p, Eq a)
+             => (Options -> Name -> LeanPartialFn p)
+             -> (Options -> Name -> a -> LeanPartialFn OptionsPtr)
+             -> Name
+             -> Simple Lens Options a
+simpleLensEq leanGetter leanSetter nm f o = fmap setFun (f oldVal)
   where
-    maybeVal = getter o nm
+    has_val = o `containsOption` nm
     -- This will only throw an error if f demands oldVal
-    oldVal = fromMaybe (throw (leanOtherException msg)) maybeVal
+    oldVal
+      | has_val = tryGetLeanValue $ leanGetter o nm
+      | otherwise =  throw (leanException LeanOtherException msg)
       where msg = "options object does not contain entry " ++ show nm
-    setFun newVal
-     | Just v <- maybeVal, v == newVal = o
-     | otherwise = setter o nm newVal
+    setFun :: a -> Options
+    setFun newVal = tryGetLeanValue $ leanSetter o nm newVal
+{-# INLINE simpleLensEq #-}
 
 -- | Access the lean option with the given name as a Boolean.
 boolOption :: Name -> Simple Lens Options Bool
-boolOption = simpleLensEq optGet optSet
-  where
-    optGet = optionsGet tryGetLeanValue lean_options_get_bool
-    optSet = optionsSet lean_options_set_bool
+boolOption = simpleLensEq lean_options_get_bool lean_options_set_bool
 
 -- | Access the lean option with the given name as a signed integer.
 intOption :: Name -> Simple Lens Options Int32
-intOption = simpleLensEq optGet optSet
-  where
-    optGet = optionsGet tryGetLeanValue lean_options_get_int
-    optSet = optionsSet lean_options_set_int
+intOption = simpleLensEq lean_options_get_int lean_options_set_int
 
 -- | Access the lean option with the given name as an unsigned integer.
 uintOption :: Name -> Simple Lens Options Word32
-uintOption = simpleLensEq optGet optSet
-  where
-    optGet = optionsGet tryGetLeanValue lean_options_get_unsigned
-    optSet = optionsSet lean_options_set_unsigned
+uintOption = simpleLensEq lean_options_get_unsigned lean_options_set_unsigned
 
 -- | Access the lean option with the given name as a floating point value.
 doubleOption :: Name -> Simple Lens Options Double
-doubleOption = simpleLensEq optGet optSet
-  where
-    optGet = optionsGet tryGetLeanValue lean_options_get_double
-    optSet = optionsSet lean_options_set_double
+doubleOption = simpleLensEq lean_options_get_double lean_options_set_double
 
 -- | Access the lean option with the given name as a string.
 stringOption :: Name -> Simple Lens Options String
-stringOption = simpleLensEq optGet optSet
-  where
-    optGet = optionsGet tryGetLeanValue lean_options_get_string
-    optSet = optionsSet lean_options_set_string
+stringOption = simpleLensEq lean_options_get_string lean_options_set_string

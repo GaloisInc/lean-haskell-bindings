@@ -23,7 +23,7 @@ module Language.Lean.Env
   , envReplaceAxiom
     -- * Projections
   , envTrustLevel
-  , envContainsProofIrrelProp
+  , envHasProofIrrelevantProp
   , envIsImpredicative
   , envContainsDecl
   , envLookupDecl
@@ -37,7 +37,7 @@ module Language.Lean.Env
   , forEnvUniv_
   ) where
 
-import Control.Exception (bracket)
+import Control.Exception (bracket, throwIO)
 import Control.Lens
 import Control.Monad
 import Data.IORef
@@ -89,7 +89,7 @@ runLeanFold wrapFn foldFn h e = unsafePerformIO $ do
       if success then
         readIORef ref
       else
-        throwLeanException =<< peek ex_ptr
+        throwIO =<< mkLeanException =<< peek ex_ptr
 {-# INLINABLE runLeanFold #-}
 
 safeRunLeanFold :: IsLeanValue a p
@@ -105,7 +105,7 @@ safeRunLeanFold wrapFn foldFn f s = do
     alloca $ \ex_ptr -> do
       success <- foldFn s g_ptr ex_ptr
       unless success $ do
-        throwLeanException =<< peek ex_ptr
+        throwIO =<< mkLeanException =<< peek ex_ptr
 {-# INLINABLE safeRunLeanFold #-}
 
 ------------------------------------------------------------------------
@@ -192,19 +192,18 @@ envReplaceAxiom d e = tryGetLeanValue $ lean_env_replace e d
 ------------------------------------------------------------------------
 -- Env Projections
 
--- | The trust level of the given environment.
+-- | Return the trust level of the given environment.
 envTrustLevel :: Env -> TrustLevel
 envTrustLevel = lean_env_trust_level
 
 {#fun pure unsafe lean_env_trust_level
   { `Env' } -> `TrustLevel' trustFromUInt #}
 
--- | Return @true@ if the given environment has a proof irrelevant Prop such as
--- @Type.{0}@.
-{#fun pure unsafe lean_env_proof_irrel as envContainsProofIrrelProp
+-- | Returns 'True' if all proofs of a proposition in @Prop@ are equivalent.
+{#fun pure unsafe lean_env_proof_irrel as envHasProofIrrelevantProp
    { `Env' } -> `Bool' #}
 
--- | Return @true@ iff in the given environment @Prop@ is impredicative.
+-- | Return whether @Prop@ is impredicative in the environment.
 {#fun pure unsafe lean_env_impredicative as envIsImpredicative
    { `Env' } -> `Bool' #}
 

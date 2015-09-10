@@ -140,23 +140,6 @@ stateTypeRepr s
 {#fun pure unsafe lean_ios_is_std { `SomeIOState' } -> `Bool' #}
 
 ------------------------------------------------------------------------
--- IOState options
-
--- | Get the options associated with the state.
-getStateOptions :: IOState tp -> IO Options
-getStateOptions ios = tryAllocLeanValue $ lean_ios_get_options (someIOS ios)
-
-{#fun unsafe lean_ios_get_options
- { `SomeIOState', `OutOptionsPtr', `OutExceptionPtr' } -> `Bool' #}
-
--- | Set the options associated with the state.
-setStateOptions :: IOState tp -> Options -> IO ()
-setStateOptions ios ops = runLeanPartialAction $ lean_ios_set_options (someIOS ios) ops
-
-{#fun unsafe lean_ios_set_options
- { `SomeIOState', `Options', `OutExceptionPtr' } -> `Bool' #}
-
-------------------------------------------------------------------------
 -- Pretty print expression
 
 -- | Pretty print an expression

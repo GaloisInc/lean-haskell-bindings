@@ -43,12 +43,12 @@ envImport :: IOState tp -> Env -> List Name -> IO Env
 envImport s e names = tryAllocLeanValue $ lean_env_import e (someIOS s) names
 
 {#fun lean_env_import
-   { `Env'
-   , `SomeIOState'
-   , `ListName'
-   , `OutEnvPtr'
-   , `OutExceptionPtr'
-   } -> `Bool' #}
+ { `Env'
+ , `SomeIOState'
+ , `ListName'
+ , `OutEnvPtr'
+ , `OutExceptionPtr'
+ } -> `Bool' #}
 
 -- | Export the lean environment to a path.
 envExport :: Env -> FilePath -> IO ()

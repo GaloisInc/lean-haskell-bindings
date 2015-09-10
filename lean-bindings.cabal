@@ -1,7 +1,7 @@
 name: lean-bindings
 version: 0.1
-author: Joe Hendrix
-maintainer: jhendrix@galois.com
+author: Galois, Inc
+maintainer: jhendrix@galois.com, lcasburn@galois.com
 license: Apache-2.0
 license-file: LICENSE
 build-type: Simple
@@ -76,6 +76,7 @@ library
     Language.Lean.Module
     Language.Lean.Name
     Language.Lean.Options
+    Language.Lean.Parser
     Language.Lean.Typechecker
     Language.Lean.Univ
 

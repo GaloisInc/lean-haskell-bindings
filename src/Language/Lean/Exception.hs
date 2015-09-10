@@ -8,8 +8,10 @@ Exceptions thrown by Lean.
 -}
 {-# LANGUAGE Safe #-}
 module Language.Lean.Exception
-  ( LeanException(..)
+  ( LeanException
   , LeanExceptionKind(..)
+  , leanExceptionKind
+  , leanExceptionMessage
   ) where
 
 import Language.Lean.Internal.Exception

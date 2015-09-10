@@ -12,11 +12,13 @@ module Language.Lean
   , module Language.Lean.Env
   , module Language.Lean.Exception
   , module Language.Lean.Expr
+  , module Language.Lean.Inductive
   , module Language.Lean.IOS
   , module Language.Lean.List
   , module Language.Lean.Module
   , module Language.Lean.Name
   , module Language.Lean.Options
+  , module Language.Lean.Parser
   , module Language.Lean.Typechecker
   , module Language.Lean.Univ
   ) where
@@ -25,10 +27,12 @@ import Language.Lean.Decl
 import Language.Lean.Env
 import Language.Lean.Exception
 import Language.Lean.Expr
+import Language.Lean.Inductive
 import Language.Lean.IOS
 import Language.Lean.List
 import Language.Lean.Module
 import Language.Lean.Name
 import Language.Lean.Options
+import Language.Lean.Parser
 import Language.Lean.Typechecker
 import Language.Lean.Univ
