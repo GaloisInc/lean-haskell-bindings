@@ -210,12 +210,12 @@ exprView x =
       ExprApp (tryGetLeanValue $ lean_expr_get_app_fun x)
               (tryGetLeanValue $ lean_expr_get_app_arg x)
     LEAN_EXPR_LAMBDA ->
-      ExprLambda (tryGetEnum $ lean_expr_get_binding_binder_kind x)
+      ExprLambda (tryGetEnum      $ lean_expr_get_binding_binder_kind x)
                  (tryGetLeanValue $ lean_expr_get_binding_name x)
                  (tryGetLeanValue $ lean_expr_get_binding_domain x)
                  (tryGetLeanValue $ lean_expr_get_binding_body x)
     LEAN_EXPR_PI ->
-      ExprPi (tryGetEnum $ lean_expr_get_binding_binder_kind x)
+      ExprPi (tryGetEnum      $ lean_expr_get_binding_binder_kind x)
              (tryGetLeanValue $ lean_expr_get_binding_name x)
              (tryGetLeanValue $ lean_expr_get_binding_domain x)
              (tryGetLeanValue $ lean_expr_get_binding_body x)

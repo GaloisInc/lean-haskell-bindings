@@ -74,13 +74,27 @@ foreign import ccall unsafe "&lean_macro_def_del"
   lean_macro_def_del_ptr :: FunPtr (MacroDefPtr -> IO ())
 
 ------------------------------------------------------------------------
--- MacroDef eq
-
-instance Eq MacroDef where
-  (==) = error "Equality comparison with macro definitions is not yet implemented."
+-- MacroDef Show instance
 
 instance Show MacroDef where
-  show = error "MacroDef.show not yet implement"
+  show = show . macroDefToString
+
+-- | Return the string representation of a macro definition.
+macroDefToString :: MacroDef -> String
+macroDefToString x = tryGetLeanValue $ lean_macro_def_to_string x
+
+{#fun unsafe lean_macro_def_to_string
+ { `MacroDef' , id `Ptr CString', `OutExceptionPtr' } -> `Bool' #}
+
+
+------------------------------------------------------------------------
+-- MacroDef Eq instance
+
+instance Eq MacroDef where
+  x == y = tryGetLeanValue $ lean_macro_def_eq x y
+
+{#fun unsafe lean_macro_def_eq
+ { `MacroDef' , `MacroDef', id `Ptr CInt', `OutExceptionPtr' } -> `Bool' #}
 
 ------------------------------------------------------------------------
 -- BinderKind declaration
@@ -146,11 +160,12 @@ foreign import ccall unsafe "&lean_list_expr_del"
 exprToString :: Expr -> String
 exprToString x = tryGetLeanValue $ lean_expr_to_string x
 
+{#fun unsafe lean_expr_to_string
+ { `Expr' , id `Ptr CString', `OutExceptionPtr' } -> `Bool' #}
+
 instance Show Expr where
   show = show . exprToString
 
-{#fun unsafe lean_expr_to_string
- { `Expr' , id `Ptr CString', `OutExceptionPtr' } -> `Bool' #}
 
 ------------------------------------------------------------------------
 -- Expression Comparison
