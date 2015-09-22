@@ -19,12 +19,10 @@ import Foreign.C
 
 import Language.Lean.List
 
-{#import Language.Lean.Internal.Decl#}
 {#import Language.Lean.Internal.Exception#}
 {#import Language.Lean.Internal.Expr#}
 {#import Language.Lean.Internal.IOS#}
 {#import Language.Lean.Internal.Name#}
-{#import Language.Lean.Internal.Options#}
 
 #include "lean_bool.h"
 #include "lean_macros.h"

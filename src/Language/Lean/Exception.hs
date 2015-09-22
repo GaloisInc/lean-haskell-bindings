@@ -10,8 +10,11 @@ Exceptions thrown by Lean.
 module Language.Lean.Exception
   ( LeanException
   , LeanExceptionKind(..)
-  , leanExceptionKind
-  , leanExceptionMessage
+  , exceptionKind
+  , exceptionMessage
+  , exceptionMessageWithEnv
+  , exceptionRawMessage
+  , exceptionDetailedMessage
   ) where
 
 import Language.Lean.Internal.Exception

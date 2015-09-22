@@ -20,11 +20,9 @@ import Foreign.C
 
 import Language.Lean.List
 
-{#import Language.Lean.Internal.Decl#}
 {#import Language.Lean.Internal.Exception#}
 import Language.Lean.Internal.Exception.Unsafe
 {#import Language.Lean.Internal.Name#}
-{#import Language.Lean.Internal.IOS#}
 {#import Language.Lean.Internal.String#}
 
 #include "lean_macros.h"

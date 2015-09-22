@@ -52,14 +52,13 @@ library
     leanshared
   hs-source-dirs: src
   build-tools: c2hs
-  ghc-options: -Wall
+  ghc-options: -Wall -Werror
   exposed-modules:
     Language.Lean
     Language.Lean.Internal.String
     Language.Lean.Internal.Exception
     Language.Lean.Internal.Exception.Unsafe
     Language.Lean.Internal.Name
-    Language.Lean.Internal.Options
     Language.Lean.Internal.Univ
     Language.Lean.Internal.Expr
     Language.Lean.Internal.Decl

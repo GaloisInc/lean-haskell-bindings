@@ -35,7 +35,6 @@ import System.IO.Unsafe
 import Language.Lean.List
 {#import Language.Lean.Internal.Exception #}
 import Language.Lean.Internal.Exception.Unsafe
-{#import Language.Lean.Internal.Options #}
 
 #include "lean_macros.h"
 #include "lean_bool.h"

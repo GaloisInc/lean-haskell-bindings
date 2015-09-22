@@ -13,13 +13,8 @@ certified declarations.
 {-# LANGUAGE Safe #-}
 {-# OPTIONS_HADDOCK not-home #-}
 module Language.Lean.Internal.Decl
-  ( -- * Environment
-    Env(..)
-  , EnvPtr
-  , OutEnvPtr
-  , withEnv
     -- * Declaration
-  , Decl
+  ( Decl
   , DeclPtr
   , OutDeclPtr
   , withDecl
@@ -42,29 +37,6 @@ import Foreign
 #include "lean_univ.h"
 #include "lean_expr.h"
 #include "lean_decl.h"
-
-------------------------------------------------------------------------
--- Env declaration
-
-{#pointer lean_env as Env foreign newtype nocode#}
-
--- | A Lean environment
-newtype Env = Env (ForeignPtr Env)
-
--- | Function @c2hs@ uses to pass @Env@ values to Lean
-withEnv :: Env -> (Ptr Env -> IO a) -> IO a
-withEnv (Env o) = withForeignPtr $! o
-
--- | Haskell type for @lean_env@ FFI parameters.
-{#pointer lean_env as EnvPtr -> Env#}
--- | Haskell type for @lean_env*@ FFI parameters.
-{#pointer *lean_env as OutEnvPtr -> EnvPtr#}
-
-instance IsLeanValue Env (Ptr Env) where
-   mkLeanValue = \v -> fmap Env $ newForeignPtr lean_env_del_ptr v
-
-foreign import ccall unsafe "&lean_env_del"
-  lean_env_del_ptr :: FunPtr (EnvPtr -> IO ())
 
 ------------------------------------------------------------------------
 -- Decl declaration

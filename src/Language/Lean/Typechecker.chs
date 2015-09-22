@@ -22,7 +22,6 @@ import Foreign
 import Foreign.C
 import System.IO.Unsafe
 
-{#import Language.Lean.Internal.Decl#}
 {#import Language.Lean.Internal.Exception#}
 import Language.Lean.Internal.Exception.Unsafe
 {#import Language.Lean.Internal.Expr#}

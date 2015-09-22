@@ -9,7 +9,7 @@ Operations for working with Lean declarations.
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE Trustworthy #-}
 module Language.Lean.Decl
-  ( Env(..)
+  ( Env
   , Decl
     -- * Constructors
   , axiom

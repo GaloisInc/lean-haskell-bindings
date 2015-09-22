@@ -27,7 +27,7 @@ tryGetLeanValue :: IsLeanValue a p
                 => LeanPartialFn p
                 -> a
 tryGetLeanValue alloc_fn = unsafePerformIO $ do
-  mkLeanValue =<< runLeanPartialFn alloc_fn
+  tryAllocLeanValue alloc_fn
 {-# INLINE tryGetLeanValue #-}
 
 -- | Try to run a Lean function that may return a Lean value
