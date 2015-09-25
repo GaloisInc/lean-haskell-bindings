@@ -15,26 +15,28 @@ module Language.Lean.Env
   ( Env
   , TrustLevel
   , trustHigh
-    -- * Constructing and manipulating environments.
+    -- * Empty environments
   , standardEnv
   , hottEnv
-  , envAddUniv
-  , envAddDecl
-  , envReplaceAxiom
-    -- * Projections
+    -- * Environment information
   , envTrustLevel
   , envHasProofIrrelevantProp
   , envIsImpredicative
-  , envContainsDecl
-  , envLookupDecl
+    -- * Environment universe operations
+  , envAddUniv
   , envContainsUniv
-  , envIsDescendant
-    -- * Operations
-  , envForget
-  , envDecls
-  , forEnvDecl_
   , envUnivs
   , forEnvUniv_
+    -- * Environment declaration information
+  , envAddDecl
+  , envReplaceAxiom
+  , envContainsDecl
+  , envLookupDecl
+  , envDecls
+  , forEnvDecl_
+    -- * Environment containment
+  , envIsDescendant
+  , envForget
   ) where
 
 import Control.Exception (bracket, throwIO)
@@ -128,7 +130,7 @@ trustHigh :: TrustLevel
 trustHigh = TrustLevel {#const LEAN_TRUST_HIGH#}
 
 ------------------------------------------------------------------------
--- Env constructors
+-- Constructors for empty universes.
 
 -- | Create an empty standard environment with the given trust level.
 standardEnv :: TrustLevel -> Env
@@ -150,7 +152,33 @@ hottEnv lvl = tryGetLeanValue $ lean_env_mk_hott lvl
   , `OutExceptionPtr'
   } -> `Bool' #}
 
+------------------------------------------------------------------------
+-- Env information
+
+-- | Return the trust level of the given environment.
+envTrustLevel :: Env -> TrustLevel
+envTrustLevel = lean_env_trust_level
+
+{#fun pure unsafe lean_env_trust_level
+  { `Env' } -> `TrustLevel' trustFromUInt #}
+
+-- | Returns 'True' if all proofs of a proposition in @Prop@ are equivalent.
+{#fun pure unsafe lean_env_proof_irrel as envHasProofIrrelevantProp
+   { `Env' } -> `Bool' #}
+
+-- | Return whether @Prop@ is impredicative in the environment.
+{#fun pure unsafe lean_env_impredicative as envIsImpredicative
+   { `Env' } -> `Bool' #}
+
+------------------------------------------------------------------------
+-- Env global universe functions
+
+
 -- | Add a new global universe with the given name.
+--
+-- This throws a 'LeanException' if the environment already contains a universe
+-- level with the given name.  You can check whether the environment already
+-- contains the name by calling env
 envAddUniv :: Name -> Env -> Env
 envAddUniv u e = tryGetLeanValue $ lean_env_add_univ e u
 
@@ -160,6 +188,30 @@ envAddUniv u e = tryGetLeanValue $ lean_env_add_univ e u
   , `OutEnvPtr'
   , `OutExceptionPtr'
   } -> `Bool' #}
+
+-- |  Return @true@ iff the environment contains a global universe with the name.
+{#fun pure unsafe lean_env_contains_univ as envContainsUniv
+    { `Env', `Name' } -> `Bool' #}
+
+-- | Fold over the global universes in the environment.
+envUnivs :: Fold Env Name
+envUnivs = runLeanFold wrapNameVisitFn lean_env_for_each_univ
+
+-- | Run an IO action on each universe in the environment.
+forEnvUniv_ :: Env -> (Name -> IO ()) -> IO ()
+forEnvUniv_ e f = safeRunLeanFold wrapNameVisitFn lean_env_for_each_univ f e
+
+
+foreign import ccall "wrapper" wrapNameVisitFn :: WrapLeanVisitFn NamePtr
+
+{#fun lean_env_for_each_univ
+     { `Env'
+     , id `FunPtr (NamePtr -> IO ())'
+     , `OutExceptionPtr'
+     } -> `Bool' #}
+
+------------------------------------------------------------------------
+-- Env declaration functions
 
 -- | Adding the given certified declaration to the environment.
 envAddDecl :: CertDecl -> Env -> Env
@@ -192,25 +244,6 @@ envReplaceAxiom d e = tryGetLeanValue $ lean_env_replace e d
 ------------------------------------------------------------------------
 -- Env Projections
 
--- | Return the trust level of the given environment.
-envTrustLevel :: Env -> TrustLevel
-envTrustLevel = lean_env_trust_level
-
-{#fun pure unsafe lean_env_trust_level
-  { `Env' } -> `TrustLevel' trustFromUInt #}
-
--- | Returns 'True' if all proofs of a proposition in @Prop@ are equivalent.
-{#fun pure unsafe lean_env_proof_irrel as envHasProofIrrelevantProp
-   { `Env' } -> `Bool' #}
-
--- | Return whether @Prop@ is impredicative in the environment.
-{#fun pure unsafe lean_env_impredicative as envIsImpredicative
-   { `Env' } -> `Bool' #}
-
--- |  Return @true@ iff the environment contains a global universe with the name.
-{#fun pure unsafe lean_env_contains_univ as envContainsUniv
-    { `Env', `Name' } -> `Bool' #}
-
 -- |  Return @true@ iff the environment contains a declaration with the name.
 {#fun pure unsafe lean_env_contains_decl as envContainsDecl
     { `Env', `Name' } -> `Bool' #}
@@ -226,30 +259,6 @@ envLookupDecl nm e =
 -- |  Return the declaration with the given name in the environment if any.
 {#fun unsafe lean_env_get_decl
  { `Env', `Name', `OutDeclPtr', `OutExceptionPtr' } -> `Bool' #}
-
--- | @x `'envIsDescendant'` y@ return true @x@ is a descendant of @y@, that is, @x@
--- was created by adding declarations to @y@.
-envIsDescendant :: Env -> Env -> Bool
-envIsDescendant = lean_env_is_descendant
-
-{#fun pure unsafe lean_env_is_descendant
- { `Env', `Env' } -> `Bool' #}
-
-------------------------------------------------------------------------
--- envForget
-
--- | Return a new environment, where its "history" has been truncated/forgotten.
--- That is, @envForget x `envIsDescendant` y@ will return false for any environment
--- @y@ that is not pointer equal to the result @envForget x@.
-envForget :: Env -> Env
-envForget x = tryGetLeanValue $ lean_env_forget x
-
--- |  Return the declaration with the given name in the environment if any.
-{#fun unsafe lean_env_forget
-     { `Env', `OutEnvPtr', `OutExceptionPtr' } -> `Bool' #}
-
-------------------------------------------------------------------------
--- foldEnvDecls
 
 -- | A fold over the declaration in the environment.
 envDecls :: Fold Env Decl
@@ -268,21 +277,22 @@ foreign import ccall "wrapper" wrapDeclVisitFn :: WrapLeanVisitFn DeclPtr
      } -> `Bool' #}
 
 ------------------------------------------------------------------------
--- foldEnvUnivs
+-- Environment containment
 
--- | Fold over the global universes in the environment.
-envUnivs :: Fold Env Name
-envUnivs = runLeanFold wrapNameVisitFn lean_env_for_each_univ
+-- | @x `'envIsDescendant'` y@ return true @x@ is a descendant of @y@, that is, @x@
+-- was created by adding declarations to @y@.
+envIsDescendant :: Env -> Env -> Bool
+envIsDescendant = lean_env_is_descendant
 
--- | Run an IO action on each universe in the environment.
-forEnvUniv_ :: Env -> (Name -> IO ()) -> IO ()
-forEnvUniv_ e f = safeRunLeanFold wrapNameVisitFn lean_env_for_each_univ f e
+{#fun pure unsafe lean_env_is_descendant
+ { `Env', `Env' } -> `Bool' #}
 
+-- | Return a new environment, where its "history" has been truncated/forgotten.
+-- That is, @envForget x `envIsDescendant` y@ will return false for any environment
+-- @y@ that is not pointer equal to the result @envForget x@.
+envForget :: Env -> Env
+envForget x = tryGetLeanValue $ lean_env_forget x
 
-foreign import ccall "wrapper" wrapNameVisitFn :: WrapLeanVisitFn NamePtr
-
-{#fun lean_env_for_each_univ
-     { `Env'
-     , id `FunPtr (NamePtr -> IO ())'
-     , `OutExceptionPtr'
-     } -> `Bool' #}
+-- |  Return the declaration with the given name in the environment if any.
+{#fun unsafe lean_env_forget
+     { `Env', `OutEnvPtr', `OutExceptionPtr' } -> `Bool' #}
