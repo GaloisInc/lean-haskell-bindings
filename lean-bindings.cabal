@@ -96,6 +96,6 @@ test-suite test
     Tests.Options
     Tests.Univ
 
-  ghc-options: -Wall -threaded
+  ghc-options: -Wall -threaded -Werror
   hs-source-dirs: test
   main-is: Main_test.hs

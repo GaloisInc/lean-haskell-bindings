@@ -253,7 +253,8 @@ declView x =
 -- | Creates a cerified declaration by type checking it within a
 -- given environment.
 --
--- Throws a `LeanException` if the certification fails
+-- Throws a `LeanException` with kind `LeanKernelException` if the
+-- certification fails.
 certify :: Env -> Decl ->  CertDecl
 certify e d = getLeanValue $ lean_decl_check e d
 

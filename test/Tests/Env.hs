@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Tests.Env (envTests) where
 
-import Control.Exception (catch)
+import Control.Exception (catch, try)
 import Control.Lens
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -18,7 +18,7 @@ expectLeanFailure msg action = do
 expectLeanException :: String -> Either LeanException a -> IO ()
 expectLeanException msg mr = do
   case mr of
-    Left e -> return ()
+    Left _ -> return ()
     Right _ -> assertFailure msg
 
 envTests :: TestTree
