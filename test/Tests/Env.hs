@@ -9,9 +9,25 @@ import Test.Tasty.HUnit
 
 import Language.Lean as Lean
 
+-- | Validates that the IO action throws a Lean exception
+expectLeanFailure :: String -> IO a -> IO ()
+expectLeanFailure msg action = do
+  expectLeanException msg =<< try action
+
+-- | Validates that the IO action throws a Lean exception
+expectLeanException :: String -> Either LeanException a -> IO ()
+expectLeanException msg mr = do
+  case mr of
+    Left e -> return ()
+    Right _ -> assertFailure msg
+
 envTests :: TestTree
 envTests = testGroup "Env"
   [ testCase "add_univ" testAddUniv
+  , testCase "standard_env" testStandardEnv
+  , testCase "hott_env"     testHottEnv
+  , testCase "add_decls"    testEnvAddDecls
+  , testCase "is_descendant" testIsDescendant
   , testCase "id"       testId
   , testCase "import"   testImport
   ]
@@ -24,19 +40,90 @@ u1 = explicitUniv 1
 
 testAddUniv :: IO ()
 testAddUniv = do
-  let env = standardEnv trustHigh
-  let new_env = env & envAddUniv "u"
+  env <- standardEnv trustHigh
+  new_env <- envAddUniv "u" env
   assert (new_env      `envContainsUniv` "u")
   assert (not (new_env `envContainsUniv` "v"))
   assert (new_env^..envUnivs == ["u"])
   -- Check that adding duplicate names throws an exception.
-  let bad_env = new_env & envAddUniv "u"
-  catch (seq bad_env $ assertFailure "Expected exception from duplicate universe addition")
+  catch (envAddUniv "u" new_env
+         >> assertFailure "Expected exception from duplicate universe addition")
         (\e -> assert (exceptionKind e == LeanKernelException))
+
+testStandardEnv :: IO ()
+testStandardEnv = do
+  env <- standardEnv trustHigh
+  assert $ envTrustLevel env == trustHigh
+  assert $ envHasProofIrrelevantProp env
+  assert $ envIsImpredicative env
+  env4 <- standardEnv 4
+  assert $ envTrustLevel env4 == 4
+
+testHottEnv :: IO ()
+testHottEnv = do
+  env <- hottEnv trustHigh
+  assert $ envTrustLevel env == trustHigh
+  assert $ not $ envHasProofIrrelevantProp env
+  assert $ not $ envIsImpredicative env
+  env9 <- hottEnv 9
+  assert $ envTrustLevel env9 == 9
+
+testEnvAddDecls :: IO ()
+testEnvAddDecls = do
+  -- Declare Bar as a proposition.
+  let bar = axiom "Bar" [] (sortExpr zeroUniv)
+  -- Create an empty environment to certify Bar in
+  env0 <- standardEnv trustHigh
+  let Right certBar = tryCertify env0 bar
+  envBar <- envAddCertDecl certBar env0
+
+  -- Test failures
+  expectLeanFailure "Expected duplicate add to fail" $ do
+    envAddCertDecl certBar envBar
+  expectLeanFailure "Expected add to new environment to fail" $ do
+    envAddCertDecl certBar =<< standardEnv trustHigh
+  expectLeanFailure "Expected add to forget environment to fail" $ do
+    envAddCertDecl certBar =<< envForget env0
+
+  let foo = axiom "foo" [] (constExpr "Bar" [])
+  let Right certFoo = tryCertify envBar foo
+  envBarFoo <- envAddCertDecl certFoo envBar
+
+  assert $ envBarFoo `envIsDescendant` envBar
+
+  let foo2 = axiom "foo2" [] (constExpr "Bar" [])
+  let Right certFoo2 = tryCertify envBar foo2
+  envBarFoo2 <- envAddCertDecl certFoo2 envBarFoo
+
+  -- Test replace axiom
+  let foo2Def = theoremWith envBarFoo "foo2" [] (constExpr "Bar" []) (constExpr "foo" [])
+  let Right certFoo2Def = tryCertify envBarFoo foo2Def
+  envFinal  <- envReplaceAxiom certFoo2Def envBarFoo2
+  assert $ envIsDescendant envFinal envBarFoo2
+
+--
+testIsDescendant :: IO ()
+testIsDescendant = do
+  env0 <- standardEnv trustHigh
+  assert $ env0 `envIsDescendant` env0
+
+  do env_add_a0 <- envAddUniv "a" env0
+     env_add_a1 <- envAddUniv "a" env0
+     assert $ env_add_a0 `envIsDescendant` env0
+     assert $ env_add_a1 `envIsDescendant` env0
+     assert $ not $ env0 `envIsDescendant` env_add_a0
+     assert $ not $ env0 `envIsDescendant` env_add_a1
+     assert $ not $ env_add_a0 `envIsDescendant` env_add_a1
+
+  do env_forget0 <- envForget env0
+     env_forget1 <- envForget env0
+     assert $ not $ env0 `envIsDescendant` env_forget0
+     assert $ not $ env0 `envIsDescendant` env_forget1
+     assert $ not $ env_forget0 `envIsDescendant` env_forget1
 
 testId :: IO ()
 testId = do
-  let env = standardEnv trustHigh
+  env <- standardEnv trustHigh
   let v0 = varExpr 0
   let v1 = varExpr 1
   let tp = sortExpr (paramUniv "l")
@@ -51,11 +138,11 @@ testId = do
   assert $ exprToString id_type == "Pi (A : Type.{l}) (a : A), A"
   assert $ exprToString id_val  == "fun (A : Type.{l}) (a : A), a"
 
-  let id_cert_def = check env id_def
-  let new_env = env & envAddDecl id_cert_def
+  let Right id_cert_def = tryCertify env id_def
+  new_env <- envAddCertDecl id_cert_def env
 
-  assert $     env `envContainsDecl` "id" == False
-  assert $ new_env `envContainsDecl` "id"
+  assert $ not $ env `envContainsDecl` "id"
+  assert $   new_env `envContainsDecl` "id"
 
   let decls = fmap declView $ new_env^..envDecls
 
@@ -63,8 +150,8 @@ testId = do
 
   let prop = sortExpr u0
 
-  let id1 = constExpr "id" [u1]
-  let id1T1 = id1 `appExpr` prop
+  let id1     = constExpr "id" [u1]
+  let id1T1   = id1 `appExpr` prop
   let id1T1T0 = id1T1 `appExpr` sortExpr u1
 
   let tc = typechecker new_env
@@ -77,7 +164,7 @@ testId = do
 
 testImport :: IO ()
 testImport = do
-  let env = standardEnv trustHigh
+  env <- standardEnv trustHigh
   ios <- mkBufferedIOState
   new_env <- envImport ios env ["init.logic"]
   assert $ envContainsDecl new_env "not"

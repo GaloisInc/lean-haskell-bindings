@@ -41,11 +41,12 @@ module Language.Lean.Internal.Exception
   , mkLeanException
   , mkLeanExceptionWithEnv
     -- * Partial operations
-  , LeanPartialAction
-  , runLeanPartialAction
-  , LeanPartialFn
-  , runLeanPartialFn
+  , LeanAction
+  , runLeanAction
+  , LeanFn
+  , runLeanFn
   , runLeanMaybeFn
+  , tryRunLeanFn
   , IsLeanValue(..)
     -- * Options
   , Options
@@ -70,7 +71,7 @@ module Language.Lean.Internal.Exception
   , withSomeIOState
   , mkBufferedIOStateWithOptions
     -- * Functions that return a result in IO
-  , tryAllocLeanValue
+  , allocLeanValue
   ) where
 
 import Control.Exception
@@ -125,6 +126,20 @@ instance IsLeanValue Options (Ptr Options) where
 {#pointer lean_env as Env foreign newtype nocode#}
 
 -- | A Lean environment
+--
+-- Conceptually, a Lean environment may be thought of as a set of global
+-- universe names and a collection of certified declarations where each
+-- declaration has a unique name.
+--
+-- However, there is also a partial order over environments, where one
+-- environment may be thought of as a /descendant/ of another when the first
+-- was created by adding declarations to the first.  This relationship is
+-- reflexible, transitive, and anti-symmetric.
+--
+-- As two separate invocations of operations for constructing an environment
+-- return distinct environments that are not considered descendants of each
+-- other, the operations for constructing environments cannot be pure functions
+-- due to a lack of referential transparency.
 newtype Env = Env (ForeignPtr Env)
 
 -- | Function @c2hs@ uses to pass 'Env' values to Lean
@@ -135,7 +150,6 @@ withEnv (Env o) = withForeignPtr $! o
 {#pointer lean_env as EnvPtr -> Env#}
 -- | Haskell type for @lean_env*@ FFI parameters.
 {#pointer *lean_env as OutEnvPtr -> EnvPtr#}
-
 
 ------------------------------------------------------------------------
 -- SomeIOState
@@ -337,7 +351,7 @@ leanExceptionPtrPrettyMessage :: Env -> Options -> ForeignPtr LeanException -> S
 leanExceptionPtrPrettyMessage e o fnPtr = unsafePerformIO $ do
   ios <- mkBufferedIOStateWithOptions o
   withForeignPtr fnPtr $ \p -> do
-    tryAllocLeanValue $ lean_exception_to_pp_string e (someIOS ios) p
+    allocLeanValue $ lean_exception_to_pp_string e (someIOS ios) p
 
 {#fun unsafe lean_exception_get_message
  { `ExceptionPtr' } -> `String' getLeanString* #}
@@ -392,36 +406,51 @@ foreign import ccall unsafe "&lean_env_del"
 -- Partial functions
 
 -- | A lean partial function is an action that may fail
-type LeanPartialAction = (Ptr ExceptionPtr -> IO Bool)
+type LeanAction = (Ptr ExceptionPtr -> IO Bool)
 
 -- | Run a lean partial action, throwing an exception if it fails.
-runLeanPartialAction :: LeanPartialAction -> IO ()
-runLeanPartialAction action =
+runLeanAction :: LeanAction -> IO ()
+runLeanAction action =
   alloca $ \ex_ptr -> do
     poke ex_ptr nullPtr
     success <- action ex_ptr
     when (not success) $ do
       throwIO =<< mkLeanException =<< peek ex_ptr
-{-# INLINE runLeanPartialAction #-}
+{-# INLINE runLeanAction #-}
 
 -- | A lean partial function is a function that returns a value of type @a@, but
 -- may fail.
-type LeanPartialFn a = (Ptr a -> LeanPartialAction)
+type LeanFn a = (Ptr a -> LeanAction)
 
 -- | Run a lean partial function
-runLeanPartialFn :: Storable a
-                 => LeanPartialFn a
-                 -> IO a
-runLeanPartialFn alloc_fn =
+runLeanFn :: Storable a => LeanFn a -> IO a
+runLeanFn alloc_fn =
   alloca $ \ret_ptr -> do
-    runLeanPartialAction (alloc_fn ret_ptr)
+    runLeanAction (alloc_fn ret_ptr)
     peek ret_ptr
-{-# INLINE runLeanPartialFn #-}
+{-# INLINE runLeanFn #-}
+
+-- | Run a lean partial function, but return the exception instead of throwing.
+tryRunLeanFn :: Storable a
+             => (Ptr LeanException -> IO LeanException)
+                -- ^ Function for creating Lean exception
+             -> LeanFn a
+             -> IO (Either LeanException a)
+tryRunLeanFn except_fn alloc_fn =
+  alloca $ \ret_ptr -> do
+    alloca $ \ex_ptr -> do
+      poke ex_ptr nullPtr
+      success <- alloc_fn ret_ptr ex_ptr
+      if success then
+        Right <$> peek ret_ptr
+      else
+        Left <$> (except_fn =<< peek ex_ptr)
+{-# INLINE tryRunLeanFn #-}
 
 -- | Run a lean partial function where false does not automatically imply
 -- an exception was thrown.
 runLeanMaybeFn :: Storable p
-               => LeanPartialFn p
+               => LeanFn p
                -> IO (Maybe p)
 runLeanMaybeFn alloc_fn =
   alloca $ \ret_ptr -> do
@@ -441,11 +470,11 @@ runLeanMaybeFn alloc_fn =
 
 -- | Try to run a Lean partial function that returns a Lean value
 -- that will need to be freed.
-tryAllocLeanValue :: IsLeanValue a p
-                  => LeanPartialFn p
-                  -> IO a
-tryAllocLeanValue = \alloc_fn -> mkLeanValue =<< runLeanPartialFn alloc_fn
-{-# INLINE tryAllocLeanValue #-}
+allocLeanValue :: IsLeanValue a p
+               => LeanFn p
+               -> IO a
+allocLeanValue = \alloc_fn -> mkLeanValue =<< runLeanFn alloc_fn
+{-# INLINE allocLeanValue #-}
 
 ------------------------------------------------------------------------
 -- Options Monoid instance
@@ -457,13 +486,13 @@ instance Monoid Options where
 -- | An empty set of options
 emptyOptions :: Options
 emptyOptions = unsafePerformIO $ do
-  tryAllocLeanValue lean_options_mk_empty
+  allocLeanValue lean_options_mk_empty
 
 -- | Combine two options where the assignments from the second
 -- argument override the assignments from the first.
 joinOptions :: Options -> Options -> Options
 joinOptions x y = unsafePerformIO $ do
-  tryAllocLeanValue $ lean_options_join x y
+  allocLeanValue $ lean_options_join x y
 
 {#fun unsafe lean_options_mk_empty
   { `OutOptionsPtr'
@@ -494,7 +523,7 @@ instance Show Options where
 
 showOption :: Options -> String
 showOption x = unsafePerformIO $ do
-  tryAllocLeanValue $ lean_options_to_string x
+  allocLeanValue $ lean_options_to_string x
 
 {#fun unsafe lean_options_to_string
   { `Options'
@@ -508,7 +537,7 @@ showOption x = unsafePerformIO $ do
 -- | Create IO state object that sends the regular and diagnostic output to
 -- string buffers with the given options.
 mkBufferedIOStateWithOptions :: Options -> IO (IOState 'Buffered)
-mkBufferedIOStateWithOptions o = tryAllocLeanValue $ lean_ios_mk_buffered o
+mkBufferedIOStateWithOptions o = allocLeanValue $ lean_ios_mk_buffered o
 
 {#fun unsafe lean_ios_mk_buffered
  { `Options', `OutSomeIOStatePtr', `OutExceptionPtr' } -> `Bool' #}

@@ -83,7 +83,7 @@ instance Ord Name where
 
 -- | Return a name as a string with subnames separated by periods.
 nameToString :: Name -> String
-nameToString nm = tryGetLeanValue $ lean_name_to_string nm
+nameToString nm = getLeanValue $ lean_name_to_string nm
 
 instance Show Name where
   show = show . nameToString
@@ -96,15 +96,15 @@ instance Show Name where
 
 -- | The root "anonymous" name
 anonymousName :: Name
-anonymousName = tryGetLeanValue lean_name_mk_anonymous
+anonymousName = getLeanValue lean_name_mk_anonymous
 
 -- | Append a string to a name.
 nameAppend :: Name -> String -> Name
-nameAppend pre r = tryGetLeanValue (lean_name_mk_str pre r)
+nameAppend pre r = getLeanValue (lean_name_mk_str pre r)
 
 -- | Append a numeric index to a name.
 nameAppendIndex :: Name -> Word32 -> Name
-nameAppendIndex pre i = tryGetLeanValue (lean_name_mk_idx pre i)
+nameAppendIndex pre i = getLeanValue (lean_name_mk_idx pre i)
 
 {#fun unsafe lean_name_mk_anonymous
   { `OutNamePtr'
@@ -144,11 +144,11 @@ nameView nm =
   if lean_name_is_anonymous nm then
     AnonymousName
   else if lean_name_is_str nm then do
-    StringName (tryGetLeanValue $ lean_name_get_prefix nm)
-               (tryGetLeanValue $ lean_name_get_str nm)
+    StringName (getLeanValue $ lean_name_get_prefix nm)
+               (getLeanValue $ lean_name_get_str nm)
   else assert (lean_name_is_idx nm) $ do
-    IndexName (tryGetLeanValue $ lean_name_get_prefix nm)
-              (tryGetLeanValue $ lean_name_get_idx nm)
+    IndexName (getLeanValue $ lean_name_get_prefix nm)
+              (getLeanValue $ lean_name_get_idx nm)
 
 {#fun pure unsafe lean_name_is_anonymous { `Name' } -> `Bool' #}
 {#fun pure unsafe lean_name_is_str       { `Name' } -> `Bool' #}
@@ -238,13 +238,13 @@ instance Eq (List Name) where
 -- ListName IsListIso instance
 
 instance IsListIso (List Name) where
-  nil = tryGetLeanValue $ lean_list_name_mk_nil
-  h <| r = tryGetLeanValue $ lean_list_name_mk_cons h r
+  nil = getLeanValue $ lean_list_name_mk_nil
+  h <| r = getLeanValue $ lean_list_name_mk_cons h r
 
   listView l =
     if lean_list_name_is_cons l then
-      tryGetLeanValue (lean_list_name_head l)
-        :< tryGetLeanValue (lean_list_name_tail l)
+      getLeanValue (lean_list_name_head l)
+        :< getLeanValue (lean_list_name_tail l)
     else
       Nil
 

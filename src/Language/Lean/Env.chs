@@ -28,7 +28,7 @@ module Language.Lean.Env
   , envUnivs
   , forEnvUniv_
     -- * Environment declaration information
-  , envAddDecl
+  , envAddCertDecl
   , envReplaceAxiom
   , envContainsDecl
   , envLookupDecl
@@ -133,8 +133,10 @@ trustHigh = TrustLevel {#const LEAN_TRUST_HIGH#}
 -- Constructors for empty universes.
 
 -- | Create an empty standard environment with the given trust level.
-standardEnv :: TrustLevel -> Env
-standardEnv lvl = tryGetLeanValue $ lean_env_mk_std lvl
+--
+-- The returned an environment is not a descendant of any other environment.
+standardEnv :: TrustLevel -> IO Env
+standardEnv lvl = allocLeanValue $ lean_env_mk_std lvl
 
 {#fun unsafe lean_env_mk_std
   { trustUInt `TrustLevel'
@@ -143,8 +145,10 @@ standardEnv lvl = tryGetLeanValue $ lean_env_mk_std lvl
   } -> `Bool' #}
 
 -- | Create an empty hott environment with the given trust level.
-hottEnv :: TrustLevel -> Env
-hottEnv lvl = tryGetLeanValue $ lean_env_mk_hott lvl
+--
+-- The returned an environment is not a descendant of any other environment.
+hottEnv :: TrustLevel -> IO Env
+hottEnv lvl = allocLeanValue $ lean_env_mk_hott lvl
 
 {#fun unsafe lean_env_mk_hott
   { trustUInt `TrustLevel'
@@ -156,10 +160,7 @@ hottEnv lvl = tryGetLeanValue $ lean_env_mk_hott lvl
 -- Env information
 
 -- | Return the trust level of the given environment.
-envTrustLevel :: Env -> TrustLevel
-envTrustLevel = lean_env_trust_level
-
-{#fun pure unsafe lean_env_trust_level
+{#fun pure unsafe lean_env_trust_level as envTrustLevel
   { `Env' } -> `TrustLevel' trustFromUInt #}
 
 -- | Returns 'True' if all proofs of a proposition in @Prop@ are equivalent.
@@ -173,14 +174,17 @@ envTrustLevel = lean_env_trust_level
 ------------------------------------------------------------------------
 -- Env global universe functions
 
-
 -- | Add a new global universe with the given name.
 --
 -- This throws a 'LeanException' if the environment already contains a universe
--- level with the given name.  You can check whether the environment already
--- contains the name by calling env
-envAddUniv :: Name -> Env -> Env
-envAddUniv u e = tryGetLeanValue $ lean_env_add_univ e u
+-- level with the given name.
+--
+-- 'envContainsUniv' can be used to check whether the environment already contains
+-- a global universe with the given name.
+--
+-- The returned an environment is a descendant of the input environment.
+envAddUniv :: Name -> Env -> IO Env
+envAddUniv u e = allocLeanValue $ lean_env_add_univ e u
 
 {#fun unsafe lean_env_add_univ
   { `Env'
@@ -201,7 +205,6 @@ envUnivs = runLeanFold wrapNameVisitFn lean_env_for_each_univ
 forEnvUniv_ :: Env -> (Name -> IO ()) -> IO ()
 forEnvUniv_ e f = safeRunLeanFold wrapNameVisitFn lean_env_for_each_univ f e
 
-
 foreign import ccall "wrapper" wrapNameVisitFn :: WrapLeanVisitFn NamePtr
 
 {#fun lean_env_for_each_univ
@@ -214,8 +217,19 @@ foreign import ccall "wrapper" wrapNameVisitFn :: WrapLeanVisitFn NamePtr
 -- Env declaration functions
 
 -- | Adding the given certified declaration to the environment.
-envAddDecl :: CertDecl -> Env -> Env
-envAddDecl d e = tryGetLeanValue $ lean_env_add e d
+--
+-- This throws a 'LeanException' if the environment is not a descendant
+-- of the environment used to certify the declaration originally.
+--
+-- This throws a 'LeanException' if the environment already contains a
+-- declaration with the same name as the certified declaration.
+--
+-- 'envContainsDecl' can be used to check whether the environment already contains
+-- a global declaration with a specific name.
+--
+-- The returned an environment is a descendant of the input environment.
+envAddCertDecl :: CertDecl -> Env -> IO Env
+envAddCertDecl d e = allocLeanValue $ lean_env_add e d
 
 {#fun unsafe lean_env_add
   { `Env'
@@ -224,15 +238,18 @@ envAddDecl d e = tryGetLeanValue $ lean_env_add e d
   , `OutExceptionPtr'
   } -> `Bool' #}
 
--- |  Replace the axiom that has the name of the given certified declaration with the
--- certified declaration.
+-- |  Replace the axiom that has the name of the given certified declaration
+-- with the certified declaration.
 --
--- This procedure throws an exception if
+-- This procedure throws a LeanException if
 --
+--  * The certified declaration is not a theorem.
 --  * The theorem was certified in an environment which is not an ancestor of the environment.
 --  * The environment does not contain an axiom with the given name.
-envReplaceAxiom :: CertDecl -> Env -> Env
-envReplaceAxiom d e = tryGetLeanValue $ lean_env_replace e d
+--
+-- The returned environment is a descendant of the input environment.
+envReplaceAxiom :: CertDecl -> Env -> IO Env
+envReplaceAxiom d e = allocLeanValue $ lean_env_replace e d
 
 {#fun unsafe lean_env_replace
   { `Env'
@@ -240,9 +257,6 @@ envReplaceAxiom d e = tryGetLeanValue $ lean_env_replace e d
   , `OutEnvPtr'
   , `OutExceptionPtr'
   } -> `Bool' #}
-
-------------------------------------------------------------------------
--- Env Projections
 
 -- |  Return @true@ iff the environment contains a declaration with the name.
 {#fun pure unsafe lean_env_contains_decl as envContainsDecl
@@ -252,7 +266,7 @@ envReplaceAxiom d e = tryGetLeanValue $ lean_env_replace e d
 envLookupDecl :: Name -> Env -> Maybe Decl
 envLookupDecl nm e =
   if envContainsDecl e nm then
-    Just (tryGetLeanValue $ lean_env_get_decl e nm)
+    Just (getLeanValue $ lean_env_get_decl e nm)
   else
     Nothing
 
@@ -288,10 +302,10 @@ envIsDescendant = lean_env_is_descendant
  { `Env', `Env' } -> `Bool' #}
 
 -- | Return a new environment, where its "history" has been truncated/forgotten.
--- That is, @envForget x `envIsDescendant` y@ will return false for any environment
--- @y@ that is not pointer equal to the result @envForget x@.
-envForget :: Env -> Env
-envForget x = tryGetLeanValue $ lean_env_forget x
+-- That is, @envForget x@ will return an environment @y@ that is only a descendant of
+-- itself.
+envForget :: Env -> IO Env
+envForget x = allocLeanValue $ lean_env_forget x
 
 -- |  Return the declaration with the given name in the environment if any.
 {#fun unsafe lean_env_forget

@@ -4,7 +4,7 @@ Copyright   : (c) Galois Inc, 2015
 License     : Apache-2
 Maintainer  : jhendrix@galois.com, lcasburn@galois.com
 
-Declares internal datatypes for Lean environment, declarations, and
+Declares internal datatypes for Lean declarations and
 certified declarations.
 -}
 {-# LANGUAGE FlexibleInstances #-}
@@ -13,8 +13,8 @@ certified declarations.
 {-# LANGUAGE Safe #-}
 {-# OPTIONS_HADDOCK not-home #-}
 module Language.Lean.Internal.Decl
-    -- * Declaration
-  ( Decl
+  ( -- * Declaration
+    Decl
   , DeclPtr
   , OutDeclPtr
   , withDecl
@@ -67,7 +67,7 @@ foreign import ccall unsafe "&lean_decl_del"
 
 {#pointer lean_cert_decl as CertDecl foreign newtype nocode#}
 
--- | A Lean certified declaration
+-- | A definition that has been typechecked in some environment.
 newtype CertDecl = CertDecl (ForeignPtr CertDecl)
 
 -- | Function @c2hs@ uses to pass @CertDecl@ values to Lean

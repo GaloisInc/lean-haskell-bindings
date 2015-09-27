@@ -43,7 +43,7 @@ import Language.Lean.Internal.Exception.Unsafe
 
 -- | Create a type checker object for the given environment.
 typechecker :: Env -> Typechecker
-typechecker e = tryGetLeanValue $ lean_type_checker_mk e
+typechecker e = getLeanValue $ lean_type_checker_mk e
 
 {#fun unsafe lean_type_checker_mk
      { `Env', `OutTypecheckerPtr', `OutExceptionPtr' } -> `Bool' #}
@@ -53,20 +53,20 @@ typechecker e = tryGetLeanValue $ lean_type_checker_mk e
 
 -- | A lean partial function is a function that returns a value of type @a@, but
 -- may fail.
-type LeanPartialFn2 a b = (Ptr a -> Ptr b -> LeanPartialAction)
+type LeanFn2 a b = (Ptr a -> Ptr b -> LeanAction)
 
 -- | @inferType t e@ infers the type of @e@ using @t@.
 -- This returns the type and any constraints generated.
 --
 -- The expression @e@ must not contain any free variables (subexpressions with
 -- type @ExprVar@.
-tryGetLeanPair :: (IsLeanValue a p, IsLeanValue b q)
-               => LeanPartialFn2 p q
-               -> (a,b)
-tryGetLeanPair alloc_fn = unsafePerformIO $ do
+getLeanPair :: (IsLeanValue a p, IsLeanValue b q)
+            => LeanFn2 p q
+            -> (a,b)
+getLeanPair alloc_fn = unsafePerformIO $ do
   alloca $ \p_ptr -> do
     alloca $ \q_ptr -> do
-      runLeanPartialAction $ alloc_fn p_ptr q_ptr
+      runLeanAction $ alloc_fn p_ptr q_ptr
       p <- mkLeanValue =<< peek p_ptr
       q <- mkLeanValue =<< peek q_ptr
       seq p $ seq q $ (return $! (p,q))
@@ -77,7 +77,7 @@ tryGetLeanPair alloc_fn = unsafePerformIO $ do
 -- The expression @e@ must not contain any free variables (subexpressions with
 -- type @ExprVar@).
 inferType :: Typechecker -> Expr -> (Expr, ConstraintSeq)
-inferType t e = tryGetLeanPair $ lean_type_checker_infer t e
+inferType t e = getLeanPair $ lean_type_checker_infer t e
 
 {#fun unsafe lean_type_checker_infer
      { `Typechecker'
@@ -93,7 +93,7 @@ inferType t e = tryGetLeanPair $ lean_type_checker_infer t e
 -- The expression @e@ must not contain any free variables (subexpressions with
 -- type @ExprVar@).
 checkType :: Typechecker -> Expr -> (Expr, ConstraintSeq)
-checkType t e = tryGetLeanPair $ lean_type_checker_check t e
+checkType t e = getLeanPair $ lean_type_checker_check t e
 
 {#fun unsafe lean_type_checker_check
      { `Typechecker'
@@ -109,7 +109,7 @@ checkType t e = tryGetLeanPair $ lean_type_checker_check t e
 -- The expression @e@ must not contain any free variables (subexpressions with
 -- type @ExprVar@).
 whnf :: Typechecker -> Expr -> (Expr, ConstraintSeq)
-whnf t e = tryGetLeanPair $ lean_type_checker_whnf t e
+whnf t e = getLeanPair $ lean_type_checker_whnf t e
 
 {#fun unsafe lean_type_checker_whnf
      { `Typechecker'
@@ -125,7 +125,7 @@ whnf t e = tryGetLeanPair $ lean_type_checker_whnf t e
 -- The expressions @e1@ and @e2@ must not contain any free variables
 -- (subexpressions with type @ExprVar@).
 isDefEq :: Typechecker -> Expr -> Expr -> (Bool, ConstraintSeq)
-isDefEq t e1 e2 = tryGetLeanPair $ lean_type_checker_is_def_eq t e1 e2
+isDefEq t e1 e2 = getLeanPair $ lean_type_checker_is_def_eq t e1 e2
 
 {#fun unsafe lean_type_checker_is_def_eq
      { `Typechecker'

@@ -81,7 +81,7 @@ instance Show MacroDef where
 
 -- | Return the string representation of a macro definition.
 macroDefToString :: MacroDef -> String
-macroDefToString x = tryGetLeanValue $ lean_macro_def_to_string x
+macroDefToString x = getLeanValue $ lean_macro_def_to_string x
 
 {#fun unsafe lean_macro_def_to_string
  { `MacroDef' , id `Ptr CString', `OutExceptionPtr' } -> `Bool' #}
@@ -91,7 +91,7 @@ macroDefToString x = tryGetLeanValue $ lean_macro_def_to_string x
 -- MacroDef Eq instance
 
 instance Eq MacroDef where
-  x == y = tryGetLeanValue $ lean_macro_def_eq x y
+  x == y = getLeanValue $ lean_macro_def_eq x y
 
 {#fun unsafe lean_macro_def_eq
  { `MacroDef' , `MacroDef', id `Ptr CInt', `OutExceptionPtr' } -> `Bool' #}
@@ -158,7 +158,7 @@ foreign import ccall unsafe "&lean_list_expr_del"
 
 -- | Return the string representation of an expression.
 exprToString :: Expr -> String
-exprToString x = tryGetLeanValue $ lean_expr_to_string x
+exprToString x = getLeanValue $ lean_expr_to_string x
 
 {#fun unsafe lean_expr_to_string
  { `Expr' , id `Ptr CString', `OutExceptionPtr' } -> `Bool' #}
@@ -166,25 +166,24 @@ exprToString x = tryGetLeanValue $ lean_expr_to_string x
 instance Show Expr where
   show = show . exprToString
 
-
 ------------------------------------------------------------------------
 -- Expression Comparison
 
 instance Eq Expr where
-  x == y = tryGetLeanValue $ lean_expr_eq x y
+  x == y = getLeanValue $ lean_expr_eq x y
 
 {#fun unsafe lean_expr_eq
  { `Expr' , `Expr', id `Ptr CInt', `OutExceptionPtr' } -> `Bool' #}
 
 instance Ord Expr where
-   x <= y = not $ tryGetLeanValue $ lean_expr_quick_lt y x
+   x <= y = not $ getLeanValue $ lean_expr_quick_lt y x
 
 {#fun unsafe lean_expr_quick_lt
  { `Expr' , `Expr', id `Ptr CInt', `OutExceptionPtr' } -> `Bool' #}
 
 -- | Return true if first expression is structurally less than other.
 exprLt :: Expr -> Expr -> Bool
-exprLt x y = tryGetLeanValue $ lean_expr_lt x y
+exprLt x y = getLeanValue $ lean_expr_lt x y
 
 {#fun unsafe lean_expr_lt
  { `Expr' , `Expr', id `Ptr CInt', `OutExceptionPtr' } -> `Bool' #}
@@ -202,13 +201,13 @@ instance Eq (List Expr) where
 -- ListExpr IsListIso instance
 
 instance IsListIso (List Expr) where
-  nil = tryGetLeanValue $ lean_list_expr_mk_nil
-  h <| r = tryGetLeanValue $ lean_list_expr_mk_cons h r
+  nil = getLeanValue $ lean_list_expr_mk_nil
+  h <| r = getLeanValue $ lean_list_expr_mk_cons h r
 
   listView l =
     if lean_list_expr_is_cons l then
-      tryGetLeanValue (lean_list_expr_head l)
-        :< tryGetLeanValue (lean_list_expr_tail l)
+      getLeanValue (lean_list_expr_head l)
+        :< getLeanValue (lean_list_expr_tail l)
     else
       Nil
 

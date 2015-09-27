@@ -110,13 +110,13 @@ instance Eq (List InductiveType) where
 -- List InductiveType IsListIso instance
 
 instance IsListIso (List InductiveType) where
-  nil = tryGetLeanValue $ lean_list_inductive_type_mk_nil
-  h <| r = tryGetLeanValue $ lean_list_inductive_type_mk_cons h r
+  nil = getLeanValue $ lean_list_inductive_type_mk_nil
+  h <| r = getLeanValue $ lean_list_inductive_type_mk_cons h r
 
   listView l =
     if lean_list_inductive_type_is_cons l then
-      tryGetLeanValue (lean_list_inductive_type_head l)
-        :< tryGetLeanValue (lean_list_inductive_type_tail l)
+      getLeanValue (lean_list_inductive_type_head l)
+        :< getLeanValue (lean_list_inductive_type_tail l)
     else
       Nil
 

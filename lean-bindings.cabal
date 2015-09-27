@@ -62,7 +62,6 @@ library
     Language.Lean.Internal.Univ
     Language.Lean.Internal.Expr
     Language.Lean.Internal.Decl
-    Language.Lean.Internal.IOS
     Language.Lean.Internal.Typechecker
     Language.Lean.Internal.Inductive
     Language.Lean.Decl

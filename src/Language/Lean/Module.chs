@@ -38,7 +38,7 @@ import Language.Lean.Internal.Exception.Unsafe
 
 -- | Import the given module names into the lean environment
 envImport :: IOState tp -> Env -> List Name -> IO Env
-envImport s e names = tryAllocLeanValue $ lean_env_import e (someIOS s) names
+envImport s e names = allocLeanValue $ lean_env_import e (someIOS s) names
 
 {#fun lean_env_import
  { `Env'
@@ -50,7 +50,7 @@ envImport s e names = tryAllocLeanValue $ lean_env_import e (someIOS s) names
 
 -- | Export the lean environment to a path.
 envExport :: Env -> FilePath -> IO ()
-envExport e path = runLeanPartialAction $ lean_env_export e path
+envExport e path = runLeanAction $ lean_env_export e path
 
 {#fun lean_env_export
    { `Env'
@@ -60,14 +60,14 @@ envExport e path = runLeanPartialAction $ lean_env_export e path
 
 -- | Path to lean standard library (extracted from LEAN_PATH)
 stdPath :: String
-stdPath = tryGetLeanValue $ lean_get_std_path
+stdPath = getLeanValue $ lean_get_std_path
 
 {#fun unsafe lean_get_std_path
  { id `Ptr CString', `OutExceptionPtr' } -> `Bool' #}
 
 -- | Path to lean hott library (extrcted from HLEAN_PATH)
 hottPath :: String
-hottPath = tryGetLeanValue $ lean_get_hott_path
+hottPath = getLeanValue $ lean_get_hott_path
 
 {#fun unsafe lean_get_hott_path
  { id `Ptr CString', `OutExceptionPtr' } -> `Bool' #}

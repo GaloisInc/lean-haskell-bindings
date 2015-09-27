@@ -52,49 +52,49 @@ import Language.Lean.Internal.Exception.Unsafe
 
 -- | The zero universe
 zeroUniv :: Univ
-zeroUniv = tryGetLeanValue $ lean_univ_mk_zero
+zeroUniv = getLeanValue $ lean_univ_mk_zero
 
 {#fun unsafe lean_univ_mk_zero
  { `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
 
 -- | Successor of the universe
 succUniv :: Univ -> Univ
-succUniv x = tryGetLeanValue $ lean_univ_mk_succ x
+succUniv x = getLeanValue $ lean_univ_mk_succ x
 
 {#fun unsafe lean_univ_mk_succ
  { `Univ', `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
 
 -- | The max of two universes.
 maxUniv :: Univ -> Univ -> Univ
-maxUniv x y = tryGetLeanValue $ lean_univ_mk_max x y
+maxUniv x y = getLeanValue $ lean_univ_mk_max x y
 
 {#fun unsafe lean_univ_mk_max
  { `Univ', `Univ', `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
 
 -- | The imax of two universes.
 imaxUniv :: Univ -> Univ -> Univ
-imaxUniv x y = tryGetLeanValue $ lean_univ_mk_imax x y
+imaxUniv x y = getLeanValue $ lean_univ_mk_imax x y
 
 {#fun unsafe lean_univ_mk_imax
  { `Univ', `Univ', `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
 
 -- | A universe parameter of the given name.
 paramUniv :: Name -> Univ
-paramUniv x = tryGetLeanValue $ lean_univ_mk_param x
+paramUniv x = getLeanValue $ lean_univ_mk_param x
 
 {#fun unsafe lean_univ_mk_param
  { `Name', `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
 
 -- | A global universe with the given name.
 globalUniv :: Name -> Univ
-globalUniv x = tryGetLeanValue $ lean_univ_mk_global x
+globalUniv x = getLeanValue $ lean_univ_mk_global x
 
 {#fun unsafe lean_univ_mk_global
  { `Name', `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
 
 -- | A universe meta-variable with the given name.
 metaUniv :: Name -> Univ
-metaUniv x = tryGetLeanValue $ lean_univ_mk_meta x
+metaUniv x = getLeanValue $ lean_univ_mk_meta x
 
 {#fun unsafe lean_univ_mk_meta
  { `Name', `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
@@ -134,16 +134,16 @@ univView :: Univ -> UnivView
 univView x =
   case lean_univ_get_kind x of
    LEAN_UNIV_ZERO -> UnivZero
-   LEAN_UNIV_SUCC -> UnivSucc (tryGetLeanValue $ lean_univ_get_pred x)
+   LEAN_UNIV_SUCC -> UnivSucc (getLeanValue $ lean_univ_get_pred x)
    LEAN_UNIV_MAX ->
-     UnivMax (tryGetLeanValue $ lean_univ_get_max_lhs x)
-             (tryGetLeanValue $ lean_univ_get_max_rhs x)
+     UnivMax (getLeanValue $ lean_univ_get_max_lhs x)
+             (getLeanValue $ lean_univ_get_max_rhs x)
    LEAN_UNIV_IMAX ->
-     UnivIMax (tryGetLeanValue $ lean_univ_get_max_lhs x)
-              (tryGetLeanValue $ lean_univ_get_max_rhs x)
-   LEAN_UNIV_PARAM  -> UnivParam  (tryGetLeanValue $ lean_univ_get_name x)
-   LEAN_UNIV_GLOBAL -> UnivGlobal (tryGetLeanValue $ lean_univ_get_name x)
-   LEAN_UNIV_META   -> UnivMeta   (tryGetLeanValue $ lean_univ_get_name x)
+     UnivIMax (getLeanValue $ lean_univ_get_max_lhs x)
+              (getLeanValue $ lean_univ_get_max_rhs x)
+   LEAN_UNIV_PARAM  -> UnivParam  (getLeanValue $ lean_univ_get_name x)
+   LEAN_UNIV_GLOBAL -> UnivGlobal (getLeanValue $ lean_univ_get_name x)
+   LEAN_UNIV_META   -> UnivMeta   (getLeanValue $ lean_univ_get_name x)
 
 {#enum lean_univ_kind as UnivKind { upcaseFirstLetter }
          deriving (Eq)#}
@@ -167,7 +167,7 @@ univView x =
 -- than @x@ for all possible assignments to the variables in the
 -- @x@ and @y@.
 univGeq :: Univ -> Univ -> Bool
-univGeq x y = tryGetLeanValue $ lean_univ_geq x y
+univGeq x y = getLeanValue $ lean_univ_geq x y
 
 {#fun unsafe lean_univ_geq
   { `Univ'
@@ -188,7 +188,7 @@ univGeq x y = tryGetLeanValue $ lean_univ_geq x y
 
 -- | Return the normal form for a universe.
 normalizeUniv :: Univ -> Univ
-normalizeUniv x = tryGetLeanValue $ lean_univ_normalize x
+normalizeUniv x = getLeanValue $ lean_univ_normalize x
 
 ------------------------------------------------------------------------
 -- Instantiate
@@ -203,7 +203,7 @@ instantiateUniv2 :: Univ
                  -> List Name
                  -> List Univ
                  -> Univ
-instantiateUniv2 u nms args = tryGetLeanValue $ lean_univ_instantiate u nms args
+instantiateUniv2 u nms args = getLeanValue $ lean_univ_instantiate u nms args
 
 {#fun unsafe lean_univ_instantiate
   { `Univ'

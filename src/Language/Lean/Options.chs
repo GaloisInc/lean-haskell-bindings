@@ -134,8 +134,8 @@ import Language.Lean.Internal.Exception.Unsafe
 --   rewriting equivalent values
 simpleLensEq :: forall a p
               . (IsLeanValue a p, Eq a)
-             => (Options -> Name -> LeanPartialFn p)
-             -> (Options -> Name -> a -> LeanPartialFn OptionsPtr)
+             => (Options -> Name -> LeanFn p)
+             -> (Options -> Name -> a -> LeanFn OptionsPtr)
              -> Name
              -> Simple Lens Options a
 simpleLensEq leanGetter leanSetter nm f o = fmap setFun (f oldVal)
@@ -143,11 +143,11 @@ simpleLensEq leanGetter leanSetter nm f o = fmap setFun (f oldVal)
     has_val = o `containsOption` nm
     -- This will only throw an error if f demands oldVal
     oldVal
-      | has_val = tryGetLeanValue $ leanGetter o nm
+      | has_val = getLeanValue $ leanGetter o nm
       | otherwise =  throw (leanException LeanOtherException msg)
       where msg = "options object does not contain entry " ++ show nm
     setFun :: a -> Options
-    setFun newVal = tryGetLeanValue $ leanSetter o nm newVal
+    setFun newVal = getLeanValue $ leanSetter o nm newVal
 {-# INLINE simpleLensEq #-}
 
 -- | Access the lean option with the given name as a Boolean.

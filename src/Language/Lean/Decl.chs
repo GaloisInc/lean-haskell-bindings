@@ -9,8 +9,7 @@ Operations for working with Lean declarations.
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE Trustworthy #-}
 module Language.Lean.Decl
-  ( Env
-  , Decl
+  ( Decl
     -- * Constructors
   , axiom
   , constant
@@ -26,7 +25,8 @@ module Language.Lean.Decl
   , declView
     -- * Certified declarations
   , CertDecl
-  , check
+  , certify
+  , tryCertify
   ) where
 
 import Foreign
@@ -58,7 +58,7 @@ axiom :: Name -- ^ Name of axiom
       -> List Name -- ^ Universe parameters
       -> Expr -- ^ Type of axiom
       -> Decl
-axiom nm params tp = tryGetLeanValue $ lean_decl_mk_axiom nm params tp
+axiom nm params tp = getLeanValue $ lean_decl_mk_axiom nm params tp
 
 {#fun unsafe lean_decl_mk_axiom
   { `Name'
@@ -75,7 +75,7 @@ constant :: Name -- ^ Name of constant
          -> List Name -- ^ Universe parameters
          -> Expr -- ^ Type of constant
          -> Decl
-constant nm params tp = tryGetLeanValue $ lean_decl_mk_const nm params tp
+constant nm params tp = getLeanValue $ lean_decl_mk_const nm params tp
 
 {#fun unsafe lean_decl_mk_const
   { `Name'
@@ -93,7 +93,7 @@ definition :: Name -- ^ Name of the definition
            -> Word32 -- ^ Definitional height
            -> Bool -- ^ Flag that indicates if definition should be lazily unfolded
            -> Decl
-definition nm params tp v h o = tryGetLeanValue $ lean_decl_mk_def nm params tp v h o
+definition nm params tp v h o = getLeanValue $ lean_decl_mk_def nm params tp v h o
 
 {#fun unsafe lean_decl_mk_def
   { `Name'
@@ -118,7 +118,7 @@ definitionWith :: Env  -- ^ The environment
                -> Bool -- ^ Flag that indicates if definition should be lazily unfolded
                -> Decl
 definitionWith e nm params tp v o =
-  tryGetLeanValue $ lean_decl_mk_def_with e nm params tp v o
+  getLeanValue $ lean_decl_mk_def_with e nm params tp v o
 
 {#fun unsafe lean_decl_mk_def_with
   { `Env'
@@ -143,7 +143,7 @@ theorem :: Name      -- ^ Name of the theorem
         -> Expr      -- ^ Proof of the theorem
         -> Word32    -- ^ Definitional height
         -> Decl
-theorem nm params tp v h = tryGetLeanValue $ lean_decl_mk_thm nm params tp v h
+theorem nm params tp v h = getLeanValue $ lean_decl_mk_thm nm params tp v h
 
 {#fun unsafe lean_decl_mk_thm
   { `Name'
@@ -169,7 +169,7 @@ theoremWith :: Env       -- ^ The environment
             -> Expr      -- ^ Type of the theorem
             -> Expr      -- ^ Proof of the theorem
             -> Decl
-theoremWith e nm params tp v = tryGetLeanValue $ lean_decl_mk_thm_with e nm params tp v
+theoremWith e nm params tp v = getLeanValue $ lean_decl_mk_thm_with e nm params tp v
 
 {#fun unsafe lean_decl_mk_thm_with
   { `Env'
@@ -186,21 +186,21 @@ theoremWith e nm params tp v = tryGetLeanValue $ lean_decl_mk_thm_with e nm para
 
 -- | The name of a declaration.
 declName :: Decl -> Name
-declName d = tryGetLeanValue $ lean_decl_get_name d
+declName d = getLeanValue $ lean_decl_get_name d
 
 {#fun unsafe lean_decl_get_name
   { `Decl', `OutNamePtr', `OutExceptionPtr' } -> `Bool' #}
 
 -- | The list of universe params for a declaration.
 declUnivParams :: Decl -> List Name
-declUnivParams d = tryGetLeanValue $ lean_decl_get_univ_params d
+declUnivParams d = getLeanValue $ lean_decl_get_univ_params d
 
 {#fun unsafe lean_decl_get_univ_params
   { `Decl', `OutListNamePtr', `OutExceptionPtr' } -> `Bool' #}
 
 -- | The type of a declaration.
 declType :: Decl -> Expr
-declType d = tryGetLeanValue $ lean_decl_get_type d
+declType d = getLeanValue $ lean_decl_get_type d
 
 {#fun unsafe lean_decl_get_type
   { `Decl', `OutExprPtr', `OutExceptionPtr' } -> `Bool' #}
@@ -225,12 +225,12 @@ declView x =
     LEAN_DECL_CONST -> Constant
     LEAN_DECL_AXIOM -> Axiom
     LEAN_DECL_DEF ->
-      Definition (tryGetLeanValue $ lean_decl_get_value x)
-                 (tryGetLeanValue $ lean_decl_get_height x)
-                 (tryGetLeanValue $ lean_decl_get_conv_opt x)
+      Definition (getLeanValue $ lean_decl_get_value x)
+                 (getLeanValue $ lean_decl_get_height x)
+                 (getLeanValue $ lean_decl_get_conv_opt x)
     LEAN_DECL_THM ->
-      Theorem (tryGetLeanValue $ lean_decl_get_value x)
-              (tryGetLeanValue $ lean_decl_get_height x)
+      Theorem (getLeanValue $ lean_decl_get_value x)
+              (getLeanValue $ lean_decl_get_height x)
 
 {#enum lean_decl_kind as DeclKind { upcaseFirstLetter }
          deriving (Eq)#}
@@ -252,8 +252,18 @@ declView x =
 
 -- | Creates a cerified declaration by type checking it within a
 -- given environment.
-check :: Env -> Decl -> CertDecl
-check e d = tryGetLeanValue $ lean_decl_check e d
+--
+-- Throws a `LeanException` if the certification fails
+certify :: Env -> Decl ->  CertDecl
+certify e d = getLeanValue $ lean_decl_check e d
+
+-- | Tries to creates a cerified declaration by type checking it
+-- within a given environment.
+--
+-- Returns either an exception or the certified declaration.
+tryCertify :: Env -> Decl -> Either LeanException CertDecl
+tryCertify e d = tryGetLeanValue (mkLeanExceptionWithEnv e emptyOptions) $
+  lean_decl_check e d
 
 {#fun unsafe lean_decl_check
   { `Env', `Decl', `OutCertDeclPtr', `OutExceptionPtr' } -> `Bool' #}

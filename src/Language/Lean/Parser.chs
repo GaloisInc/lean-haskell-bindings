@@ -21,8 +21,8 @@ import Language.Lean.List
 
 {#import Language.Lean.Internal.Exception#}
 {#import Language.Lean.Internal.Expr#}
-{#import Language.Lean.Internal.IOS#}
 {#import Language.Lean.Internal.Name#}
+{#import Language.Lean.IOS#}
 
 #include "lean_bool.h"
 #include "lean_macros.h"
@@ -43,7 +43,7 @@ parseFile :: IOState tp -> Env -> FilePath -> IO (Env, Options)
 parseFile s old_env path = do
   alloca $ \env_ptr -> do
     alloca $ \ios_ptr -> do
-      runLeanPartialAction $ lean_parse_file old_env (someIOS s) path env_ptr ios_ptr
+      runLeanAction $ lean_parse_file old_env (someIOS s) path env_ptr ios_ptr
       new_env <- mkLeanValue =<< peek env_ptr
       new_ios <- mkLeanValue =<< peek ios_ptr
       new_ops <- getStateOptions new_ios
@@ -68,7 +68,7 @@ parseCommands :: IOState tp -> Env -> String -> IO (Env, Options)
 parseCommands s old_env cmds = do
   alloca $ \env_ptr -> do
     alloca $ \ios_ptr -> do
-      runLeanPartialAction $ lean_parse_commands old_env (someIOS s) cmds env_ptr ios_ptr
+      runLeanAction $ lean_parse_commands old_env (someIOS s) cmds env_ptr ios_ptr
       new_env <- mkLeanValue =<< peek env_ptr
       new_ios <- mkLeanValue =<< peek ios_ptr
       new_ops <- getStateOptions new_ios
@@ -92,7 +92,7 @@ parseExpr :: IOState tp -> Env -> String -> IO (Expr, List Name)
 parseExpr s old_env input = do
   alloca $ \expr_ptr -> do
     alloca $ \univ_ptr -> do
-      runLeanPartialAction $ lean_parse_expr old_env (someIOS s) input expr_ptr univ_ptr
+      runLeanAction $ lean_parse_expr old_env (someIOS s) input expr_ptr univ_ptr
       new_expr <- mkLeanValue =<< peek expr_ptr
       new_univs <- mkLeanValue =<< peek univ_ptr
       seq new_expr $ do

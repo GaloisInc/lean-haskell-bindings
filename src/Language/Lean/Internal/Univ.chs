@@ -68,7 +68,7 @@ instance IsLeanValue Univ (Ptr Univ) where
 -- Equality and comparison of universes.
 
 instance Eq Univ where
-  x == y = tryGetLeanValue $ lean_univ_eq x y
+  x == y = getLeanValue $ lean_univ_eq x y
 
 {#fun unsafe lean_univ_eq
   { `Univ'
@@ -78,7 +78,7 @@ instance Eq Univ where
   } -> `Bool' #}
 
 instance Ord Univ where
-  x <= y = not (tryGetLeanValue $ y `lean_univ_quick_lt` x)
+  x <= y = not (getLeanValue $ y `lean_univ_quick_lt` x)
 
 {#fun unsafe lean_univ_quick_lt
   { `Univ'
@@ -89,7 +89,7 @@ instance Ord Univ where
 
 -- | Total ordering over universes using structural equality.
 univLt :: Univ -> Univ -> Bool
-univLt x y = tryGetLeanValue $ x `lean_univ_lt` y
+univLt x y = getLeanValue $ x `lean_univ_lt` y
 
 {#fun unsafe lean_univ_lt
   { `Univ'
@@ -106,11 +106,11 @@ instance Show Univ where
 
 -- | Show a universe.
 showUniv :: Univ -> String
-showUniv u = tryGetLeanValue $ lean_univ_to_string u
+showUniv u = getLeanValue $ lean_univ_to_string u
 
 -- | Show a universe with the given options.
 showUnivUsing :: Univ -> Options -> String
-showUnivUsing u options = tryGetLeanValue $ lean_univ_to_string_using u options
+showUnivUsing u options = getLeanValue $ lean_univ_to_string_using u options
 
 {#fun unsafe lean_univ_to_string
   { `Univ'
@@ -155,7 +155,7 @@ foreign import ccall unsafe "&lean_list_univ_del"
 -- ListUniv Eq instance
 
 instance Eq (List Univ) where
-  x == y = tryGetLeanValue $ lean_list_univ_eq x y
+  x == y = getLeanValue $ lean_list_univ_eq x y
 
 {#fun unsafe lean_list_univ_eq
    { `ListUniv'
@@ -178,13 +178,13 @@ instance IsList (List Univ) where
 -- ListUniv IsListIso instance
 
 instance IsListIso (List Univ) where
-  nil = tryGetLeanValue $ lean_list_univ_mk_nil
-  h <| r = tryGetLeanValue $ lean_list_univ_mk_cons h r
+  nil = getLeanValue $ lean_list_univ_mk_nil
+  h <| r = getLeanValue $ lean_list_univ_mk_cons h r
 
   listView l =
     if lean_list_univ_is_cons l then
-      tryGetLeanValue (lean_list_univ_head l)
-        :< tryGetLeanValue (lean_list_univ_tail l)
+      getLeanValue (lean_list_univ_head l)
+        :< getLeanValue (lean_list_univ_tail l)
     else
       Nil
 
