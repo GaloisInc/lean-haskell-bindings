@@ -42,6 +42,8 @@ import Language.Lean.Internal.Exception.Unsafe
 {#import Language.Lean.Internal.Inductive#}
 {#import Language.Lean.Internal.Name#}
 
+import Language.Lean.Expr
+
 #include "lean_macros.h"
 #include "lean_bool.h"
 #include "lean_exception.h"
@@ -56,11 +58,15 @@ import Language.Lean.Internal.Exception.Unsafe
 -- Constructing InductiveType
 
 -- | Creates an inductive type
+--
+-- Note thtat this function does not certify that the inductive
+-- type is well-formed or certifiable in any environment.
 inductiveType :: Name -- ^ Name of the inductive type
               -> Expr -- ^ Type of the inductive type
-              -> List Expr -- ^ Constructors (must be a list of local constants)
+              -> List LocalConst -- ^ Constructors
               -> InductiveType
-inductiveType n t cs = getLeanValue $ lean_inductive_type_mk n t cs
+inductiveType n t c =
+  getLeanValue $ lean_inductive_type_mk n t (localConstListToExprList c)
 
 {#fun unsafe lean_inductive_type_mk
  { `Name'
@@ -94,7 +100,7 @@ inductiveTypeType tp = getLeanValue $ lean_inductive_type_get_type tp
  } -> `Bool' #}
 
 -- | Get the list of constructors associated with the given inductive type.
-inductiveTypeConstructors :: InductiveType -> List Expr
+inductiveTypeConstructors :: InductiveType -> List LocalConst
 inductiveTypeConstructors tp = getLeanValue $ lean_inductive_type_get_constructors tp
 
 {#fun unsafe lean_inductive_type_get_constructors

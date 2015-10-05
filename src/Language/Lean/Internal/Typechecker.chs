@@ -14,12 +14,14 @@ Internal declarations for ConstraintSeq and Typechecker.
 module Language.Lean.Internal.Typechecker
   ( Typechecker
   , ConstraintSeq
-    -- * Foreign exports
+    -- * Internal exports
   , ConstraintSeqPtr
   , OutConstraintSeqPtr
   , withConstraintSeq
   , TypecheckerPtr
   , OutTypecheckerPtr
+  , mkTypechecker
+  , typecheckerEnv
   , withTypechecker
   ) where
 
@@ -65,11 +67,15 @@ foreign import ccall unsafe "&lean_cnstr_seq_del"
 -- Typechecker
 
 -- | A Lean typechecker
-newtype Typechecker = Typechecker (ForeignPtr Typechecker)
+data Typechecker = Typechecker !Env !(ForeignPtr Typechecker)
+
+-- | Return the environment associated with a typechecker.
+typecheckerEnv :: Typechecker -> Env
+typecheckerEnv (Typechecker e _) = e
 
 -- | Function @c2hs@ uses to pass @Typechecker@ values to Lean
 withTypechecker :: Typechecker -> (Ptr Typechecker -> IO a) -> IO a
-withTypechecker (Typechecker o) = withForeignPtr $! o
+withTypechecker (Typechecker _ o) = withForeignPtr $! o
 
 {#pointer lean_type_checker as Typechecker foreign newtype nocode#}
 
@@ -78,8 +84,9 @@ withTypechecker (Typechecker o) = withForeignPtr $! o
 -- | Haskell type for @lean_type_checker*@ FFI parameters.
 {#pointer *lean_type_checker as OutTypecheckerPtr -> TypecheckerPtr #}
 
-instance IsLeanValue Typechecker (Ptr Typechecker) where
-  mkLeanValue = fmap Typechecker . newForeignPtr lean_type_checker_del_ptr
+-- | Create a typechecker for the given environment
+mkTypechecker :: Env -> Ptr Typechecker -> IO Typechecker
+mkTypechecker e p = Typechecker e <$> newForeignPtr lean_type_checker_del_ptr p
 
 foreign import ccall unsafe "&lean_type_checker_del"
   lean_type_checker_del_ptr :: FunPtr (TypecheckerPtr -> IO ())

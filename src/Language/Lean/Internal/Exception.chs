@@ -38,15 +38,19 @@ module Language.Lean.Internal.Exception
     -- * FFI types
   , ExceptionPtr
   , OutExceptionPtr
+  , LeanExceptionFn
   , mkLeanException
   , mkLeanExceptionWithEnv
     -- * Partial operations
   , LeanAction
+  , tryRunLeanAction
   , runLeanAction
   , LeanFn
   , runLeanFn
   , runLeanMaybeFn
   , tryRunLeanFn
+  , getPartial
+  , runPartial
   , IsLeanValue(..)
     -- * Options
   , Options
@@ -72,10 +76,11 @@ module Language.Lean.Internal.Exception
   , mkBufferedIOStateWithOptions
     -- * Functions that return a result in IO
   , allocLeanValue
+  , tryAllocLeanValue
   ) where
 
 import Control.Exception
-import Control.Monad (when)
+import Control.Lens (_Right)
 import Data.Typeable
 import Foreign
 import Foreign.C
@@ -278,12 +283,18 @@ instance Exception LeanException
 leanException :: LeanExceptionKind -> String -> LeanException
 leanException = BindingsLeanException
 
+-- A function for creating a Lean exception
+--
+-- Functions to use for this include 'mkLeanException' and
+-- 'mkLeanExceptionWithEnv'.
+type LeanExceptionFn = Ptr LeanException -> IO LeanException
+
 -- | Create a Lean exception from a pointer.
-mkLeanException :: Ptr LeanException -> IO LeanException
+mkLeanException :: LeanExceptionFn
 mkLeanException = fmap RealLeanException . newForeignPtr lean_exception_del_ptr
 
 -- | Create a Lean exception from a pointer.
-mkLeanExceptionWithEnv :: Env -> Options -> Ptr LeanException -> IO LeanException
+mkLeanExceptionWithEnv :: Env -> Options -> LeanExceptionFn
 mkLeanExceptionWithEnv e s p = do
   PrettyLeanException e s <$> newForeignPtr lean_exception_del_ptr p
 
@@ -413,14 +424,27 @@ foreign import ccall unsafe "&lean_env_del"
 -- | A lean partial function is an action that may fail
 type LeanAction = (Ptr ExceptionPtr -> IO Bool)
 
--- | Run a lean partial action, throwing an exception if it fails.
-runLeanAction :: LeanAction -> IO ()
-runLeanAction action =
+
+-- | Run a lean partial action.
+--
+-- This returns the exception if it fails, and 'Nothing' if it succeeds.
+tryRunLeanAction :: LeanAction -> IO (Maybe (Ptr LeanException))
+tryRunLeanAction action =
   alloca $ \ex_ptr -> do
     poke ex_ptr nullPtr
     success <- action ex_ptr
-    when (not success) $ do
-      throwIO =<< mkLeanException =<< peek ex_ptr
+    case success of
+      True -> return $! Nothing
+      False -> Just <$> peek ex_ptr
+{-# INLINE tryRunLeanAction #-}
+
+-- | Run a lean partial action, throwing an exception if it fails.
+runLeanAction :: LeanAction -> IO ()
+runLeanAction action = do
+  res <- tryRunLeanAction action
+  case res of
+    Just p -> throwIO =<< mkLeanException p
+    Nothing -> return $! ()
 {-# INLINE runLeanAction #-}
 
 -- | A lean partial function is a function that returns a value of type @a@, but
@@ -437,19 +461,16 @@ runLeanFn alloc_fn =
 
 -- | Run a lean partial function, but return the exception instead of throwing.
 tryRunLeanFn :: Storable a
-             => (Ptr LeanException -> IO LeanException)
+             => LeanExceptionFn
                 -- ^ Function for creating Lean exception
              -> LeanFn a
              -> IO (Either LeanException a)
 tryRunLeanFn except_fn alloc_fn =
   alloca $ \ret_ptr -> do
-    alloca $ \ex_ptr -> do
-      poke ex_ptr nullPtr
-      success <- alloc_fn ret_ptr ex_ptr
-      if success then
-        Right <$> peek ret_ptr
-      else
-        Left <$> (except_fn =<< peek ex_ptr)
+    res <- tryRunLeanAction (alloc_fn ret_ptr)
+    case res of
+      Nothing -> Right <$> peek ret_ptr
+      Just p  -> Left  <$> except_fn p
 {-# INLINE tryRunLeanFn #-}
 
 -- | Run a lean partial function where false does not automatically imply
@@ -478,8 +499,31 @@ runLeanMaybeFn alloc_fn =
 allocLeanValue :: IsLeanValue a p
                => LeanFn p
                -> IO a
-allocLeanValue = \alloc_fn -> mkLeanValue =<< runLeanFn alloc_fn
+allocLeanValue alloc_fn = mkLeanValue =<< runLeanFn alloc_fn
 {-# INLINE allocLeanValue #-}
+
+-- | Try to run a Lean partial function that returns a Lean value
+-- that will need to be freed.
+tryAllocLeanValue :: IsLeanValue a p
+                  => LeanExceptionFn
+                  -> LeanFn p
+                  -> IO (Either LeanException a)
+tryAllocLeanValue e_fn a_fn = _Right mkLeanValue =<< tryRunLeanFn e_fn a_fn
+{-# INLINE tryAllocLeanValue #-}
+
+-- | Get the value that may be an exception, throwing it if it does.
+getPartial :: Either LeanException a -> a
+getPartial (Left l) = throw l
+getPartial (Right r) = r
+
+-- | Run an action that may return an exception, and throw the exception
+-- if it does.
+runPartial :: IO (Either LeanException a) -> IO a
+runPartial m = do
+  e <- m
+  case e of
+    Left l -> throwIO l
+    Right r -> return r
 
 ------------------------------------------------------------------------
 -- Options Monoid instance

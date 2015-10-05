@@ -18,12 +18,12 @@ module Language.Lean.Module
 import Foreign
 import Foreign.C
 
-import Language.Lean.List
-
 {#import Language.Lean.Internal.Exception#}
 import Language.Lean.Internal.Exception.Unsafe
 {#import Language.Lean.Internal.Name#}
 {#import Language.Lean.Internal.String#}
+import Language.Lean.IOS (getStateOptions)
+import Language.Lean.List
 
 #include "lean_macros.h"
 #include "lean_bool.h"
@@ -36,9 +36,20 @@ import Language.Lean.Internal.Exception.Unsafe
 #include "lean_ios.h"
 #include "lean_module.h"
 
--- | Import the given module names into the lean environment
+-- | Import the given module names into the lean environment.
+--
+-- This returns the exception if the import fails, and the new
+-- environment if it succeeds.
+envTryImport :: IOState tp -> Env -> List Name -> IO (Either LeanException Env)
+envTryImport s e names = do
+  o <- getStateOptions s
+  tryAllocLeanValue (mkLeanExceptionWithEnv e o) $ lean_env_import e (someIOS s) names
+
+-- | Import the given module names into the lean environment.
+--
+-- This throws a `'LeanException' if the import fails.
 envImport :: IOState tp -> Env -> List Name -> IO Env
-envImport s e names = allocLeanValue $ lean_env_import e (someIOS s) names
+envImport s e names = runPartial $ envTryImport s e names
 
 {#fun lean_env_import
  { `Env'

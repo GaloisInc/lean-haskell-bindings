@@ -8,7 +8,9 @@ Operations for Lean expressions.
 -}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE Trustworthy #-}
 module Language.Lean.Expr
   ( MacroDef
@@ -41,6 +43,7 @@ module Language.Lean.Expr
   , localConstName
   , localConstPrettyName
   , localConstType
+  , localConstListToExprList
   ) where
 
 import Foreign
@@ -128,6 +131,27 @@ localConstPrettyName x = getLeanValue $ lean_expr_get_local_pp_name $ localConst
 -- | Get the type of the local constant
 localConstType :: LocalConst -> Expr
 localConstType x = getLeanValue $ lean_expr_get_mlocal_type $ localConstExpr x
+
+------------------------------------------------------------------------
+-- List LocalConst
+
+-- | A list of expressions (constructor not actually exported)
+newtype instance List LocalConst = ListLocalConst (List Expr)
+  deriving ( IsListIso)
+
+localConstListToExprList :: List LocalConst -> List Expr
+localConstListToExprList (ListLocalConst l) = l
+
+instance Show (List LocalConst) where
+  show (ListLocalConst l) = show l
+
+instance IsList (List LocalConst) where
+  type Item (List LocalConst) = LocalConst
+  fromList l = ListLocalConst (fromList (localConstExpr <$> l))
+  toList (ListLocalConst l) = LocalConst <$> toList l
+
+instance IsLeanValue (List LocalConst) ListExprPtr where
+  mkLeanValue p = ListLocalConst <$> mkLeanValue p
 
 ------------------------------------------------------------------------
 -- Expression constructors

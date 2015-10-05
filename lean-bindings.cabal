@@ -42,7 +42,6 @@ library
     bytestring,
     lens,
     text
-
   if flag(use-integer-simple)
      build-depends: integer-simple
   else
