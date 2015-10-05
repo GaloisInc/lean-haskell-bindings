@@ -255,6 +255,10 @@ declView x =
 --
 -- Throws a `LeanException` with kind `LeanKernelException` if the
 -- certification fails.
+--
+-- Certification can fail if a declaration with the same name already
+-- exists in the environment, if the declaration refers to undefined
+-- globals, or if typechecking fails.
 certify :: Env -> Decl ->  CertDecl
 certify e d = getLeanValue $ lean_decl_check e d
 

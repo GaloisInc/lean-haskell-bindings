@@ -6,13 +6,16 @@ Maintainer  : jhendrix@galois.com, lcasburn@galois.com
 
 Operations for Lean expressions.
 -}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE Trustworthy #-}
 module Language.Lean.Expr
   ( MacroDef
-  , Expr
   , BinderKind(..)
-    -- * Constructors
+    -- * Expressions
+  , Expr
+    -- ** Constructors
   , varExpr
   , sortExpr
   , constExpr
@@ -20,15 +23,24 @@ module Language.Lean.Expr
   , lambdaExpr
   , piExpr
   , macroExpr
+  , localConstExpr
   , localExpr
   , localExtExpr
   , metavarExpr
-    -- * View
+    -- ** View
   , ExprView(..)
   , exprView
-    -- * Operations
+    -- ** Operations
   , exprLt
   , exprToString
+    -- * Local constant
+  , LocalConst
+  , localConst
+  , localConstExt
+  , localConstBinderKind
+  , localConstName
+  , localConstPrettyName
+  , localConstType
   ) where
 
 import Foreign
@@ -49,6 +61,73 @@ import Language.Lean.Internal.Exception.Unsafe
 #include "lean_options.h"
 #include "lean_univ.h"
 #include "lean_expr.h"
+
+------------------------------------------------------------------------
+-- LocalConst
+
+-- | A local constant
+--
+-- Internally, local constants are just expressions, but we use this to
+-- refine the types in the interface.
+newtype LocalConst = LocalConst Expr
+
+-- | Return the expression representing this local constant.
+localConstExpr :: LocalConst -> Expr
+localConstExpr (LocalConst e) = e
+{-# INLINE localConstExpr #-}
+
+instance Eq LocalConst where
+  x == y = localConstExpr x == localConstExpr y
+
+instance Show LocalConst where
+  show x = show (localConstExpr x)
+
+instance IsLeanValue LocalConst (Ptr Expr) where
+  mkLeanValue p = LocalConst <$> mkLeanValue p
+
+-- | Create a local constant with the given name and type.
+localConst :: Name -> Expr -> LocalConst
+localConst nm tp = getLeanValue $ lean_expr_mk_local nm tp
+
+{#fun unsafe lean_expr_mk_local
+  { `Name'
+  , `Expr'
+  , `OutExprPtr'
+  , `OutExceptionPtr'
+  } -> `Bool' #}
+
+-- | Create a local constant with additional parameters
+localConstExt :: BinderKind -- ^ The binder kind for expression
+              -> Name -- ^ The name of expression
+              -> Name -- ^ The pretty print name
+              -> Expr -- ^ The type of the expression
+              -> LocalConst
+localConstExt k nm ppnm tp = getLeanValue $ lean_expr_mk_local_ext nm ppnm tp k
+
+{#fun unsafe lean_expr_mk_local_ext
+  { `Name'
+  , `Name'
+  , `Expr'
+  , `BinderKind'
+  , `OutExprPtr'
+  , `OutExceptionPtr'
+  } -> `Bool' #}
+
+-- | Get the kind of bindng for the local constant.
+localConstBinderKind :: LocalConst -> BinderKind
+localConstBinderKind x = getEnum $ lean_expr_get_local_binder_kind $ localConstExpr x
+
+-- | Get the name of the local constant.
+localConstName :: LocalConst -> Name
+localConstName x = getLeanValue $ lean_expr_get_mlocal_name $ localConstExpr x
+
+-- | Get the name for pretty printing the local constant.
+localConstPrettyName :: LocalConst -> Name
+localConstPrettyName x = getLeanValue $ lean_expr_get_local_pp_name $ localConstExpr x
+
+-- | Get the type of the local constant
+localConstType :: LocalConst -> Expr
+localConstType x = getLeanValue $ lean_expr_get_mlocal_type $ localConstExpr x
 
 ------------------------------------------------------------------------
 -- Expression constructors
@@ -132,34 +211,6 @@ macroExpr m args = getLeanValue $ lean_expr_mk_macro m args
   , `OutExceptionPtr'
   } -> `Bool' #}
 
--- | Create a local constant with the given name and type.
-localExpr :: Name -> Expr -> Expr
-localExpr nm tp = getLeanValue $ lean_expr_mk_local nm tp
-
-{#fun unsafe lean_expr_mk_local
-  { `Name'
-  , `Expr'
-  , `OutExprPtr'
-  , `OutExceptionPtr'
-  } -> `Bool' #}
-
--- | Create a local constant with additional parameters
-localExtExpr :: BinderKind -- ^ The binder kind for expression
-             -> Name -- ^ The name of expression
-             -> Name -- ^ The pretty print name
-             -> Expr -- ^ The type of the expression
-             -> Expr
-localExtExpr k nm ppnm tp = getLeanValue $ lean_expr_mk_local_ext nm ppnm tp k
-
-{#fun unsafe lean_expr_mk_local_ext
-  { `Name'
-  , `Name'
-  , `Expr'
-  , `BinderKind'
-  , `OutExprPtr'
-  , `OutExceptionPtr'
-  } -> `Bool' #}
-
 -- | Create a metavariable with the given name @nm@ and type @tp@.
 metavarExpr :: Name -> Expr -> Expr
 metavarExpr nm tp = getLeanValue $ lean_expr_mk_metavar nm tp
@@ -171,6 +222,21 @@ metavarExpr nm tp = getLeanValue $ lean_expr_mk_metavar nm tp
   , `OutExceptionPtr'
   } -> `Bool' #}
 
+-- | Create a expression from the local cosntant with the given name and type.
+--
+-- 'localExpr nm tp' is equivalent to 'localConstExpr (localConst nm tp)'
+localExpr :: Name -> Expr -> Expr
+localExpr nm tp = localConstExpr $ localConst nm tp
+
+-- | Create a local constant with additional parameters
+localExtExpr :: BinderKind -- ^ The binder kind for expression
+             -> Name -- ^ The name of expression
+             -> Name -- ^ The pretty print name
+             -> Expr -- ^ The type of the expression
+             -> Expr
+localExtExpr k nm ppnm tp = localConstExpr $ localConstExt k nm ppnm tp
+
+
 ------------------------------------------------------------------------
 -- Expression view
 
@@ -179,7 +245,7 @@ data ExprView
   = ExprVar Word32
   | ExprSort Univ
   | ExprConst Name (List Univ)
-  | ExprLocal BinderKind Name Name Expr
+  | ExprLocal !LocalConst
   | ExprMeta Name Expr
   | ExprApp Expr Expr
   | ExprLambda BinderKind Name Expr Expr
@@ -199,10 +265,7 @@ exprView x =
       ExprConst (getLeanValue $ lean_expr_get_const_name x)
                 (getLeanValue $ lean_expr_get_const_univs x)
     LEAN_EXPR_LOCAL ->
-      ExprLocal (getEnum $ lean_expr_get_local_binder_kind x)
-                (getLeanValue $ lean_expr_get_mlocal_name x)
-                (getLeanValue $ lean_expr_get_local_pp_name x)
-                (getLeanValue $ lean_expr_get_mlocal_type x)
+      ExprLocal (LocalConst x)
     LEAN_EXPR_META ->
       ExprMeta  (getLeanValue $ lean_expr_get_mlocal_name x)
                 (getLeanValue $ lean_expr_get_mlocal_type x)

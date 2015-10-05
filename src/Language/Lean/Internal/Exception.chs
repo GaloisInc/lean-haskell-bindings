@@ -353,11 +353,16 @@ leanExceptionPtrPrettyMessage e o fnPtr = unsafePerformIO $ do
   withForeignPtr fnPtr $ \p -> do
     allocLeanValue $ lean_exception_to_pp_string e (someIOS ios) p
 
+decodeExceptionMessage :: CString -> IO String
+decodeExceptionMessage cstr
+  | cstr == nullPtr = return "Error decoding exception message"
+  | otherwise = getLeanString cstr
+
 {#fun unsafe lean_exception_get_message
- { `ExceptionPtr' } -> `String' getLeanString* #}
+ { `ExceptionPtr' } -> `String' decodeExceptionMessage* #}
 
 {#fun unsafe lean_exception_get_detailed_message
- { `ExceptionPtr' } -> `String' getLeanString* #}
+ { `ExceptionPtr' } -> `String' decodeExceptionMessage* #}
 
 {#fun unsafe lean_exception_to_pp_string
   { `Env'
