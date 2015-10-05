@@ -283,10 +283,10 @@ instance Exception LeanException
 leanException :: LeanExceptionKind -> String -> LeanException
 leanException = BindingsLeanException
 
--- A function for creating a Lean exception
+-- | A function for creating a Lean exception
 --
--- Functions to use for this include 'mkLeanException' and
--- 'mkLeanExceptionWithEnv'.
+-- Functions that can create a compatible function include 'mkLeanException'
+-- and 'mkLeanExceptionWithEnv'.
 type LeanExceptionFn = Ptr LeanException -> IO LeanException
 
 -- | Create a Lean exception from a pointer.

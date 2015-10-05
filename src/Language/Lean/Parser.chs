@@ -39,6 +39,8 @@ import Language.Lean.List
 --
 -- This returns the new environment along with the options after any commands
 -- modified it.
+--
+-- This will throw a 'LeanException' if parsing fails.
 parseFile :: IOState tp -> Env -> FilePath -> IO (Env, Options)
 parseFile s old_env path = do
   alloca $ \env_ptr -> do
@@ -64,6 +66,8 @@ parseFile s old_env path = do
 --
 -- This returns the new environment along with the options after any commands
 -- modified it.
+--
+-- This will throw a 'LeanException' if parsing fails.
 parseCommands :: IOState tp -> Env -> String -> IO (Env, Options)
 parseCommands s old_env cmds = do
   alloca $ \env_ptr -> do
@@ -88,6 +92,8 @@ parseCommands s old_env cmds = do
 --
 -- This returns the expression along with the universe parameters that were automatically
 -- generated.
+--
+-- This will throw a 'LeanException' if parsing fails.
 parseExpr :: IOState tp -> Env -> String -> IO (Expr, List Name)
 parseExpr s old_env input = do
   alloca $ \expr_ptr -> do

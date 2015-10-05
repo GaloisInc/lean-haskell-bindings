@@ -139,6 +139,7 @@ localConstType x = getLeanValue $ lean_expr_get_mlocal_type $ localConstExpr x
 newtype instance List LocalConst = ListLocalConst (List Expr)
   deriving ( IsListIso)
 
+-- | Convert a list of local constants to a list of expressions.
 localConstListToExprList :: List LocalConst -> List Expr
 localConstListToExprList (ListLocalConst l) = l
 
