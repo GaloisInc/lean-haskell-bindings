@@ -43,7 +43,8 @@ import Language.Lean.List
 envTryImport :: IOState tp -> Env -> List Name -> IO (Either LeanException Env)
 envTryImport s e names = do
   o <- getStateOptions s
-  tryAllocLeanValue (mkLeanExceptionWithEnv e o) $ lean_env_import e (someIOS s) names
+  tryAllocLeanValue (mkLeanExceptionWithEnvAndOptions e o) $
+    lean_env_import e (someIOS s) names
 
 -- | Import the given module names into the lean environment.
 --
@@ -61,7 +62,8 @@ envImport s e names = runPartial $ envTryImport s e names
 
 -- | Export the lean environment to a path.
 envExport :: Env -> FilePath -> IO ()
-envExport e path = runLeanAction $ lean_env_export e path
+envExport e path = runLeanAction (mkLeanExceptionWithEnv e) $
+  lean_env_export e path
 
 {#fun lean_env_export
    { `Env'

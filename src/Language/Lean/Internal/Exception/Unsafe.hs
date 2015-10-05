@@ -27,8 +27,8 @@ import Language.Lean.Internal.Exception
 -- Other than allocating a new value or throwing an exception,
 -- the function should be pure.
 getEnum :: Enum a => LeanFn CInt -> a
-getEnum alloc_fn =
-  toEnum $ fromIntegral $ unsafePerformIO $ runLeanFn alloc_fn
+getEnum alloc_fn = do
+  toEnum $ fromIntegral $ unsafePerformIO $ runLeanFn mkLeanException alloc_fn
 
 -- | Run a Lean partial function that returns a Lean value.
 --
@@ -36,7 +36,7 @@ getEnum alloc_fn =
 -- pure.
 getLeanValue :: IsLeanValue a p => LeanFn p -> a
 getLeanValue alloc_fn = unsafePerformIO $ do
-  allocLeanValue alloc_fn
+  allocLeanValue mkLeanException alloc_fn
 {-# INLINE getLeanValue #-}
 
 -- | Try to run a Lean partial function that returns a Lean value
@@ -59,5 +59,5 @@ tryGetLeanValue except_fn alloc_fn = unsafePerformIO $ do
 -- the function should be pure.
 getLeanMaybeValue :: IsLeanValue a p => LeanFn p -> Maybe a
 getLeanMaybeValue alloc_fn = unsafePerformIO $ do
-  traverse mkLeanValue =<< runLeanMaybeFn alloc_fn
+  traverse mkLeanValue =<< runLeanMaybeFn mkLeanException alloc_fn
 {-# INLINE getLeanMaybeValue #-}

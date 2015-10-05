@@ -42,10 +42,12 @@ import Language.Lean.List
 --
 -- This will throw a 'LeanException' if parsing fails.
 parseFile :: IOState tp -> Env -> FilePath -> IO (Env, Options)
-parseFile s old_env path = do
+parseFile old_ios old_env path = do
   alloca $ \env_ptr -> do
     alloca $ \ios_ptr -> do
-      runLeanAction $ lean_parse_file old_env (someIOS s) path env_ptr ios_ptr
+      old_ops <- getStateOptions old_ios
+      runLeanAction (mkLeanExceptionWithEnvAndOptions old_env old_ops) $
+        lean_parse_file old_env (someIOS old_ios) path env_ptr ios_ptr
       new_env <- mkLeanValue =<< peek env_ptr
       new_ios <- mkLeanValue =<< peek ios_ptr
       new_ops <- getStateOptions new_ios
@@ -69,10 +71,12 @@ parseFile s old_env path = do
 --
 -- This will throw a 'LeanException' if parsing fails.
 parseCommands :: IOState tp -> Env -> String -> IO (Env, Options)
-parseCommands s old_env cmds = do
+parseCommands old_ios old_env cmds = do
   alloca $ \env_ptr -> do
     alloca $ \ios_ptr -> do
-      runLeanAction $ lean_parse_commands old_env (someIOS s) cmds env_ptr ios_ptr
+      old_ops <- getStateOptions old_ios
+      runLeanAction (mkLeanExceptionWithEnvAndOptions old_env old_ops) $
+        lean_parse_commands old_env (someIOS old_ios) cmds env_ptr ios_ptr
       new_env <- mkLeanValue =<< peek env_ptr
       new_ios <- mkLeanValue =<< peek ios_ptr
       new_ops <- getStateOptions new_ios
@@ -98,7 +102,9 @@ parseExpr :: IOState tp -> Env -> String -> IO (Expr, List Name)
 parseExpr s old_env input = do
   alloca $ \expr_ptr -> do
     alloca $ \univ_ptr -> do
-      runLeanAction $ lean_parse_expr old_env (someIOS s) input expr_ptr univ_ptr
+      old_ops <- getStateOptions s
+      runLeanAction (mkLeanExceptionWithEnvAndOptions old_env old_ops) $
+        lean_parse_expr old_env (someIOS s) input expr_ptr univ_ptr
       new_expr <- mkLeanValue =<< peek expr_ptr
       new_univs <- mkLeanValue =<< peek univ_ptr
       seq new_expr $ do

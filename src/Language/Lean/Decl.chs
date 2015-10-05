@@ -267,7 +267,7 @@ certify e d = getLeanValue $ lean_decl_check e d
 --
 -- Returns either an exception or the certified declaration.
 tryCertify :: Env -> Decl -> Either LeanException CertDecl
-tryCertify e d = tryGetLeanValue (mkLeanExceptionWithEnv e emptyOptions) $
+tryCertify e d = tryGetLeanValue (mkLeanExceptionWithEnv e) $
   lean_decl_check e d
 
 {#fun unsafe lean_decl_check

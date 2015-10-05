@@ -65,7 +65,7 @@ mkStandardIOState = mkStandardIOStateWithOptions emptyOptions
 
 -- | Create a standard IO state object with the given options.
 mkStandardIOStateWithOptions :: Options -> IO (IOState 'Standard)
-mkStandardIOStateWithOptions o = allocLeanValue $ lean_ios_mk_std o
+mkStandardIOStateWithOptions o = allocLeanValue mkLeanException $ lean_ios_mk_std o
 
 {#fun unsafe lean_ios_mk_std
  { `Options', `OutSomeIOStatePtr', `OutExceptionPtr' } -> `Bool' #}
@@ -80,28 +80,30 @@ mkBufferedIOState = mkBufferedIOStateWithOptions emptyOptions
 
 -- | Return the regular output associated with a state.
 getRegularOutput :: IOState 'Buffered -> IO String
-getRegularOutput s = allocLeanValue $ lean_ios_get_regular (someIOS s)
+getRegularOutput s = allocLeanValue mkLeanException $ lean_ios_get_regular (someIOS s)
 
 {#fun unsafe lean_ios_get_regular
  { `SomeIOState', id `Ptr CString', `OutExceptionPtr' } -> `Bool' #}
 
 -- | Reset the regular output associated with a state.
 resetRegularOutput :: IOState 'Buffered -> IO ()
-resetRegularOutput s = runLeanAction $ lean_ios_reset_regular (someIOS s)
+resetRegularOutput s = runLeanAction mkLeanException $
+  lean_ios_reset_regular (someIOS s)
 
 {#fun unsafe lean_ios_reset_regular
  { `SomeIOState',`OutExceptionPtr' } -> `Bool' #}
 
 -- | Return the diagnostic output associated with a state.
 getDiagnosticOutput :: IOState 'Buffered -> IO String
-getDiagnosticOutput s = allocLeanValue $ lean_ios_get_diagnostic (someIOS s)
+getDiagnosticOutput s = allocLeanValue mkLeanException $ lean_ios_get_diagnostic (someIOS s)
 
 {#fun unsafe lean_ios_get_diagnostic
  { `SomeIOState', id `Ptr CString', `OutExceptionPtr' } -> `Bool' #}
 
 -- | Clear the diagnostic output associated with a state.
 resetDiagnosticOutput :: IOState 'Buffered -> IO ()
-resetDiagnosticOutput s = runLeanAction $ lean_ios_reset_diagnostic (someIOS s)
+resetDiagnosticOutput s = runLeanAction mkLeanException $
+  lean_ios_reset_diagnostic (someIOS s)
 
 {#fun unsafe lean_ios_reset_diagnostic
  { `SomeIOState',`OutExceptionPtr' } -> `Bool' #}
@@ -133,14 +135,15 @@ stateTypeRepr s
 
 -- | Get the options associated with the state.
 getStateOptions :: IOState tp -> IO Options
-getStateOptions ios = allocLeanValue $ lean_ios_get_options (someIOS ios)
+getStateOptions ios = allocLeanValue mkLeanException $ lean_ios_get_options (someIOS ios)
 
 {#fun unsafe lean_ios_get_options
  { `SomeIOState', `OutOptionsPtr', `OutExceptionPtr' } -> `Bool' #}
 
 -- | Set the options associated with the state.
 setStateOptions :: IOState tp -> Options -> IO ()
-setStateOptions ios ops = runLeanAction $ lean_ios_set_options (someIOS ios) ops
+setStateOptions ios ops = runLeanAction mkLeanException $
+  lean_ios_set_options (someIOS ios) ops
 
 {#fun unsafe lean_ios_set_options
  { `SomeIOState', `Options', `OutExceptionPtr' } -> `Bool' #}
@@ -156,8 +159,8 @@ ppExpr env e = ppExprWithOptions env e emptyOptions
 ppExprWithOptions :: Env -> Expr -> Options -> String
 ppExprWithOptions env e o = unsafePerformIO $ do
   s <- mkBufferedIOStateWithOptions o
-  allocLeanValue $ lean_expr_to_pp_string env (someIOS s) e
-
+  allocLeanValue mkLeanException $ do
+    lean_expr_to_pp_string env (someIOS s) e
 
 {#fun unsafe lean_expr_to_pp_string
   { `Env'

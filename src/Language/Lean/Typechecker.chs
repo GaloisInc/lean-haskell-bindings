@@ -72,7 +72,7 @@ tryGetLeanPair except_fn alloc_fn = unsafePerformIO $ do
 -- | Create a type checker object for the given environment.
 typechecker :: Env -> Typechecker
 typechecker e = unsafePerformIO $ do
-  mkTypechecker e =<< runLeanFn (lean_type_checker_mk e)
+  mkTypechecker e =<< runLeanFn (mkLeanExceptionWithEnv e) (lean_type_checker_mk e)
 
 {#fun unsafe lean_type_checker_mk
  { `Env', `OutTypecheckerPtr', `OutExceptionPtr' } -> `Bool' #}
@@ -99,7 +99,7 @@ inferType t e = getPartial $ tryInferType t e
 -- This version allows the exception to be pattern matched against.
 tryInferType :: Typechecker -> Expr -> Either LeanException (Expr, ConstraintSeq)
 tryInferType t e = tryGetLeanPair e_fn $ lean_type_checker_infer t e
-  where e_fn = mkLeanExceptionWithEnv (typecheckerEnv t) emptyOptions
+  where e_fn = mkLeanExceptionWithEnv (typecheckerEnv t)
 
 {#fun unsafe lean_type_checker_infer
      { `Typechecker'
@@ -128,7 +128,7 @@ checkType t e = getPartial $ tryCheckType t e
 -- This version allows the exception to be pattern matched against.
 tryCheckType :: Typechecker -> Expr -> Either LeanException (Expr, ConstraintSeq)
 tryCheckType t e = tryGetLeanPair e_fn $ lean_type_checker_check t e
-  where e_fn = mkLeanExceptionWithEnv (typecheckerEnv t) emptyOptions
+  where e_fn = mkLeanExceptionWithEnv (typecheckerEnv t)
 
 {#fun unsafe lean_type_checker_check
      { `Typechecker'
@@ -155,7 +155,7 @@ whnf t e = getPartial $ tryWhnf t e
 -- type @ExprVar@).
 tryWhnf :: Typechecker -> Expr -> Either LeanException (Expr, ConstraintSeq)
 tryWhnf t e = tryGetLeanPair e_fn $ lean_type_checker_whnf t e
-  where e_fn = mkLeanExceptionWithEnv (typecheckerEnv t) emptyOptions
+  where e_fn = mkLeanExceptionWithEnv (typecheckerEnv t)
 
 {#fun unsafe lean_type_checker_whnf
      { `Typechecker'
@@ -182,7 +182,7 @@ isDefEq t e1 e2 = getPartial $ tryIsDefEq t e1 e2
 -- (subexpressions with type @ExprVar@).
 tryIsDefEq :: Typechecker -> Expr -> Expr -> Either LeanException (Bool, ConstraintSeq)
 tryIsDefEq t e1 e2 = tryGetLeanPair e_fn $ lean_type_checker_is_def_eq t e1 e2
-  where e_fn = mkLeanExceptionWithEnv (typecheckerEnv t) emptyOptions
+  where e_fn = mkLeanExceptionWithEnv (typecheckerEnv t)
 
 {#fun unsafe lean_type_checker_is_def_eq
      { `Typechecker'

@@ -136,7 +136,7 @@ trustHigh = TrustLevel {#const LEAN_TRUST_HIGH#}
 --
 -- The returned an environment is not a descendant of any other environment.
 standardEnv :: TrustLevel -> IO Env
-standardEnv lvl = allocLeanValue $ lean_env_mk_std lvl
+standardEnv lvl = allocLeanValue mkLeanException $ lean_env_mk_std lvl
 
 {#fun unsafe lean_env_mk_std
   { trustUInt `TrustLevel'
@@ -148,7 +148,7 @@ standardEnv lvl = allocLeanValue $ lean_env_mk_std lvl
 --
 -- The returned an environment is not a descendant of any other environment.
 hottEnv :: TrustLevel -> IO Env
-hottEnv lvl = allocLeanValue $ lean_env_mk_hott lvl
+hottEnv lvl = allocLeanValue mkLeanException $ lean_env_mk_hott lvl
 
 {#fun unsafe lean_env_mk_hott
   { trustUInt `TrustLevel'
@@ -184,7 +184,8 @@ hottEnv lvl = allocLeanValue $ lean_env_mk_hott lvl
 --
 -- The returned an environment is a descendant of the input environment.
 envAddUniv :: Name -> Env -> IO Env
-envAddUniv u e = allocLeanValue $ lean_env_add_univ e u
+envAddUniv u e = allocLeanValue (mkLeanExceptionWithEnv e) $
+  lean_env_add_univ e u
 
 {#fun unsafe lean_env_add_univ
   { `Env'
@@ -229,7 +230,7 @@ foreign import ccall "wrapper" wrapNameVisitFn :: WrapLeanVisitFn NamePtr
 --
 -- The returned an environment is a descendant of the input environment.
 envAddCertDecl :: CertDecl -> Env -> IO Env
-envAddCertDecl d e = allocLeanValue $ lean_env_add e d
+envAddCertDecl d e = allocLeanValue (mkLeanExceptionWithEnv e) $ lean_env_add e d
 
 {#fun unsafe lean_env_add
   { `Env'
@@ -249,7 +250,7 @@ envAddCertDecl d e = allocLeanValue $ lean_env_add e d
 --
 -- The returned environment is a descendant of the input environment.
 envReplaceAxiom :: CertDecl -> Env -> IO Env
-envReplaceAxiom d e = allocLeanValue $ lean_env_replace e d
+envReplaceAxiom d e = allocLeanValue (mkLeanExceptionWithEnv e) $ lean_env_replace e d
 
 {#fun unsafe lean_env_replace
   { `Env'
@@ -305,7 +306,7 @@ envIsDescendant = lean_env_is_descendant
 -- That is, @envForget x@ will return an environment @y@ that is only a descendant of
 -- itself.
 envForget :: Env -> IO Env
-envForget x = allocLeanValue $ lean_env_forget x
+envForget x = allocLeanValue (mkLeanExceptionWithEnv x) $ lean_env_forget x
 
 -- |  Return the declaration with the given name in the environment if any.
 {#fun unsafe lean_env_forget
