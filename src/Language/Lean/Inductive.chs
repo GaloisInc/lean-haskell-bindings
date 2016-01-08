@@ -16,6 +16,7 @@ module Language.Lean.Inductive
   , inductiveTypeType
   , inductiveTypeConstructors
   , recursorName
+  , ListInductiveType
     -- * Inductive declarations
   , InductiveDecl
   , inductiveDecl
