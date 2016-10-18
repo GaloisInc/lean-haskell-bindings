@@ -24,6 +24,7 @@ addons:
     - liblua5.2-0
     - liblua5.2-dev
     - cmake
+    - cmake-data
     - g++-4.9
     - ghc-7.10.3
     - cabal-install-1.22
