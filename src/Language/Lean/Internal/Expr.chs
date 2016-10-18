@@ -11,7 +11,7 @@ Internal declarations for Lean expressions and typeclass instances for @Expr@.
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE Trustworthy #-}
-{-# OPTIONS_GHC -Wno-unused-imports #-}
+{-# OPTIONS_GHC -fno-warn-unused-imports #-}
 {-# OPTIONS_HADDOCK not-home #-}
 module Language.Lean.Internal.Expr
   ( -- * Macro definitions

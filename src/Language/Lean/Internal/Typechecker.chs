@@ -10,7 +10,7 @@ Internal declarations for ConstraintSeq and Typechecker.
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE Safe #-}
-{-# OPTIONS_GHC -Wno-unused-imports #-}
+{-# OPTIONS_GHC -fno-warn-unused-imports #-}
 {-# OPTIONS_HADDOCK not-home #-}
 module Language.Lean.Internal.Typechecker
   ( Typechecker
