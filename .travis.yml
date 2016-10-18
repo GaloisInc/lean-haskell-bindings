@@ -14,8 +14,9 @@ addons:
   apt:
     sources:
     - hvr-ghc
-    - kalakris-cmake
     - ubuntu-toolchain-r-test
+    # Install ppa for more recent cmake
+    - george-edison55-precise-backports
     packages:
     - libgmp-dev
     - libmpfr-dev
