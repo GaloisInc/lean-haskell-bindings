@@ -2,6 +2,6 @@ flags: {}
 packages:
 - '.'
 extra-deps: []
-resolver: lts-4.0
+resolver: lts-7.3
 extra-include-dirs:
 - /use/local/include/

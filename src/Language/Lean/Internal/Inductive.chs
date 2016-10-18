@@ -11,6 +11,7 @@ Internal declarations for inductive types and declarations.
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE Trustworthy #-}
+{-# OPTIONS_GHC -Wno-unused-imports #-}
 {-# OPTIONS_HADDOCK not-home #-}
 module Language.Lean.Internal.Inductive
   ( InductiveType
@@ -31,7 +32,6 @@ import Control.Lens (toListOf)
 import Foreign
 import Foreign.C
 import Language.Lean.List
-import System.IO.Unsafe
 
 {#import Language.Lean.Internal.Exception#}
 import Language.Lean.Internal.Exception.Unsafe
@@ -99,11 +99,13 @@ foreign import ccall unsafe "&lean_list_inductive_type_del"
 -- List InductiveType Eq instance
 
 instance Eq (List InductiveType) where
-  (==) = lean_list_inductive_type_eq
+  x == y = getLeanValue $ lean_list_inductive_type_eq x y
 
-{#fun pure unsafe lean_list_inductive_type_eq
+{#fun unsafe lean_list_inductive_type_eq
    { `ListInductiveType'
    , `ListInductiveType'
+   , id `Ptr CInt'
+   , `OutExceptionPtr'
    } -> `Bool' #}
 
 ------------------------------------------------------------------------

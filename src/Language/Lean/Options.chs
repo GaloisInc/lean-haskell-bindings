@@ -31,7 +31,6 @@ import Control.Exception (throw)
 import Control.Lens
 import Foreign
 import Foreign.C
-import System.IO.Unsafe
 
 {#import Language.Lean.Internal.Exception #}
 import Language.Lean.Internal.Exception.Unsafe
@@ -133,7 +132,7 @@ import Language.Lean.Internal.Exception.Unsafe
 -- | Lens for getting and setting boolean options without
 --   rewriting equivalent values
 simpleLensEq :: forall a p
-              . (IsLeanValue a p, Eq a)
+              . (IsLeanValue a p)
              => (Options -> Name -> LeanFn p)
              -> (Options -> Name -> a -> LeanFn OptionsPtr)
              -> Name

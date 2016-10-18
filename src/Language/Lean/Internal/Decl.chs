@@ -11,6 +11,7 @@ certified declarations.
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE Safe #-}
+{-# OPTIONS_GHC -Wno-unused-imports #-}
 {-# OPTIONS_HADDOCK not-home #-}
 module Language.Lean.Internal.Decl
   ( -- * Declaration
@@ -25,7 +26,8 @@ module Language.Lean.Internal.Decl
   , withCertDecl
   ) where
 
-import Foreign
+import Foreign.ForeignPtr
+import Foreign.Ptr
 
 {#import Language.Lean.Internal.Exception#}
 

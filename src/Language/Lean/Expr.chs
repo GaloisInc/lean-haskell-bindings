@@ -12,6 +12,7 @@ Operations for Lean expressions.
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE Trustworthy #-}
+{-# OPTIONS_GHC -Wwarn #-}
 module Language.Lean.Expr
   ( MacroDef
   , BinderKind(..)
@@ -48,7 +49,6 @@ module Language.Lean.Expr
 
 import Foreign
 import Foreign.C
-import System.IO.Unsafe
 
 import Language.Lean.List
 {#import Language.Lean.Internal.Exception#}
@@ -307,9 +307,12 @@ exprView x =
              (getLeanValue $ lean_expr_get_binding_name x)
              (getLeanValue $ lean_expr_get_binding_domain x)
              (getLeanValue $ lean_expr_get_binding_body x)
+--    LEAN_EXPR_LET ->
+--      ExprLet undefined
     LEAN_EXPR_MACRO ->
       ExprMacro (getLeanValue $ lean_expr_get_macro_def x)
                 (getLeanValue $ lean_expr_get_macro_args x)
+
 
 {#enum lean_expr_kind as ExprKind { upcaseFirstLetter }
          deriving (Eq)#}

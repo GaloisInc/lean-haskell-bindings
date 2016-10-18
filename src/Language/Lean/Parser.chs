@@ -15,7 +15,6 @@ module Language.Lean.Parser
   ) where
 
 import Foreign
-import Foreign.C
 
 import Language.Lean.List
 

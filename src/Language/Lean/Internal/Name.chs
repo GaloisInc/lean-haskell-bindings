@@ -12,6 +12,7 @@ together with typeclass instances for @Name@.
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE Trustworthy #-}
+{-# OPTIONS_GHC -Wno-unused-imports #-}
 {-# OPTIONS_HADDOCK not-home #-}
 module Language.Lean.Internal.Name
   ( Name
@@ -37,7 +38,6 @@ import Data.Char (isDigit)
 import Data.String
 import Foreign
 import Foreign.C
-import System.IO.Unsafe
 
 import Language.Lean.List
 
@@ -61,7 +61,7 @@ withName (Name fo) = withForeignPtr $! fo
 {-# INLINE withName #-}
 
 -- | Haskell type for @lean_name@ FFI parameters.
-{#pointer  lean_name as NamePtr -> Name#}
+{#pointer  lean_name as NamePtr -> Name #}
 -- | Haskell type for @lean_name*@ FFI parameters.
 {#pointer *lean_name as OutNamePtr -> NamePtr #}
 

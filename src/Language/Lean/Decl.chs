@@ -31,7 +31,6 @@ module Language.Lean.Decl
 
 import Foreign
 import Foreign.C
-import System.IO.Unsafe (unsafePerformIO)
 
 import Language.Lean.List
 

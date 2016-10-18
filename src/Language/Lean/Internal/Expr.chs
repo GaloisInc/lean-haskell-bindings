@@ -11,6 +11,7 @@ Internal declarations for Lean expressions and typeclass instances for @Expr@.
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE Trustworthy #-}
+{-# OPTIONS_GHC -Wno-unused-imports #-}
 {-# OPTIONS_HADDOCK not-home #-}
 module Language.Lean.Internal.Expr
   ( -- * Macro definitions
@@ -36,7 +37,6 @@ module Language.Lean.Internal.Expr
 import Control.Lens (toListOf)
 import Foreign
 import Foreign.C
-import System.IO.Unsafe
 
 import Language.Lean.List
 {#import Language.Lean.Internal.Exception#}
@@ -84,7 +84,7 @@ macroDefToString :: MacroDef -> String
 macroDefToString x = getLeanValue $ lean_macro_def_to_string x
 
 {#fun unsafe lean_macro_def_to_string
- { `MacroDef' , id `Ptr CString', `OutExceptionPtr' } -> `Bool' #}
+ { `MacroDef', id `Ptr CString', `OutExceptionPtr' } -> `Bool' #}
 
 
 ------------------------------------------------------------------------
@@ -192,10 +192,10 @@ exprLt x y = getLeanValue $ lean_expr_lt x y
 -- ListExpr Eq instance
 
 instance Eq (List Expr) where
-  (==) = lean_list_expr_eq
+ x == y = getLeanValue $ lean_list_expr_eq x y
 
-{#fun pure unsafe lean_list_expr_eq
- { `ListExpr', `ListExpr' } -> `Bool' #}
+{#fun unsafe lean_list_expr_eq
+ { `ListExpr', `ListExpr', id `Ptr CInt', `OutExceptionPtr' } -> `Bool' #}
 
 ------------------------------------------------------------------------
 -- ListExpr IsListIso instance

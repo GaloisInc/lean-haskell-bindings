@@ -12,6 +12,7 @@ for @Univ@.
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE Trustworthy #-}
+{-# OPTIONS_GHC -Wno-unused-imports #-}
 module Language.Lean.Internal.Univ
   ( Univ
   , showUniv
@@ -30,7 +31,6 @@ module Language.Lean.Internal.Univ
 import Control.Lens (toListOf)
 import Foreign
 import Foreign.C
-import System.IO.Unsafe
 
 import Language.Lean.List
 {#import Language.Lean.Internal.Exception #}

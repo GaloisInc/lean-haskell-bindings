@@ -19,15 +19,14 @@ module Language.Lean.Internal.String
   , withLeanTextPtr
   ) where
 
-import Control.Exception (bracket, finally, throwIO)
+import           Control.Exception (bracket, finally, throwIO)
 import qualified Data.ByteString as BS
-import Data.ByteString.Unsafe (unsafePackCString, unsafeUseAsCString)
-import Data.String
-import Data.Text (Text)
+import           Data.ByteString.Unsafe (unsafePackCString, unsafeUseAsCString)
+import           Data.String
+import           Data.Text (Text)
 import qualified Data.Text as Text
-import Data.Text.Encoding (decodeUtf8', encodeUtf8)
-import Foreign.Ptr
-import Foreign.C (CChar, CString)
+import           Data.Text.Encoding (decodeUtf8', encodeUtf8)
+import           Foreign.C (CString)
 
 #include "lean_string.h"
 

@@ -74,15 +74,14 @@ runLeanFold :: IsLeanValue a p
             -> Fold s a
 runLeanFold wrapFn foldFn h e = unsafePerformIO $ do
   -- Create reference for storing result, the initial value is pure.
-  ref <- newIORef $! (coerce $! pure ())
+  ref <- (newIORef $! (() >$ pure ()))
 
   let g d_ptr = do
         d <- mkLeanValue d_ptr
         cur_val <- readIORef ref
         let hd = h d
-        let chd = coerce hd
-        seq hd $ seq chd $ do
-        writeIORef ref $! cur_val *> chd
+        seq hd $ do
+        writeIORef ref $! cur_val <* hd
 
   -- Create function pointer for callback.
   bracket (wrapFn g) freeHaskellFunPtr $ \g_ptr -> do
