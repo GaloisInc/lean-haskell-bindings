@@ -9,20 +9,21 @@ Operations for creating inductive types and declarations.
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE Trustworthy #-}
 module Language.Lean.Inductive
-  ( -- * Inductive type
-    InductiveType
-  , inductiveType
-  , inductiveTypeName
-  , inductiveTypeType
-  , inductiveTypeConstructors
-  , recursorName
-  , ListInductiveType
+--  ( -- * Inductive type
+--    InductiveType
+--  , inductiveType
+--  , inductiveTypeName
+--  , inductiveTypeType
+--  , inductiveTypeConstructors
+--  , ListInductiveType
     -- * Inductive declarations
-  , InductiveDecl
-  , inductiveDecl
+  ( InductiveDecl
+--  , inductiveDecl
   , inductiveDeclUnivParams
   , inductiveDeclNumParams
-  , inductiveDeclTypes
+--  , inductiveDeclTypes
+    -- * Utility functions
+  , recursorName
     -- * Environment operations
   , addInductiveDecl
   , lookupInductiveDecl
@@ -39,11 +40,11 @@ import Language.Lean.List
 
 {#import Language.Lean.Internal.Exception#}
 import Language.Lean.Internal.Exception.Unsafe
-{#import Language.Lean.Internal.Expr#}
+--{#import Language.Lean.Internal.Expr#}
 {#import Language.Lean.Internal.Inductive#}
 {#import Language.Lean.Internal.Name#}
 
-import Language.Lean.Expr
+--import Language.Lean.Expr
 
 #include "lean_macros.h"
 #include "lean_bool.h"
@@ -58,9 +59,11 @@ import Language.Lean.Expr
 ------------------------------------------------------------------------
 -- Constructing InductiveType
 
+{-
+
 -- | Creates an inductive type
 --
--- Note thtat this function does not certify that the inductive
+-- Note that this function does not certify that the inductive
 -- type is well-formed or certifiable in any environment.
 inductiveType :: Name -- ^ Name of the inductive type
               -> Expr -- ^ Type of the inductive type
@@ -110,6 +113,8 @@ inductiveTypeConstructors tp = getLeanValue $ lean_inductive_type_get_constructo
  , `OutExceptionPtr'
  } -> `Bool' #}
 
+-}
+
 ------------------------------------------------------------------------
 -- recursorName
 
@@ -127,6 +132,7 @@ recursorName n = getLeanValue $ lean_get_recursor_name n
 ------------------------------------------------------------------------
 -- Constructing InductiveDecls
 
+{-
 -- | A inductive datatype declaration
 --
 -- The remaining inductive datatype arguments are treated as indices.
@@ -143,6 +149,7 @@ inductiveDecl ps n types = getLeanValue $ lean_inductive_decl_mk ps n types
  , `OutInductiveDeclPtr'
  , `OutExceptionPtr'
  } -> `Bool' #}
+-}
 
 ------------------------------------------------------------------------
 -- InductiveDecl projections
@@ -161,12 +168,14 @@ inductiveDeclNumParams d = getLeanValue $ lean_inductive_decl_get_num_params d
 {#fun lean_inductive_decl_get_num_params
  { `InductiveDecl', id `Ptr CUInt', `OutExceptionPtr' } -> `Bool' #}
 
+{-
 -- | Get  the list of inductive types in the inductive declaration
 inductiveDeclTypes :: InductiveDecl -> List InductiveType
 inductiveDeclTypes d = getLeanValue $ lean_inductive_decl_get_types d
 
 {#fun lean_inductive_decl_get_types
  { `InductiveDecl', `OutListInductiveTypePtr', `OutExceptionPtr' } -> `Bool' #}
+-}
 
 ------------------------------------------------------------------------
 -- InductiveDecl operations

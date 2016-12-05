@@ -4,4 +4,4 @@ packages:
 extra-deps: []
 resolver: lts-7.3
 extra-include-dirs:
-- /use/local/include/
+- /usr/local/include/

@@ -10,24 +10,24 @@ Interface to Lean typechecker
 {-# LANGUAGE Trustworthy #-}
 module Language.Lean.Typechecker
   ( Typechecker
-  , ConstraintSeq
+--  , ConstraintSeq
   , typechecker
-  , inferType
-  , tryInferType
-  , checkType
-  , tryCheckType
-  , whnf
-  , tryWhnf
-  , isDefEq
-  , tryIsDefEq
+--  , inferType
+--  , tryInferType
+--  , checkType
+--  , tryCheckType
+--  , whnf
+--  , tryWhnf
+--  , isDefEq
+--  , tryIsDefEq
   ) where
 
-import Foreign
-import Foreign.C
+--import Foreign
+--import Foreign.C
 import System.IO.Unsafe
 
 {#import Language.Lean.Internal.Exception#}
-{#import Language.Lean.Internal.Expr#}
+--{#import Language.Lean.Internal.Expr#}
 {#import Language.Lean.Internal.Typechecker#}
 
 #include "lean_bool.h"
@@ -46,8 +46,9 @@ import System.IO.Unsafe
 
 -- | A lean partial function is a function that returns a value of type @a@, but
 -- may fail.
-type LeanFn2 a b = (Ptr a -> Ptr b -> LeanAction)
+-- type LeanFn2 a b = (Ptr a -> Ptr b -> LeanAction)
 
+{-
 -- | This runs a partial lean function that returns two values in separate
 -- pointers.
 tryGetLeanPair :: (IsLeanValue a p, IsLeanValue b q)
@@ -65,6 +66,7 @@ tryGetLeanPair except_fn alloc_fn = unsafePerformIO $ do
           let pair = seq p $ seq q $ (p,q)
           return $! (seq pair $ Right pair)
         Just p -> Left <$> except_fn p
+-}
 
 ------------------------------------------------------------------------
 -- Typechecker constructor
@@ -79,6 +81,8 @@ typechecker e = unsafePerformIO $ do
 
 ------------------------------------------------------------------------
 -- Typechecker operations
+
+{-
 
 -- | @inferType t e@ infers the type of @e@ using @t@.
 -- This returns the type and any constraints generated.
@@ -192,3 +196,4 @@ tryIsDefEq t e1 e2 = tryGetLeanPair e_fn $ lean_type_checker_is_def_eq t e1 e2
      , `OutConstraintSeqPtr'
      , `OutExceptionPtr'
      } -> `Bool' #}
+-}

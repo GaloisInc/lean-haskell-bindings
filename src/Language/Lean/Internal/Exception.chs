@@ -233,8 +233,6 @@ data LeanExceptionKind
    | LeanInterrupted
    | LeanKernelException
      -- ^ An exception thrown when a precondition is violated.
-   | LeanUnifierException
-   | LeanTacticException
    | LeanParserException
    | LeanOtherException
   deriving (Eq, Show)
@@ -250,8 +248,6 @@ getLeanExceptionKind k = do
     LEAN_OUT_OF_MEMORY     -> LeanOutOfMemory
     LEAN_INTERRUPTED       -> LeanInterrupted
     LEAN_KERNEL_EXCEPTION  -> LeanKernelException
-    LEAN_UNIFIER_EXCEPTION -> LeanUnifierException
-    LEAN_TACTIC_EXCEPTION  -> LeanTacticException
     LEAN_PARSER_EXCEPTION  -> LeanParserException
     LEAN_OTHER_EXCEPTION   -> LeanOtherException
 

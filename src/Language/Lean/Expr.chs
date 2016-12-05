@@ -14,10 +14,12 @@ Operations for Lean expressions.
 {-# LANGUAGE Trustworthy #-}
 {-# OPTIONS_GHC -Wwarn #-}
 module Language.Lean.Expr
-  ( MacroDef
-  , BinderKind(..)
+  ( -- * MacroDef
+    MacroDef
+  , macroDefToString
     -- * Expressions
   , Expr
+  , BinderKind(..)
     -- ** Constructors
   , varExpr
   , sortExpr

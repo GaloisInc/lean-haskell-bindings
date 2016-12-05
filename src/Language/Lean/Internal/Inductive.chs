@@ -14,15 +14,15 @@ Internal declarations for inductive types and declarations.
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
 {-# OPTIONS_HADDOCK not-home #-}
 module Language.Lean.Internal.Inductive
-  ( InductiveType
-  , InductiveTypePtr
-  , OutInductiveTypePtr
-  , withInductiveType
-  , ListInductiveType
-  , ListInductiveTypePtr
-  , OutListInductiveTypePtr
-  , withListInductiveType
-  , InductiveDecl
+--  ( InductiveType
+--  , InductiveTypePtr
+--  , OutInductiveTypePtr
+--  , withInductiveType
+--  , ListInductiveType
+--  , ListInductiveTypePtr
+--  , OutListInductiveTypePtr
+--  , withListInductiveType
+  ( InductiveDecl
   , InductiveDeclPtr
   , OutInductiveDeclPtr
   , withInductiveDecl
@@ -49,6 +49,7 @@ import Language.Lean.Internal.Exception.Unsafe
 ------------------------------------------------------------------------
 -- InductiveType declarations
 
+{-
 {#pointer  lean_inductive_type as InductiveType foreign newtype nocode#}
 
 -- | An inductive type
@@ -68,10 +69,12 @@ instance IsLeanValue InductiveType (Ptr InductiveType) where
 
 foreign import ccall unsafe "&lean_inductive_type_del"
   lean_inductive_type_del_ptr :: FunPtr (InductiveTypePtr -> IO ())
+-}
 
 ------------------------------------------------------------------------
 -- List InductiveType declarations
 
+{-
 -- | A list of inductive types (constructor not actually exported)
 newtype instance List InductiveType = ListInductiveType (ForeignPtr (List InductiveType))
 
@@ -157,6 +160,8 @@ instance IsList (List InductiveType) where
   type Item (List InductiveType) = InductiveType
   fromList = fromListDefault
   toList = toListOf traverseList
+
+-}
 
 ------------------------------------------------------------------------
 -- InductiveDecl declarations

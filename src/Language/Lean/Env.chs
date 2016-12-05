@@ -17,11 +17,11 @@ module Language.Lean.Env
   , trustHigh
     -- * Empty environments
   , standardEnv
-  , hottEnv
+--  , hottEnv
     -- * Environment information
   , envTrustLevel
-  , envHasProofIrrelevantProp
-  , envIsImpredicative
+--  , envHasProofIrrelevantProp
+--  , envIsImpredicative
     -- * Environment universe operations
   , envAddUniv
   , envContainsUniv
@@ -143,6 +143,7 @@ standardEnv lvl = allocLeanValue mkLeanException $ lean_env_mk_std lvl
   , `OutExceptionPtr'
   } -> `Bool' #}
 
+{-
 -- | Create an empty hott environment with the given trust level.
 --
 -- The returned an environment is not a descendant of any other environment.
@@ -154,6 +155,7 @@ hottEnv lvl = allocLeanValue mkLeanException $ lean_env_mk_hott lvl
   , `OutEnvPtr'
   , `OutExceptionPtr'
   } -> `Bool' #}
+-}
 
 ------------------------------------------------------------------------
 -- Env information
@@ -162,6 +164,7 @@ hottEnv lvl = allocLeanValue mkLeanException $ lean_env_mk_hott lvl
 {#fun pure unsafe lean_env_trust_level as envTrustLevel
   { `Env' } -> `TrustLevel' trustFromUInt #}
 
+{-
 -- | Returns 'True' if all proofs of a proposition in @Prop@ are equivalent.
 {#fun pure unsafe lean_env_proof_irrel as envHasProofIrrelevantProp
    { `Env' } -> `Bool' #}
@@ -169,6 +172,7 @@ hottEnv lvl = allocLeanValue mkLeanException $ lean_env_mk_hott lvl
 -- | Return whether @Prop@ is impredicative in the environment.
 {#fun pure unsafe lean_env_impredicative as envIsImpredicative
    { `Env' } -> `Bool' #}
+-}
 
 ------------------------------------------------------------------------
 -- Env global universe functions
