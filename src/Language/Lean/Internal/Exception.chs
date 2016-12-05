@@ -34,7 +34,7 @@ module Language.Lean.Internal.Exception
   , exceptionMessage
   , exceptionMessageWithEnv
   , exceptionRawMessage
-  , exceptionDetailedMessage
+--  , exceptionDetailedMessage
   , leanException
     -- * FFI types
   , ExceptionPtr
@@ -328,6 +328,7 @@ exceptionRawMessage (RealLeanException fnPtr) =
 exceptionRawMessage (PrettyLeanException _ _ fnPtr) =
   leanExceptionPtrMessage fnPtr
 
+{-
 -- | Get detailed information describing this exception.
 exceptionDetailedMessage :: LeanException -> String
 exceptionDetailedMessage (BindingsLeanException _ msg) = msg
@@ -335,6 +336,7 @@ exceptionDetailedMessage (RealLeanException fnPtr) =
   leanExceptionPtrDetailedMessage fnPtr
 exceptionDetailedMessage (PrettyLeanException _ _ fnPtr) =
   leanExceptionPtrDetailedMessage fnPtr
+-}
 
 -- | Get as pretty a message as possible from the LeanException
 exceptionMessageWithEnv :: Env -> Options -> LeanException -> String
@@ -356,9 +358,11 @@ leanExceptionPtrMessage :: ForeignPtr LeanException -> String
 leanExceptionPtrMessage fnPtr = unsafePerformIO $ do
   withForeignPtr fnPtr $ lean_exception_get_message
 
+{-
 leanExceptionPtrDetailedMessage :: ForeignPtr LeanException -> String
 leanExceptionPtrDetailedMessage fnPtr = unsafePerformIO $ do
   withForeignPtr fnPtr $ lean_exception_get_detailed_message
+-}
 
 leanExceptionPtrPrettyMessage :: Env -> Options -> ForeignPtr LeanException -> String
 leanExceptionPtrPrettyMessage e o fnPtr = unsafePerformIO $ do
@@ -375,8 +379,10 @@ decodeExceptionMessage cstr
 {#fun unsafe lean_exception_get_message
  { `ExceptionPtr' } -> `String' decodeExceptionMessage* #}
 
+{-
 {#fun unsafe lean_exception_get_detailed_message
  { `ExceptionPtr' } -> `String' decodeExceptionMessage* #}
+-}
 
 {#fun unsafe lean_exception_to_pp_string
   { `Env'

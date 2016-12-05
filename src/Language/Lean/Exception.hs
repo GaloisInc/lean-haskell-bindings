@@ -14,7 +14,7 @@ module Language.Lean.Exception
   , exceptionMessage
   , exceptionMessageWithEnv
   , exceptionRawMessage
-  , exceptionDetailedMessage
+--  , exceptionDetailedMessage
   ) where
 
 import Language.Lean.Internal.Exception
