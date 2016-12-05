@@ -34,7 +34,7 @@ module Language.Lean.Internal.Exception
   , exceptionMessage
   , exceptionMessageWithEnv
   , exceptionRawMessage
-  , exceptionDetailedMessage
+--  , exceptionDetailedMessage
   , leanException
     -- * FFI types
   , ExceptionPtr
@@ -233,8 +233,6 @@ data LeanExceptionKind
    | LeanInterrupted
    | LeanKernelException
      -- ^ An exception thrown when a precondition is violated.
-   | LeanUnifierException
-   | LeanTacticException
    | LeanParserException
    | LeanOtherException
   deriving (Eq, Show)
@@ -250,8 +248,6 @@ getLeanExceptionKind k = do
     LEAN_OUT_OF_MEMORY     -> LeanOutOfMemory
     LEAN_INTERRUPTED       -> LeanInterrupted
     LEAN_KERNEL_EXCEPTION  -> LeanKernelException
-    LEAN_UNIFIER_EXCEPTION -> LeanUnifierException
-    LEAN_TACTIC_EXCEPTION  -> LeanTacticException
     LEAN_PARSER_EXCEPTION  -> LeanParserException
     LEAN_OTHER_EXCEPTION   -> LeanOtherException
 
@@ -332,6 +328,7 @@ exceptionRawMessage (RealLeanException fnPtr) =
 exceptionRawMessage (PrettyLeanException _ _ fnPtr) =
   leanExceptionPtrMessage fnPtr
 
+{-
 -- | Get detailed information describing this exception.
 exceptionDetailedMessage :: LeanException -> String
 exceptionDetailedMessage (BindingsLeanException _ msg) = msg
@@ -339,6 +336,7 @@ exceptionDetailedMessage (RealLeanException fnPtr) =
   leanExceptionPtrDetailedMessage fnPtr
 exceptionDetailedMessage (PrettyLeanException _ _ fnPtr) =
   leanExceptionPtrDetailedMessage fnPtr
+-}
 
 -- | Get as pretty a message as possible from the LeanException
 exceptionMessageWithEnv :: Env -> Options -> LeanException -> String
@@ -360,9 +358,11 @@ leanExceptionPtrMessage :: ForeignPtr LeanException -> String
 leanExceptionPtrMessage fnPtr = unsafePerformIO $ do
   withForeignPtr fnPtr $ lean_exception_get_message
 
+{-
 leanExceptionPtrDetailedMessage :: ForeignPtr LeanException -> String
 leanExceptionPtrDetailedMessage fnPtr = unsafePerformIO $ do
   withForeignPtr fnPtr $ lean_exception_get_detailed_message
+-}
 
 leanExceptionPtrPrettyMessage :: Env -> Options -> ForeignPtr LeanException -> String
 leanExceptionPtrPrettyMessage e o fnPtr = unsafePerformIO $ do
@@ -379,8 +379,10 @@ decodeExceptionMessage cstr
 {#fun unsafe lean_exception_get_message
  { `ExceptionPtr' } -> `String' decodeExceptionMessage* #}
 
+{-
 {#fun unsafe lean_exception_get_detailed_message
  { `ExceptionPtr' } -> `String' decodeExceptionMessage* #}
+-}
 
 {#fun unsafe lean_exception_to_pp_string
   { `Env'

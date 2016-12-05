@@ -12,7 +12,6 @@ module Language.Lean.Module
   ( envImport
   , envExport
   , stdPath
-  , hottPath
   ) where
 
 import Foreign
@@ -76,11 +75,4 @@ stdPath :: String
 stdPath = getLeanValue $ lean_get_std_path
 
 {#fun unsafe lean_get_std_path
- { id `Ptr CString', `OutExceptionPtr' } -> `Bool' #}
-
--- | Path to lean hott library (extrcted from HLEAN_PATH)
-hottPath :: String
-hottPath = getLeanValue $ lean_get_hott_path
-
-{#fun unsafe lean_get_hott_path
  { id `Ptr CString', `OutExceptionPtr' } -> `Bool' #}

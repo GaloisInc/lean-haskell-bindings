@@ -9,20 +9,16 @@ Operations for creating inductive types and declarations.
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE Trustworthy #-}
 module Language.Lean.Inductive
-  ( -- * Inductive type
-    InductiveType
-  , inductiveType
-  , inductiveTypeName
-  , inductiveTypeType
-  , inductiveTypeConstructors
-  , recursorName
-  , ListInductiveType
     -- * Inductive declarations
-  , InductiveDecl
+  ( InductiveDecl
   , inductiveDecl
+  , inductiveDeclName
   , inductiveDeclUnivParams
   , inductiveDeclNumParams
-  , inductiveDeclTypes
+  , inductiveDeclType
+  , inductiveDeclConstructors
+    -- * Utility functions
+  , recursorName
     -- * Environment operations
   , addInductiveDecl
   , lookupInductiveDecl
@@ -36,14 +32,14 @@ module Language.Lean.Inductive
 import Foreign
 import Foreign.C
 import Language.Lean.List
+import Language.Lean.Internal.Exception.Unsafe
 
 {#import Language.Lean.Internal.Exception#}
-import Language.Lean.Internal.Exception.Unsafe
 {#import Language.Lean.Internal.Expr#}
 {#import Language.Lean.Internal.Inductive#}
 {#import Language.Lean.Internal.Name#}
 
-import Language.Lean.Expr
+--import Language.Lean.Expr
 
 #include "lean_macros.h"
 #include "lean_bool.h"
@@ -54,61 +50,6 @@ import Language.Lean.Expr
 #include "lean_expr.h"
 #include "lean_decl.h"
 #include "lean_inductive.h"
-
-------------------------------------------------------------------------
--- Constructing InductiveType
-
--- | Creates an inductive type
---
--- Note thtat this function does not certify that the inductive
--- type is well-formed or certifiable in any environment.
-inductiveType :: Name -- ^ Name of the inductive type
-              -> Expr -- ^ Type of the inductive type
-              -> List LocalConst -- ^ Constructors
-              -> InductiveType
-inductiveType n t c =
-  getLeanValue $ lean_inductive_type_mk n t (localConstListToExprList c)
-
-{#fun unsafe lean_inductive_type_mk
- { `Name'
- , `Expr'
- , `ListExpr'
- , `OutInductiveTypePtr'
- , `OutExceptionPtr'
- } -> `Bool' #}
-
-------------------------------------------------------------------------
--- Inductive Types
-
--- | Get the name of a inductive type.
-inductiveTypeName :: InductiveType -> Name
-inductiveTypeName tp = getLeanValue $ lean_inductive_type_get_name tp
-
-{#fun unsafe lean_inductive_type_get_name
- { `InductiveType'
- , `OutNamePtr'
- , `OutExceptionPtr'
- } -> `Bool' #}
-
--- | Get the type of a inductive type.
-inductiveTypeType :: InductiveType -> Expr
-inductiveTypeType tp = getLeanValue $ lean_inductive_type_get_type tp
-
-{#fun unsafe lean_inductive_type_get_type
- { `InductiveType'
- , `OutExprPtr'
- , `OutExceptionPtr'
- } -> `Bool' #}
-
--- | Get the list of constructors associated with the given inductive type.
-inductiveTypeConstructors :: InductiveType -> List LocalConst
-inductiveTypeConstructors tp = getLeanValue $ lean_inductive_type_get_constructors tp
-
-{#fun unsafe lean_inductive_type_get_constructors
- { `InductiveType'
- , `OutListExprPtr'
- , `OutExceptionPtr'
- } -> `Bool' #}
 
 ------------------------------------------------------------------------
 -- recursorName
@@ -127,25 +68,62 @@ recursorName n = getLeanValue $ lean_get_recursor_name n
 ------------------------------------------------------------------------
 -- Constructing InductiveDecls
 
--- | A inductive datatype declaration
+
+-- | Create a new inductive type
 --
 -- The remaining inductive datatype arguments are treated as indices.
-inductiveDecl :: List Name -- ^ Universe parameters
-              -> Word32 -- ^ Number of parameters
-              -> List InductiveType -- ^ List of inductive types
+inductiveDecl :: Name       -- ^ Name of new type
+              -> List Name  -- ^ Universe parameter names
+              -> Word32     -- ^ Number of parameters
+              -> Expr       -- ^ Type of declaration
+              -> List Expr  -- ^ Constructor rules.
               -> InductiveDecl
-inductiveDecl ps n types = getLeanValue $ lean_inductive_decl_mk ps n types
+inductiveDecl n ps nparams t cs =
+  getLeanValue $ lean_inductive_decl_mk n ps nparams t cs
 
 {#fun unsafe lean_inductive_decl_mk
- { `ListName'
+ { `Name'
+ , `ListName'
  , `Word32'
- , `ListInductiveType'
+ , `Expr'
+ , `ListExpr'
  , `OutInductiveDeclPtr'
  , `OutExceptionPtr'
  } -> `Bool' #}
 
+
 ------------------------------------------------------------------------
 -- InductiveDecl projections
+
+-- | Get the name of a inductive type.
+inductiveDeclName :: InductiveDecl -> Name
+inductiveDeclName d = getLeanValue $ lean_inductive_decl_get_name d
+
+{#fun unsafe lean_inductive_decl_get_name
+ { `InductiveDecl'
+ , `OutNamePtr'
+ , `OutExceptionPtr'
+ } -> `Bool' #}
+
+-- | Get the type of a inductive type.
+inductiveDeclType :: InductiveDecl -> Expr
+inductiveDeclType d = getLeanValue $ lean_inductive_decl_get_type d
+
+{#fun unsafe lean_inductive_decl_get_type
+ { `InductiveDecl'
+ , `OutExprPtr'
+ , `OutExceptionPtr'
+ } -> `Bool' #}
+
+-- | Get the list of constructors associated with the given inductive type.
+inductiveDeclConstructors :: InductiveDecl -> List Expr
+inductiveDeclConstructors d = getLeanValue $ lean_inductive_decl_get_constructors d
+
+{#fun unsafe lean_inductive_decl_get_constructors
+ { `InductiveDecl'
+ , `OutListExprPtr'
+ , `OutExceptionPtr'
+ } -> `Bool' #}
 
 -- | Get the list of universe parameter names for the given inductive declaration.
 inductiveDeclUnivParams :: InductiveDecl -> List Name
@@ -160,13 +138,6 @@ inductiveDeclNumParams d = getLeanValue $ lean_inductive_decl_get_num_params d
 
 {#fun lean_inductive_decl_get_num_params
  { `InductiveDecl', id `Ptr CUInt', `OutExceptionPtr' } -> `Bool' #}
-
--- | Get  the list of inductive types in the inductive declaration
-inductiveDeclTypes :: InductiveDecl -> List InductiveType
-inductiveDeclTypes d = getLeanValue $ lean_inductive_decl_get_types d
-
-{#fun lean_inductive_decl_get_types
- { `InductiveDecl', `OutListInductiveTypePtr', `OutExceptionPtr' } -> `Bool' #}
 
 ------------------------------------------------------------------------
 -- InductiveDecl operations

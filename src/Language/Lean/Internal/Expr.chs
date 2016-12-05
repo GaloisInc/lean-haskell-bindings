@@ -19,6 +19,7 @@ module Language.Lean.Internal.Expr
   , MacroDefPtr
   , OutMacroDefPtr
   , withMacroDef
+  , macroDefToString
     -- * Expressions
   , Expr
   , ExprPtr
@@ -85,7 +86,6 @@ macroDefToString x = getLeanValue $ lean_macro_def_to_string x
 
 {#fun unsafe lean_macro_def_to_string
  { `MacroDef', id `Ptr CString', `OutExceptionPtr' } -> `Bool' #}
-
 
 ------------------------------------------------------------------------
 -- MacroDef Eq instance
@@ -164,7 +164,7 @@ exprToString x = getLeanValue $ lean_expr_to_string x
  { `Expr' , id `Ptr CString', `OutExceptionPtr' } -> `Bool' #}
 
 instance Show Expr where
-  show = show . exprToString
+  show = exprToString
 
 ------------------------------------------------------------------------
 -- Expression Comparison

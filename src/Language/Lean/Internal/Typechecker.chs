@@ -14,11 +14,14 @@ Internal declarations for ConstraintSeq and Typechecker.
 {-# OPTIONS_HADDOCK not-home #-}
 module Language.Lean.Internal.Typechecker
   ( Typechecker
+{-
   , ConstraintSeq
     -- * Internal exports
   , ConstraintSeqPtr
   , OutConstraintSeqPtr
   , withConstraintSeq
+-}
+
   , TypecheckerPtr
   , OutTypecheckerPtr
   , mkTypechecker
@@ -44,6 +47,7 @@ import Foreign
 ------------------------------------------------------------------------
 -- Constraint Sequence
 
+{-
 {#pointer lean_cnstr_seq as ConstraintSeq foreign newtype nocode#}
 
 -- | A sequence of constraints
@@ -63,6 +67,7 @@ instance IsLeanValue ConstraintSeq (Ptr ConstraintSeq) where
 
 foreign import ccall unsafe "&lean_cnstr_seq_del"
   lean_cnstr_seq_del_ptr :: FunPtr (ConstraintSeqPtr -> IO ())
+-}
 
 ------------------------------------------------------------------------
 -- Typechecker
