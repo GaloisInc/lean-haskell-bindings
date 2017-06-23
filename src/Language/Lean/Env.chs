@@ -19,11 +19,6 @@ module Language.Lean.Env
   , standardEnv
     -- * Environment information
   , envTrustLevel
-    -- * Environment universe operations
-  , envAddUniv
-  , envContainsUniv
-  , envUnivs
-  , forEnvUniv_
     -- * Environment declaration information
   , envAddCertDecl
   , envReplaceAxiom
@@ -146,49 +141,6 @@ standardEnv lvl = allocLeanValue mkLeanException $ lean_env_mk_std lvl
 -- | Return the trust level of the given environment.
 {#fun pure unsafe lean_env_trust_level as envTrustLevel
   { `Env' } -> `TrustLevel' trustFromUInt #}
-
-------------------------------------------------------------------------
--- Env global universe functions
-
--- | Add a new global universe with the given name.
---
--- This throws a 'LeanException' if the environment already contains a universe
--- level with the given name.
---
--- 'envContainsUniv' can be used to check whether the environment already contains
--- a global universe with the given name.
---
--- The returned an environment is a descendant of the input environment.
-envAddUniv :: Name -> Env -> IO Env
-envAddUniv u e = allocLeanValue (mkLeanExceptionWithEnv e) $
-  lean_env_add_univ e u
-
-{#fun unsafe lean_env_add_univ
-  { `Env'
-  , `Name'
-  , `OutEnvPtr'
-  , `OutExceptionPtr'
-  } -> `Bool' #}
-
--- |  Return @true@ iff the environment contains a global universe with the name.
-{#fun pure unsafe lean_env_contains_univ as envContainsUniv
-    { `Env', `Name' } -> `Bool' #}
-
--- | Fold over the global universes in the environment.
-envUnivs :: Fold Env Name
-envUnivs = runLeanFold wrapNameVisitFn lean_env_for_each_univ
-
--- | Run an IO action on each universe in the environment.
-forEnvUniv_ :: Env -> (Name -> IO ()) -> IO ()
-forEnvUniv_ e f = safeRunLeanFold wrapNameVisitFn lean_env_for_each_univ f e
-
-foreign import ccall "wrapper" wrapNameVisitFn :: WrapLeanVisitFn NamePtr
-
-{#fun lean_env_for_each_univ
-     { `Env'
-     , id `FunPtr (NamePtr -> IO ())'
-     , `OutExceptionPtr'
-     } -> `Bool' #}
 
 ------------------------------------------------------------------------
 -- Env declaration functions

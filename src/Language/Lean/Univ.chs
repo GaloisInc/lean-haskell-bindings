@@ -15,7 +15,6 @@ module Language.Lean.Univ
   , maxUniv
   , imaxUniv
   , paramUniv
-  , globalUniv
   , metaUniv
   , explicitUniv
   , UnivView(..)
@@ -84,13 +83,6 @@ paramUniv x = getLeanValue $ lean_univ_mk_param x
 {#fun unsafe lean_univ_mk_param
  { `Name', `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
 
--- | A global universe with the given name.
-globalUniv :: Name -> Univ
-globalUniv x = getLeanValue $ lean_univ_mk_global x
-
-{#fun unsafe lean_univ_mk_global
- { `Name', `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
-
 -- | A universe meta-variable with the given name.
 metaUniv :: Name -> Univ
 metaUniv x = getLeanValue $ lean_univ_mk_meta x
@@ -122,8 +114,6 @@ data UnivView
      -- ^ @UnivIMax x y@ denotes @y@ if @y@ is universe zero, otherwise @UnivMax x y@
    | UnivParam !Name
      -- ^ Universe parameter with the given name.
-   | UnivGlobal !Name
-     -- ^ Reference to a global universe.
    | UnivMeta !Name
      -- ^ Meta variable with the given name.
   deriving (Eq, Ord, Show)
@@ -141,7 +131,6 @@ univView x =
      UnivIMax (getLeanValue $ lean_univ_get_max_lhs x)
               (getLeanValue $ lean_univ_get_max_rhs x)
    LEAN_UNIV_PARAM  -> UnivParam  (getLeanValue $ lean_univ_get_name x)
-   LEAN_UNIV_GLOBAL -> UnivGlobal (getLeanValue $ lean_univ_get_name x)
    LEAN_UNIV_META   -> UnivMeta   (getLeanValue $ lean_univ_get_name x)
 
 {#enum lean_univ_kind as UnivKind { upcaseFirstLetter }
