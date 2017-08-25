@@ -33,7 +33,7 @@ import GHC.Exts (IsList(..))
 -- representation.
 data family List a
 
--- | View of the front of a list
+-- | View of the front of a list.
 data ListView l a
    = Nil
    | a :< l
@@ -51,13 +51,13 @@ class IsList l => IsListIso l where
   -- | View the front of a list.
   listView :: l -> ListView l (Item l)
 
--- | Convert a ordinary Haskell list to an opague list
+-- | Convert an ordinary Haskell list to an opaque list.
 fromListDefault :: IsListIso l => [Item l] -> l
 fromListDefault [] = nil
 fromListDefault (h:r) = h <| fromListDefault r
 {-# INLINABLE fromListDefault #-}
 
--- | Concatenate two lists
+-- | Concatenate two lists.
 concatList :: IsListIso l => l -> l -> l
 concatList x y =
   case listView x of

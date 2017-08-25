@@ -132,10 +132,11 @@ definitionWith e nm params tp v o =
 
 -- | Creates a theorem with an explicit definitional height.
 --
--- Theorems and definitions are essentially the same thing in Lean, except in
--- the way the normalizer treats them. The normalizer will only unfold theroem
--- if there is nothing else to be done when checking whether two terms are
--- definitionally equal or not.
+-- Theorems and definitions are essentially the same thing in Lean,
+-- except in the way the normalizer treats them. The normalizer will
+-- only unfold a theorem if there is nothing else to be done when
+-- checking whether two terms are definitionally equal or not.
+
 theorem :: Name      -- ^ Name of the theorem
         -> List Name -- ^ Universe parameters for theorem
         -> Expr      -- ^ Type of the theorem
@@ -156,10 +157,10 @@ theorem nm params tp v h = getLeanValue $ lean_decl_mk_thm nm params tp v h
 
 -- | 'theoremWith' creates a theorem that is relative to an environment.
 --
--- Theorems and definitions are essentially the same thing in Lean, except in
--- the way the normalizer treats them. The normalizer will only unfold theroem
--- if there is nothing else to be done when checking whether two terms are
--- definitionally equal or not.
+-- Theorems and definitions are essentially the same thing in Lean,
+-- except in the way the normalizer treats them. The normalizer will
+-- only unfold a theorem if there is nothing else to be done when
+-- checking whether two terms are definitionally equal or not.
 --
 -- The definitional height is computed from environment.
 theoremWith :: Env       -- ^ The environment
@@ -190,7 +191,7 @@ declName d = getLeanValue $ lean_decl_get_name d
 {#fun unsafe lean_decl_get_name
   { `Decl', `OutNamePtr', `OutExceptionPtr' } -> `Bool' #}
 
--- | The list of universe params for a declaration.
+-- | The list of universe parameters for a declaration.
 declUnivParams :: Decl -> List Name
 declUnivParams d = getLeanValue $ lean_decl_get_univ_params d
 
@@ -204,16 +205,16 @@ declType d = getLeanValue $ lean_decl_get_type d
 {#fun unsafe lean_decl_get_type
   { `Decl', `OutExprPtr', `OutExceptionPtr' } -> `Bool' #}
 
--- | Information about a declaration
+-- | Information about a declaration.
 data DeclView
     -- | A constant
   = Constant
     -- | An axiom
   | Axiom
     -- | A definition with the associated value, definitional height, and
-    -- whether to lazy unfold it.
+    -- whether to lazy unfold it
   | Definition Expr Word32 Bool
-    -- | A theorem with the associated value and definitional height.
+    -- | A theorem with the associated value and definitional height
   | Theorem Expr Word32
  deriving (Eq, Show)
 

@@ -43,13 +43,13 @@ import Language.Lean.Internal.Exception.Unsafe
 
 {#pointer  lean_inductive_decl as InductiveDecl foreign newtype nocode#}
 
--- | An inductive declaration
+-- | An inductive declaration.
 --
 -- A single inductive declaration may define one or more Lean inductive
 -- types.  The inductive types must have the same parameters.
 newtype InductiveDecl = InductiveDecl (ForeignPtr InductiveDecl)
 
--- | Access raw @lean_inductive_decl@ within IO action.
+-- | Access raw @lean_inductive_decl@ within an 'IO' action.
 withInductiveDecl :: InductiveDecl -> (Ptr InductiveDecl -> IO a) -> IO a
 withInductiveDecl (InductiveDecl o) = withForeignPtr $! o
 

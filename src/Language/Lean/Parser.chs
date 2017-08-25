@@ -34,7 +34,7 @@ import Language.Lean.List
 #include "lean_ios.h"
 #include "lean_parser.h"
 
--- | Parse the given file using the environment
+-- | Parse the given file using the environment.
 --
 -- This returns the new environment along with the options after any commands
 -- modified it.
@@ -91,7 +91,7 @@ parseCommands old_ios old_env cmds = do
  , `OutSomeIOStatePtr'
  , `OutExceptionPtr' } -> `Bool' #}
 
--- | Parse the given string as commands using the environment.
+-- | Parse the given string as a Lean expression using the environment.
 --
 -- This returns the expression along with the universe parameters that were automatically
 -- generated.

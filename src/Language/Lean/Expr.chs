@@ -70,7 +70,7 @@ import Language.Lean.Internal.Exception.Unsafe
 ------------------------------------------------------------------------
 -- LocalConst
 
--- | A local constant
+-- | A local constant.
 --
 -- Internally, local constants are just expressions, but we use this to
 -- refine the types in the interface.
@@ -118,7 +118,7 @@ localConstExt k nm ppnm tp = getLeanValue $ lean_expr_mk_local_ext nm ppnm tp k
   , `OutExceptionPtr'
   } -> `Bool' #}
 
--- | Get the kind of bindng for the local constant.
+-- | Get the kind of binding for the local constant.
 localConstBinderKind :: LocalConst -> BinderKind
 localConstBinderKind x = getEnum $ lean_expr_get_local_binder_kind $ localConstExpr x
 
@@ -130,7 +130,7 @@ localConstName x = getLeanValue $ lean_expr_get_mlocal_name $ localConstExpr x
 localConstPrettyName :: LocalConst -> Name
 localConstPrettyName x = getLeanValue $ lean_expr_get_local_pp_name $ localConstExpr x
 
--- | Get the type of the local constant
+-- | Get the type of the local constant.
 localConstType :: LocalConst -> Expr
 localConstType x = getLeanValue $ lean_expr_get_mlocal_type $ localConstExpr x
 
@@ -169,7 +169,7 @@ varExpr i = getLeanValue $ lean_expr_mk_var i
   , `OutExceptionPtr'
   } -> `Bool' #}
 
--- | Creates a type for the given universe
+-- | Creates a type for the given universe.
 sortExpr :: Univ -> Expr
 sortExpr u = getLeanValue $ lean_expr_mk_sort u
 
@@ -179,7 +179,7 @@ sortExpr u = getLeanValue $ lean_expr_mk_sort u
   , `OutExceptionPtr'
   } -> `Bool' #}
 
--- | Create a constant with a given name and universe parameters
+-- | Create a constant with a given name and universe parameters.
 constExpr :: Name -> List Univ -> Expr
 constExpr nm params = getLeanValue $ lean_expr_mk_const nm params
 
@@ -190,7 +190,7 @@ constExpr nm params = getLeanValue $ lean_expr_mk_const nm params
   , `OutExceptionPtr'
   } -> `Bool' #}
 
--- | Create a function application for expressions
+-- | Create a function application for expressions.
 appExpr :: Expr -> Expr -> Expr
 appExpr f a = getLeanValue $ lean_expr_mk_app f a
 
@@ -201,7 +201,7 @@ appExpr f a = getLeanValue $ lean_expr_mk_app f a
   , `OutExceptionPtr'
   } -> `Bool' #}
 
--- | Create a lambda abstraction for expressions
+-- | Create a lambda abstraction for expressions.
 lambdaExpr :: BinderKind -> Name -> Expr -> Expr -> Expr
 lambdaExpr k nm tp b = getLeanValue $ lean_expr_mk_lambda nm tp b k
 
@@ -227,7 +227,7 @@ piExpr k nm tp b = getLeanValue $ lean_expr_mk_pi nm tp b k
   , `OutExceptionPtr'
   } -> `Bool' #}
 
--- | Create a macro application for expressions
+-- | Create a macro application for expressions.
 macroExpr :: MacroDef -> List Expr -> Expr
 macroExpr m args = getLeanValue $ lean_expr_mk_macro m args
 
@@ -238,7 +238,7 @@ macroExpr m args = getLeanValue $ lean_expr_mk_macro m args
   , `OutExceptionPtr'
   } -> `Bool' #}
 
--- | Create a metavariable with the given name @nm@ and type @tp@.
+-- | Create a metavariable with the given name and type.
 metavarExpr :: Name -> Expr -> Expr
 metavarExpr nm tp = getLeanValue $ lean_expr_mk_metavar nm tp
 
@@ -251,11 +251,11 @@ metavarExpr nm tp = getLeanValue $ lean_expr_mk_metavar nm tp
 
 -- | Create a expression from the local cosntant with the given name and type.
 --
--- 'localExpr nm tp' is equivalent to 'localConstExpr (localConst nm tp)'
+-- @'localExpr' nm tp@ is equivalent to @'localConstExpr' ('localConst' nm tp)@.
 localExpr :: Name -> Expr -> Expr
 localExpr nm tp = localConstExpr $ localConst nm tp
 
--- | Create a local constant with additional parameters
+-- | Create a local constant with additional parameters.
 localExtExpr :: BinderKind -- ^ The binder kind for expression
              -> Name -- ^ The name of expression
              -> Name -- ^ The pretty print name

@@ -33,7 +33,7 @@ import           Foreign.C (CString)
 {#fun unsafe lean_string_del
   { `CString' } -> `()' #}
 
--- | This decodes a CString as Lean text
+-- | This decodes a 'CString' as Lean text.
 decodeLeanText :: CString -> IO Text
 decodeLeanText cstr = do
   -- Get cstring as a bytestring
@@ -43,7 +43,7 @@ decodeLeanText cstr = do
     Left e -> throwIO e
     Right v -> return v
 
--- | This decodes a CString as Lean text
+-- | This decodes a 'CString' as Lean text.
 decodeLeanString :: CString -> IO String
 decodeLeanString cstr = Text.unpack <$> decodeLeanText cstr
 
@@ -62,11 +62,11 @@ mkLeanString alloc = bracket alloc lean_string_del $ decodeLeanString
 getLeanString :: CString -> IO String
 getLeanString ptr = decodeLeanString ptr `finally` lean_string_del ptr
 
--- | Use the string as a Lean string
+-- | Use the string as a Lean string.
 withLeanStringPtr :: String -> (CString -> IO a) -> IO a
 withLeanStringPtr s f = withLeanTextPtr (fromString s) f
 
--- | Use the text as a Lean string
+-- | Use the text as a Lean string.
 withLeanTextPtr :: Text -> (CString -> IO a) -> IO a
 withLeanTextPtr txt f =
   unsafeUseAsCString (encodeUtf8 txt `BS.snoc` 0) f

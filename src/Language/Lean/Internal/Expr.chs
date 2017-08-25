@@ -56,10 +56,10 @@ import Language.Lean.Internal.Exception.Unsafe
 
 {#pointer lean_macro_def as MacroDef foreign newtype nocode#}
 
--- | A Lean macro definition
+-- | A Lean macro definition.
 newtype MacroDef = MacroDef (ForeignPtr MacroDef)
 
--- | Function @c2hs@ uses to pass @MacroDef@ values to Lean
+-- | Function @c2hs@ uses to pass @MacroDef@ values to Lean.
 withMacroDef :: MacroDef -> (Ptr MacroDef -> IO a) -> IO a
 withMacroDef (MacroDef o) = withForeignPtr $! o
 
@@ -109,7 +109,7 @@ instance Eq MacroDef where
 
 {#pointer lean_expr as Expr foreign newtype nocode#}
 
--- | A Lean expression
+-- | A Lean expression.
 newtype Expr = Expr (ForeignPtr Expr)
 
 -- | Get access to @lean_expr@ within IO action.
@@ -133,10 +133,10 @@ foreign import ccall unsafe "&lean_expr_del"
 -- | A list of expressions (constructor not actually exported)
 newtype instance List Expr = ListExpr (ForeignPtr (List Expr))
 
--- | Synonym for @List Expr@ that can be used in @c2hs@ bindings
+-- | Synonym for @List Expr@ that can be used in @c2hs@ bindings.
 type ListExpr = List Expr
 
--- | Function @c2hs@ uses to pass @ListExpr@ values to Lean
+-- | Function @c2hs@ uses to pass @ListExpr@ values to Lean.
 withListExpr :: List Expr -> (Ptr (List Expr) -> IO a) -> IO a
 withListExpr (ListExpr p) = withForeignPtr $! p
 
@@ -181,7 +181,7 @@ instance Ord Expr where
 {#fun unsafe lean_expr_quick_lt
  { `Expr' , `Expr', id `Ptr CInt', `OutExceptionPtr' } -> `Bool' #}
 
--- | Return true if first expression is structurally less than other.
+-- | Return @True@ if the first expression is structurally less than the other.
 exprLt :: Expr -> Expr -> Bool
 exprLt x y = getLeanValue $ lean_expr_lt x y
 

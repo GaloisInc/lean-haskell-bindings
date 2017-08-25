@@ -72,14 +72,14 @@ foreign import ccall unsafe "&lean_cnstr_seq_del"
 ------------------------------------------------------------------------
 -- Typechecker
 
--- | A Lean typechecker
+-- | A Lean typechecker.
 data Typechecker = Typechecker !Env !(ForeignPtr Typechecker)
 
 -- | Return the environment associated with a typechecker.
 typecheckerEnv :: Typechecker -> Env
 typecheckerEnv (Typechecker e _) = e
 
--- | Function @c2hs@ uses to pass @Typechecker@ values to Lean
+-- | Function @c2hs@ uses to pass @Typechecker@ values to Lean.
 withTypechecker :: Typechecker -> (Ptr Typechecker -> IO a) -> IO a
 withTypechecker (Typechecker _ o) = withForeignPtr $! o
 
@@ -90,7 +90,7 @@ withTypechecker (Typechecker _ o) = withForeignPtr $! o
 -- | Haskell type for @lean_type_checker*@ FFI parameters.
 {#pointer *lean_type_checker as OutTypecheckerPtr -> TypecheckerPtr #}
 
--- | Create a typechecker for the given environment
+-- | Create a typechecker for the given environment.
 mkTypechecker :: Env -> Ptr Typechecker -> IO Typechecker
 mkTypechecker e p = Typechecker e <$> newForeignPtr lean_type_checker_del_ptr p
 

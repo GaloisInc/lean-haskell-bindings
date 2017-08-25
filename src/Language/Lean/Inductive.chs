@@ -69,7 +69,7 @@ recursorName n = getLeanValue $ lean_get_recursor_name n
 -- Constructing InductiveDecls
 
 
--- | Create a new inductive type
+-- | Create a new inductive type.
 --
 -- The remaining inductive datatype arguments are treated as indices.
 inductiveDecl :: Name       -- ^ Name of new type
@@ -132,7 +132,7 @@ inductiveDeclUnivParams d = getLeanValue $ lean_inductive_decl_get_univ_params d
 {#fun lean_inductive_decl_get_univ_params
  { `InductiveDecl', `OutListNamePtr', `OutExceptionPtr' } -> `Bool' #}
 
--- | Get the number of parameters for the in the declaration.
+-- | Get the number of parameters of the inductive declaration.
 inductiveDeclNumParams :: InductiveDecl -> Word32
 inductiveDeclNumParams d = getLeanValue $ lean_inductive_decl_get_num_params d
 
@@ -149,7 +149,7 @@ addInductiveDecl d e = getLeanValue $ lean_env_add_inductive e d
 {#fun lean_env_add_inductive
  { `Env', `InductiveDecl', `OutEnvPtr', `OutExceptionPtr' } -> `Bool' #}
 
--- | Return the inductive declaration that introduced type with the given
+-- | Return the inductive declaration that introduced the type with the given
 -- name in the environment (or 'Nothing' if no inductive type by that name exists).
 lookupInductiveDecl :: Env -> Name -> Maybe InductiveDecl
 lookupInductiveDecl e nm = getLeanMaybeValue $ lean_env_is_inductive_type e nm
@@ -157,7 +157,7 @@ lookupInductiveDecl e nm = getLeanMaybeValue $ lean_env_is_inductive_type e nm
 {#fun lean_env_is_inductive_type
  { `Env', `Name', `OutInductiveDeclPtr', `OutExceptionPtr' } -> `Bool' #}
 
--- | If the given name is a constructor in the envionment, this returns
+-- | If the given name is a constructor in the environment, this returns
 -- the name of the associated inductive type.
 --
 -- If the name is not a constructor, then this returns 'Nothing'.
@@ -201,7 +201,7 @@ lookupInductiveTypeNumMinorPremises e nm =
 {#fun lean_env_get_inductive_type_num_minor_premises
  { `Env', `Name', id `Ptr CUInt', `OutExceptionPtr' } -> `Bool' #}
 
--- | Given a name, this returns true if the name is for a inductive
+-- | Given a name, this returns @True@ if it is the name of an inductive
 -- type that supports dependent elimination.
 inductiveTypeHasDepElim :: Env -> Name -> Bool
 inductiveTypeHasDepElim e nm =

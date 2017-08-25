@@ -45,10 +45,10 @@ import Foreign.Ptr
 
 {#pointer lean_decl as Decl foreign newtype nocode#}
 
--- | A Lean declaration
+-- | A Lean declaration.
 newtype Decl = Decl (ForeignPtr Decl)
 
--- | Function @c2hs@ uses to pass @Decl@ values to Lean
+-- | Function @c2hs@ uses to pass @Decl@ values to Lean.
 withDecl :: Decl -> (Ptr Decl -> IO a) -> IO a
 withDecl (Decl o) = withForeignPtr $! o
 
@@ -72,7 +72,7 @@ foreign import ccall unsafe "&lean_decl_del"
 -- | A definition that has been typechecked in some environment.
 newtype CertDecl = CertDecl (ForeignPtr CertDecl)
 
--- | Function @c2hs@ uses to pass @CertDecl@ values to Lean
+-- | Function @c2hs@ uses to pass @CertDecl@ values to Lean.
 withCertDecl :: CertDecl -> (Ptr CertDecl -> IO a) -> IO a
 withCertDecl (CertDecl o) = withForeignPtr $! o
 

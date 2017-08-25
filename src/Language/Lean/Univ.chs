@@ -48,28 +48,29 @@ import Language.Lean.Internal.Exception.Unsafe
 ------------------------------------------------------------------------
 -- Operations for constructing universes
 
--- | The zero universe
+-- | The zero universe.
 zeroUniv :: Univ
 zeroUniv = getLeanValue $ lean_univ_mk_zero
 
 {#fun unsafe lean_univ_mk_zero
  { `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
 
--- | Successor of the universe
+-- | Successor of the universe.
 succUniv :: Univ -> Univ
 succUniv x = getLeanValue $ lean_univ_mk_succ x
 
 {#fun unsafe lean_univ_mk_succ
  { `Univ', `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
 
--- | The max of two universes.
+-- | The maximum of two universes.
 maxUniv :: Univ -> Univ -> Univ
 maxUniv x y = getLeanValue $ lean_univ_mk_max x y
 
 {#fun unsafe lean_univ_mk_max
  { `Univ', `Univ', `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
 
--- | The imax of two universes.
+-- | The imax of two universes, where @imax i j@ is defined to be the
+-- maximum of @i@ and @j@ if @j@ is not zero, and @0@ otherwise.
 imaxUniv :: Univ -> Univ -> Univ
 imaxUniv x y = getLeanValue $ lean_univ_mk_imax x y
 
@@ -90,7 +91,7 @@ metaUniv x = getLeanValue $ lean_univ_mk_meta x
 {#fun unsafe lean_univ_mk_meta
  { `Name', `OutUnivPtr', `OutExceptionPtr' } -> `Bool' #}
 
--- | Create an explicit universe level
+-- | Create an explicit universe level.
 explicitUniv :: Integer -> Univ
 explicitUniv i0 | i0 < 0 = error "Universes cannot be negative."
                 | otherwise = go zeroUniv i0
@@ -111,7 +112,7 @@ data UnivView
    | UnivMax !Univ !Univ
      -- ^ Maximum of two universes.
    | UnivIMax !Univ !Univ
-     -- ^ @UnivIMax x y@ denotes @y@ if @y@ is universe zero, otherwise @UnivMax x y@
+     -- ^ @UnivIMax x y@ denotes @y@ if @y@ is universe zero, otherwise @UnivMax x y@.
    | UnivParam !Name
      -- ^ Universe parameter with the given name.
    | UnivMeta !Name
@@ -181,7 +182,7 @@ normalizeUniv x = getLeanValue $ lean_univ_normalize x
 ------------------------------------------------------------------------
 -- Instantiate
 
--- | Instantiate the parameters with universes
+-- | Instantiate the parameters with universes.
 instantiateUniv :: Univ -> [(Name,Univ)] -> Univ
 instantiateUniv u bindings =
   instantiateUniv2 u (fromList (fst <$> bindings)) (fromList (snd <$> bindings))

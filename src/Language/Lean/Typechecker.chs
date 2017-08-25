@@ -93,7 +93,7 @@ tryInferType t e = tryGetLeanValue e_fn $ lean_type_checker_infer t e
 checkType :: Typechecker -> Expr -> Expr
 checkType t e = getPartial $ tryCheckType t e
 
--- | @checkType t e@ checks and infers the type of @e@ using @t@.
+-- | @tryCheckType t e@ checks and infers the type of @e@ using @t@.
 -- This returns the type and any constraints generated.
 --
 -- The expression @e@ must not contain any free variables (subexpressions with
@@ -121,11 +121,13 @@ tryCheckType t e = tryGetLeanValue e_fn $ lean_type_checker_check t e
 whnf :: Typechecker -> Expr -> Expr
 whnf t e = getPartial $ tryWhnf t e
 
--- | @whnf t e@ computes the weak-head-normal-form of @e@ using @t@, returning the
+-- | @tryWhnf t e@ computes the weak-head-normal-form of @e@ using @t@, returning the
 -- form and any generated constraints.
 --
 -- The expression @e@ must not contain any free variables (subexpressions with
 -- type @ExprVar@).
+--
+-- This version allows the exception to be pattern matched against.
 tryWhnf :: Typechecker -> Expr -> Either LeanException Expr
 tryWhnf t e = tryGetLeanValue e_fn $ lean_type_checker_whnf t e
   where e_fn = mkLeanExceptionWithEnv (typecheckerEnv t)
@@ -152,6 +154,8 @@ isDefEq t e1 e2 = getPartial $ tryIsDefEq t e1 e2
 --
 -- The expressions @e1@ and @e2@ must not contain any free variables
 -- (subexpressions with type @ExprVar@).
+--
+-- This version allows the exception to be pattern matched against.
 tryIsDefEq :: Typechecker -> Expr -> Expr -> Either LeanException Bool
 tryIsDefEq t e1 e2 = tryGetLeanValue e_fn $ lean_type_checker_is_def_eq t e1 e2
   where e_fn = mkLeanExceptionWithEnv (typecheckerEnv t)

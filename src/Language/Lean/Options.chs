@@ -4,7 +4,7 @@ Copyright   : (c) Galois Inc, 2015
 License     : Apache-2
 Maintainer  : jhendrix@galois.com, lcasburn@galois.com
 
-Operations for Lean options
+Operations for Lean options.
 -}
 {-# LANGUAGE DoAndIfThenElse #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
@@ -83,12 +83,12 @@ import Language.Lean.Internal.Exception.Unsafe
   , `OutExceptionPtr'
   } -> `Bool' #}
 
--- | Returns true if options are empty.
+-- | Returns @True@ if options are empty.
 {#fun pure unsafe lean_options_empty as nullOptions
   { `Options'
   } -> `Bool' #}
 
--- | Indicate whether name is set in the lean options.
+-- | Indicate whether name is set in the Lean options.
 {#fun pure unsafe lean_options_contains as containsOption
   { `Options'
   , `Name'
@@ -149,22 +149,22 @@ simpleLensEq leanGetter leanSetter nm f o = fmap setFun (f oldVal)
     setFun newVal = getLeanValue $ leanSetter o nm newVal
 {-# INLINE simpleLensEq #-}
 
--- | Access the lean option with the given name as a Boolean.
+-- | Access the Lean option with the given name as a Boolean.
 boolOption :: Name -> Simple Lens Options Bool
 boolOption = simpleLensEq lean_options_get_bool lean_options_set_bool
 
--- | Access the lean option with the given name as a signed integer.
+-- | Access the Lean option with the given name as a signed integer.
 intOption :: Name -> Simple Lens Options Int32
 intOption = simpleLensEq lean_options_get_int lean_options_set_int
 
--- | Access the lean option with the given name as an unsigned integer.
+-- | Access the Lean option with the given name as an unsigned integer.
 uintOption :: Name -> Simple Lens Options Word32
 uintOption = simpleLensEq lean_options_get_unsigned lean_options_set_unsigned
 
--- | Access the lean option with the given name as a floating point value.
+-- | Access the Lean option with the given name as a floating point value.
 doubleOption :: Name -> Simple Lens Options Double
 doubleOption = simpleLensEq lean_options_get_double lean_options_set_double
 
--- | Access the lean option with the given name as a string.
+-- | Access the Lean option with the given name as a string.
 stringOption :: Name -> Simple Lens Options String
 stringOption = simpleLensEq lean_options_get_string lean_options_set_string

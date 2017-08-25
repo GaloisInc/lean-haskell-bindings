@@ -45,10 +45,10 @@ import Language.Lean.Internal.Exception.Unsafe
 
 {#pointer lean_univ as Univ foreign newtype nocode#}
 
--- | A Lean universe level
+-- | A Lean universe level.
 newtype Univ = Univ (ForeignPtr Univ)
 
--- | Function @c2hs@ uses to pass @Univ@ values to Lean
+-- | Function @c2hs@ uses to pass @Univ@ values to Lean.
 withUniv :: Univ -> (Ptr Univ -> IO a) -> IO a
 withUniv (Univ o) = withForeignPtr $! o
 
@@ -138,10 +138,10 @@ newtype instance List Univ = ListUniv (ForeignPtr (List Univ))
 -- | Haskell type for @lean_list_univ*@ FFI parameters.
 {#pointer *lean_list_univ as OutListUnivPtr -> ListUnivPtr #}
 
--- | Synonym for @List Expr@ that can be used in @c2hs@ bindings
+-- | Synonym for @List Expr@ that can be used in @c2hs@ bindings.
 type ListUniv = List Univ
 
--- | Function @c2hs@ uses to pass @ListUniv@ values to Lean
+-- | Function @c2hs@ uses to pass @ListUniv@ values to Lean.
 withListUniv :: ListUniv -> (Ptr ListUniv -> IO a) -> IO a
 withListUniv (ListUniv p) = withForeignPtr $! p
 

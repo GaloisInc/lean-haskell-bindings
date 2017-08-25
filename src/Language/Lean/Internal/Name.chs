@@ -52,10 +52,10 @@ import Language.Lean.Internal.Exception.Unsafe
 
 {#pointer  lean_name as Name foreign newtype nocode#}
 
--- | A Lean name
+-- | A Lean name.
 newtype Name = Name (ForeignPtr Name)
 
--- | Function @c2hs@ uses to pass @Name@ values to Lean
+-- | Function @c2hs@ uses to pass @Name@ values to Lean.
 withName :: Name -> (Ptr Name -> IO a) -> IO a
 withName (Name fo) = withForeignPtr $! fo
 {-# INLINE withName #-}
@@ -94,7 +94,7 @@ instance Show Name where
 ------------------------------------------------------------------------
 -- Constructing Names
 
--- | The root "anonymous" name
+-- | The root "anonymous" name.
 anonymousName :: Name
 anonymousName = getLeanValue lean_name_mk_anonymous
 
@@ -213,7 +213,7 @@ newtype instance List Name = ListName (ForeignPtr (List Name))
 -- | Synonym for @List Expr@ that can be used in @c2hs@ bindings.
 type ListName = List Name
 
--- | Function @c2hs@ uses to pass @ListName@ values to Lean
+-- | Function @c2hs@ uses to pass @ListName@ values to Lean.
 withListName :: ListName -> (Ptr ListName -> IO a) -> IO a
 withListName (ListName p) = withForeignPtr $! p
 

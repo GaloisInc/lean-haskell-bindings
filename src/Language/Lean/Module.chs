@@ -4,7 +4,7 @@ Copyright   : (c) Galois Inc, 2015-17
 License     : Apache-2
 Maintainer  : jhendrix@galois.com, lcasburn@galois.com
 
-Declarations for importing and exporting modules and accessing Lean paths
+Declarations for importing and exporting modules and accessing Lean paths.
 -}
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE Safe #-}
@@ -30,7 +30,7 @@ import Language.Lean.List
 #include "lean_ios.h"
 #include "lean_module.h"
 
--- | Import the given module names into the lean environment.
+-- | Import the given module names into the Lean environment.
 --
 -- This returns the exception if the import fails, and the new
 -- environment if it succeeds.
@@ -40,9 +40,9 @@ envTryImport s e names = do
   tryAllocLeanValue (mkLeanExceptionWithEnvAndOptions e o) $
     lean_env_import e (someIOS s) names
 
--- | Import the given module names into the lean environment.
+-- | Import the given module names into the Lean environment.
 --
--- This throws a `'LeanException' if the import fails.
+-- This throws a 'LeanException' if the import fails.
 envImport :: IOState tp -> Env -> List Name -> IO Env
 envImport s e names = runPartial $ envTryImport s e names
 
@@ -54,7 +54,7 @@ envImport s e names = runPartial $ envTryImport s e names
  , `OutExceptionPtr'
  } -> `Bool' #}
 
--- | Export the lean environment to a path.
+-- | Export the Lean environment to a path.
 envExport :: Env -> FilePath -> IO ()
 envExport e path = runLeanAction (mkLeanExceptionWithEnv e) $
   lean_env_export e path

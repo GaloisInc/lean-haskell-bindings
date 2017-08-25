@@ -121,13 +121,13 @@ data IOStateTypeRepr (tp :: IOStateType) where
 
 deriving instance Show (IOStateTypeRepr tp)
 
--- | Get the type of the channel
+-- | Get the type of the channel.
 stateTypeRepr :: IOState tp -> IOStateTypeRepr tp
 stateTypeRepr s
   | lean_ios_is_std (someIOS s) = unsafeCoerce StandardRepr
   | otherwise                   = unsafeCoerce BufferedRepr
 
--- Return true if this is a IO state
+-- Return @True@ if this is a IO state.
 {#fun pure unsafe lean_ios_is_std { `SomeIOState' } -> `Bool' #}
 
 ------------------------------------------------------------------------
@@ -151,11 +151,11 @@ setStateOptions ios ops = runLeanAction mkLeanException $
 ------------------------------------------------------------------------
 -- Pretty print expression
 
--- | Pretty print an expression
+-- | Pretty print an expression.
 ppExpr :: Env -> Expr -> String
 ppExpr env e = ppExprWithOptions env e emptyOptions
 
--- | Pretty print an expression
+-- | Pretty print an expression.
 ppExprWithOptions :: Env -> Expr -> Options -> String
 ppExprWithOptions env e o = unsafePerformIO $ do
   s <- mkBufferedIOStateWithOptions o

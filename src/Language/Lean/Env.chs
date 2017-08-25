@@ -170,7 +170,7 @@ envAddCertDecl d e = allocLeanValue (mkLeanExceptionWithEnv e) $ lean_env_add e 
 -- |  Replace the axiom that has the name of the given certified declaration
 -- with the certified declaration.
 --
--- This procedure throws a LeanException if
+-- This procedure throws a 'LeanException' if:
 --
 --  * The certified declaration is not a theorem.
 --  * The theorem was certified in an environment which is not an ancestor of the environment.
@@ -187,7 +187,7 @@ envReplaceAxiom d e = allocLeanValue (mkLeanExceptionWithEnv e) $ lean_env_repla
   , `OutExceptionPtr'
   } -> `Bool' #}
 
--- |  Return @true@ iff the environment contains a declaration with the name.
+-- |  Return @True@ iff the environment contains a declaration with the name.
 {#fun pure unsafe lean_env_contains_decl as envContainsDecl
     { `Env', `Name' } -> `Bool' #}
 
@@ -222,7 +222,7 @@ foreign import ccall "wrapper" wrapDeclVisitFn :: WrapLeanVisitFn DeclPtr
 ------------------------------------------------------------------------
 -- Environment containment
 
--- | @x `'envIsDescendant'` y@ return true @x@ is a descendant of @y@, that is, @x@
+-- | @x ``envIsDescendant`` y@ returns true if @x@ is a descendant of @y@, that is, @x@
 -- was created by adding declarations to @y@.
 envIsDescendant :: Env -> Env -> Bool
 envIsDescendant = lean_env_is_descendant
