@@ -9,8 +9,8 @@ Operations for creating inductive types and declarations.
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE Trustworthy #-}
 module Language.Lean.Inductive
-    -- * Inductive declarations
-  ( InductiveDecl
+  ( -- * Inductive declarations
+    InductiveDecl
   , inductiveDecl
   , inductiveDeclName
   , inductiveDeclUnivParams
